@@ -143,19 +143,19 @@ var workflows_handler_default = async ({ req }) => {
 //#endregion
 //#region #nitro/virtual/public-assets-data
 var public_assets_data_default = {
-	"/index.mjs.map": {
-		"type": "application/json",
-		"etag": "\"3d655c-ujvjimV3yMq4T7B2Ttd/+21HJEQ\"",
-		"mtime": "2026-07-13T22:22:04.285Z",
-		"size": 4023644,
-		"path": "index.mjs.map"
-	},
 	"/index.mjs": {
 		"type": "text/javascript; charset=utf-8",
-		"etag": "\"4070a6-uLZmvIzQx3oWbhdZuqSDxefqUxE\"",
-		"mtime": "2026-07-13T22:22:04.277Z",
-		"size": 4223142,
+		"etag": "\"12802-coR7jzT4cEzxJNxertdfY7oDCuc\"",
+		"mtime": "2026-07-13T22:22:04.397Z",
+		"size": 75778,
 		"path": "index.mjs"
+	},
+	"/index.mjs.map": {
+		"type": "application/json",
+		"etag": "\"16a52-8ZxcRicvgZKh6RSKLxO6zWirack\"",
+		"mtime": "2026-07-13T22:22:04.397Z",
+		"size": 92754,
+		"path": "index.mjs.map"
 	}
 };
 //#endregion
