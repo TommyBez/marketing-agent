@@ -3,6 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { agentThreads, companyProfiles } from '@/lib/db/schema'
+import { del, get, put } from '@vercel/blob'
 import { and, desc, eq } from 'drizzle-orm'
 import type { HandleMessageStreamEvent } from 'eve/client'
 import { revalidatePath } from 'next/cache'
@@ -17,6 +18,24 @@ const sessionStateSchema = z.object({
   streamIndex: z.number().int().min(0),
 })
 const transcriptEventsSchema = z.array(z.unknown()).max(5_000)
+const transcriptPointerSchema = z.object({ blobPath: z.string().min(1) })
+
+function getTranscriptPath(userId: string, conversationId: string) {
+  return `agent-transcripts/${userId}/${conversationId}.json`
+}
+
+async function readTranscript(value: unknown) {
+  const inlineTranscript = transcriptEventsSchema.safeParse(value)
+  if (inlineTranscript.success) return inlineTranscript.data as HandleMessageStreamEvent[]
+
+  const pointer = transcriptPointerSchema.safeParse(value)
+  if (!pointer.success) return []
+
+  const result = await get(pointer.data.blobPath, { access: 'private', useCache: false })
+  if (!result || result.statusCode !== 200) return []
+  const payload = await new Response(result.stream).json()
+  return transcriptEventsSchema.parse(payload) as HandleMessageStreamEvent[]
+}
 
 export interface ConversationSummary {
   id: string
@@ -87,7 +106,7 @@ export async function getConversation(workspaceId: string, conversationId: strin
   return {
     id: conversation.id,
     title: conversation.title,
-    events: transcriptEventsSchema.parse(conversation.events) as HandleMessageStreamEvent[],
+    events: await readTranscript(conversation.events),
     session: {
       continuationToken: conversation.continuationToken ?? undefined,
       sessionId: conversation.eveSessionId ?? undefined,
@@ -102,12 +121,19 @@ export async function saveConversation(workspaceId: string, conversationId: stri
   const parsedSession = sessionStateSchema.parse(sessionState)
   const parsedEvents = transcriptEventsSchema.parse(events)
   const shouldTitle = conversation.title === 'New conversation' && Boolean(firstMessage?.trim())
+  const blobPath = getTranscriptPath(userId, conversation.id)
 
+  await put(blobPath, JSON.stringify(parsedEvents), {
+    access: 'private',
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    contentType: 'application/json',
+  })
   await db.update(agentThreads).set({
     eveSessionId: parsedSession.sessionId,
     continuationToken: parsedSession.continuationToken,
     streamIndex: parsedSession.streamIndex,
-    events: parsedEvents,
+    events: { blobPath },
     ...(shouldTitle ? { title: createTitle(firstMessage ?? '') } : {}),
     updatedAt: new Date(),
   }).where(and(eq(agentThreads.id, conversation.id), eq(agentThreads.userId, userId)))
@@ -145,5 +171,7 @@ export async function deleteConversation(workspaceId: string, conversationId: st
   const userId = await getUserId()
   const conversation = await requireConversation(userId, workspaceId, conversationId)
   await db.delete(agentThreads).where(and(eq(agentThreads.id, conversation.id), eq(agentThreads.userId, userId)))
+  const pointer = transcriptPointerSchema.safeParse(conversation.events)
+  if (pointer.success) await del(pointer.data.blobPath)
   revalidatePath(`/workspace/${workspaceId}`)
 }

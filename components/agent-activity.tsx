@@ -1,216 +1,164 @@
 'use client'
 
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
-import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker'
-import type { HandleMessageStreamEvent } from 'eve/client'
-import { Bot, Brain, Check, ChevronDown, CircleDashed, Wrench } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import type { EveMessageInputRequest, EveMessagePart } from 'eve/react'
+import { Bot, Check, ExternalLink, FileText, LoaderCircle, LockKeyhole, Wrench } from 'lucide-react'
+import { useState } from 'react'
 
-interface AgentActivityProps {
-  events: readonly HandleMessageStreamEvent[]
+interface AgentPartProps {
   isBusy: boolean
-}
-
-interface ActivityItem {
-  id: string
-  kind: 'reasoning' | 'tool' | 'subagent'
-  label: string
-  detail?: string
-  output?: string
-  status: 'running' | 'completed' | 'failed'
+  onRespond: (requestId: string, response: { optionId?: string; text?: string }) => Promise<void>
+  part: EveMessagePart
 }
 
 function formatName(value: string) {
   return value.replaceAll('_', ' ').replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
-function formatValue(value: unknown) {
-  if (value === undefined || value === null) return undefined
-  if (typeof value === 'string') return value
-
-  try {
-    return JSON.stringify(value, null, 2)
-  } catch {
-    return String(value)
-  }
+function getToolStatus(part: Extract<EveMessagePart, { type: 'dynamic-tool' }>) {
+  if (part.state === 'output-available') return 'Completed'
+  if (part.state === 'output-error') return 'Failed'
+  if (part.state === 'output-denied') return 'Declined'
+  if (part.state === 'approval-requested') return 'Needs input'
+  if (part.state === 'approval-responded') return 'Responding'
+  return 'Running'
 }
 
-function getActivity(events: readonly HandleMessageStreamEvent[]) {
-  const items = new Map<string, ActivityItem>()
+function HumanInput({ isBusy, onRespond, request }: {
+  isBusy: boolean
+  onRespond: AgentPartProps['onRespond']
+  request: EveMessageInputRequest
+}) {
+  const [freeform, setFreeform] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  for (const event of events) {
-    if (event.type === 'reasoning.appended') {
-      const id = `reasoning-${event.data.turnId}-${event.data.stepIndex}`
-      items.set(id, {
-        id,
-        kind: 'reasoning',
-        label: 'Thinking',
-        detail: event.data.reasoningSoFar,
-        status: 'running',
-      })
-    }
-
-    if (event.type === 'reasoning.completed') {
-      const id = `reasoning-${event.data.turnId}-${event.data.stepIndex}`
-      items.set(id, {
-        id,
-        kind: 'reasoning',
-        label: 'Thought process',
-        detail: event.data.reasoning,
-        status: 'completed',
-      })
-    }
-
-    if (event.type === 'actions.requested') {
-      for (const action of event.data.actions) {
-        if (action.kind === 'tool-call') {
-          items.set(action.callId, {
-            id: action.callId,
-            kind: 'tool',
-            label: formatName(action.toolName),
-            detail: formatValue(action.input),
-            status: 'running',
-          })
-        }
-
-        if (action.kind === 'subagent-call' || action.kind === 'remote-agent-call') {
-          const name = action.kind === 'subagent-call' ? action.subagentName : action.remoteAgentName
-          items.set(action.callId, {
-            id: action.callId,
-            kind: 'subagent',
-            label: formatName(name),
-            detail: action.description,
-            status: 'running',
-          })
-        }
-      }
-    }
-
-    if (event.type === 'action.result') {
-      const current = items.get(event.data.result.callId)
-      const result = event.data.result
-      const name = result.kind === 'tool-result'
-        ? result.toolName
-        : result.kind === 'subagent-result'
-          ? result.subagentName
-          : result.name ?? 'Skill'
-
-      items.set(result.callId, {
-        id: result.callId,
-        kind: result.kind === 'subagent-result' ? 'subagent' : 'tool',
-        label: current?.label ?? formatName(name),
-        detail: current?.detail,
-        output: event.data.error?.message ?? formatValue(result.output),
-        status: event.data.status === 'completed' ? 'completed' : 'failed',
-      })
-    }
-
-    if (event.type === 'subagent.called') {
-      const current = items.get(event.data.callId)
-      items.set(event.data.callId, {
-        id: event.data.callId,
-        kind: 'subagent',
-        label: current?.label ?? formatName(event.data.name),
-        detail: current?.detail,
-        status: 'running',
-      })
-    }
-
-    if (event.type === 'subagent.started') {
-      items.set(event.data.callId, {
-        id: event.data.callId,
-        kind: 'subagent',
-        label: formatName(event.data.subagentName),
-        status: 'running',
-      })
-    }
-
-    if (event.type === 'subagent.event') {
-      const current = items.get(event.data.callId)
-      const childEvent = event.data.event
-      let output = current?.output
-
-      if (childEvent.type === 'message.appended') output = childEvent.data.messageSoFar
-      if (childEvent.type === 'message.completed') output = childEvent.data.message ?? output
-      if (childEvent.type === 'reasoning.appended') output = childEvent.data.reasoningSoFar
-
-      items.set(event.data.callId, {
-        id: event.data.callId,
-        kind: 'subagent',
-        label: current?.label ?? formatName(event.data.subagentName),
-        detail: current?.detail,
-        output,
-        status: 'running',
-      })
-    }
-
-    if (event.type === 'subagent.completed') {
-      const current = items.get(event.data.callId)
-      items.set(event.data.callId, {
-        id: event.data.callId,
-        kind: 'subagent',
-        label: current?.label ?? formatName(event.data.subagentName),
-        detail: current?.detail,
-        output: event.data.output,
-        status: 'completed',
-      })
+  async function respond(response: { optionId?: string; text?: string }) {
+    if (isBusy || isSubmitting) return
+    setIsSubmitting(true)
+    try {
+      await onRespond(request.requestId, response)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  return Array.from(items.values())
+  return (
+    <Alert className="mt-2 border-primary/30 bg-primary/5">
+      <LockKeyhole />
+      <AlertTitle>Manager approval</AlertTitle>
+      <AlertDescription className="flex flex-col gap-3">
+        <p>{request.prompt}</p>
+        {request.options && request.options.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            {request.options.map((option) => (
+              <Button
+                key={option.id}
+                size="sm"
+                variant={option.style === 'danger' ? 'destructive' : option.style === 'primary' ? 'default' : 'outline'}
+                disabled={isBusy || isSubmitting}
+                onClick={() => void respond({ optionId: option.id })}
+                title={option.description}
+              >
+                {option.label}
+              </Button>
+            ))}
+          </div>
+        )}
+        {(request.allowFreeform || request.display === 'text') && (
+          <form
+            className="flex gap-2"
+            onSubmit={(event) => {
+              event.preventDefault()
+              const text = freeform.trim()
+              if (text) void respond({ text })
+            }}
+          >
+            <Input
+              value={freeform}
+              onChange={(event) => setFreeform(event.target.value)}
+              placeholder="Type your response"
+              disabled={isBusy || isSubmitting}
+              aria-label="Approval response"
+            />
+            <Button type="submit" size="sm" disabled={!freeform.trim() || isBusy || isSubmitting}>Send</Button>
+          </form>
+        )}
+      </AlertDescription>
+    </Alert>
+  )
 }
 
-function ActivityIcon({ item }: { item: ActivityItem }) {
-  if (item.status === 'completed') return <Check />
-  if (item.kind === 'reasoning') return <Brain />
-  if (item.kind === 'subagent') return <Bot />
-  if (item.kind === 'tool') return <Wrench />
-  return <CircleDashed />
+function ToolPart({ isBusy, onRespond, part }: AgentPartProps & { part: Extract<EveMessagePart, { type: 'dynamic-tool' }> }) {
+  const request = part.toolMetadata?.eve?.inputRequest
+  const hasPendingRequest = Boolean(request && !part.toolMetadata?.eve?.inputResponse)
+  const isFailed = part.state === 'output-error'
+
+  return (
+    <div className="rounded-lg border bg-muted/30 p-3">
+      <div className="flex items-center gap-2 text-sm">
+        <Wrench className="text-muted-foreground" />
+        <span className="min-w-0 flex-1 truncate font-medium">{formatName(part.toolMetadata?.eve?.name ?? part.toolName)}</span>
+        <Badge variant={isFailed ? 'destructive' : 'outline'}>{getToolStatus(part)}</Badge>
+      </div>
+      {part.state === 'output-error' && <p className="mt-2 text-sm text-destructive">{part.errorText}</p>}
+      {hasPendingRequest && request && <HumanInput isBusy={isBusy} onRespond={onRespond} request={request} />}
+    </div>
+  )
 }
 
-function ActivityRow({ item, isLatest }: { item: ActivityItem; isLatest: boolean }) {
-  const isOpen = item.status === 'running' && isLatest
-  const hasDetails = Boolean(item.detail || item.output)
-
-  if (!hasDetails) {
+function AuthorizationPart({ part }: { part: Extract<EveMessagePart, { type: 'authorization' }> }) {
+  if (part.state === 'completed') {
     return (
-      <Marker>
-        <MarkerIcon><ActivityIcon item={item} /></MarkerIcon>
-        <MarkerContent>{item.label}</MarkerContent>
-        <Badge variant="outline">{item.status === 'running' ? 'Running' : item.status}</Badge>
-      </Marker>
+      <Alert>
+        <Check />
+        <AlertTitle>{part.displayName}</AlertTitle>
+        <AlertDescription>{part.outcome === 'authorized' ? 'Connection authorized.' : `Authorization ${part.outcome}.`}</AlertDescription>
+      </Alert>
     )
   }
 
   return (
-    <details className="group rounded-lg border bg-muted/40 p-3" open={isOpen}>
-      <summary className="flex cursor-pointer list-none items-center gap-2 text-sm [&::-webkit-details-marker]:hidden">
-        <span className="text-muted-foreground"><ActivityIcon item={item} /></span>
-        <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
-        <Badge variant="outline">{item.status === 'running' ? 'Running' : item.status}</Badge>
-        <ChevronDown className="text-muted-foreground transition-transform group-open:rotate-180" />
-      </summary>
-      <div className="flex flex-col gap-3 pt-3 text-xs leading-5 text-muted-foreground">
-        {item.detail && <pre className="max-h-48 overflow-auto whitespace-pre-wrap font-sans">{item.detail}</pre>}
-        {item.output && (
-          <div className="flex flex-col gap-1 border-t pt-3">
-            <span className="font-medium text-foreground">Output</span>
-            <pre className="max-h-56 overflow-auto whitespace-pre-wrap font-mono">{item.output}</pre>
-          </div>
+    <Alert className="border-primary/30 bg-primary/5">
+      <LockKeyhole />
+      <AlertTitle>Connect {part.displayName}</AlertTitle>
+      <AlertDescription className="flex flex-col gap-3">
+        <p>{part.authorization?.instructions ?? part.description}</p>
+        {part.authorization?.userCode && <code className="w-fit rounded-md bg-muted px-2 py-1 font-mono text-foreground">{part.authorization.userCode}</code>}
+        {part.authorization?.url && (
+          <Button render={<a href={part.authorization.url} target="_blank" rel="noreferrer" />} size="sm" className="w-fit">
+            Authorize <ExternalLink />
+          </Button>
         )}
-      </div>
-    </details>
+      </AlertDescription>
+    </Alert>
   )
 }
 
-export function AgentActivity({ events, isBusy }: AgentActivityProps) {
-  const activity = getActivity(events)
-  if (activity.length === 0) return null
-
-  return (
-    <div className="flex flex-col gap-2" aria-live="polite" aria-label="Agent activity">
-      {activity.map((item, index) => (
-        <ActivityRow key={item.id} item={item} isLatest={isBusy && index === activity.length - 1} />
-      ))}
-    </div>
-  )
+export function AgentPart({ isBusy, onRespond, part }: AgentPartProps) {
+  if (part.type === 'dynamic-tool') return <ToolPart isBusy={isBusy} onRespond={onRespond} part={part} />
+  if (part.type === 'authorization') return <AuthorizationPart part={part} />
+  if (part.type === 'reasoning') {
+    return (
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        {part.state === 'streaming' ? <LoaderCircle className="animate-spin" /> : <Check />}
+        <span>{part.state === 'streaming' ? 'Planning the next step' : 'Plan completed'}</span>
+      </div>
+    )
+  }
+  if (part.type === 'file') {
+    return (
+      <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
+        <FileText className="text-muted-foreground" />
+        <span className="min-w-0 flex-1 truncate">{part.filename ?? 'Attachment'}</span>
+        {part.url && <Button render={<a href={part.url} target="_blank" rel="noreferrer" />} variant="ghost" size="sm">Open <ExternalLink /></Button>}
+      </div>
+    )
+  }
+  if (part.type === 'step-start') {
+    return <div className="flex items-center gap-2 text-xs text-muted-foreground"><Bot /><span>Specialist step started</span></div>
+  }
+  return null
 }

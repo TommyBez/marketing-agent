@@ -1,7 +1,7 @@
 'use client'
 
 import { saveConversation, titleConversation } from '@/app/actions/thread'
-import { AgentActivity } from '@/components/agent-activity'
+import { AgentPart } from '@/components/agent-activity'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Bubble, BubbleContent } from '@/components/ui/bubble'
 import { Button } from '@/components/ui/button'
@@ -38,13 +38,42 @@ function createConversationTitle(message: string) {
 export function AgentChat({ companyName, conversationId, conversationTitle, initialEvents, initialSession, workspaceId }: AgentChatProps) {
   const router = useRouter()
   const firstMessageRef = useRef('')
+  const eventsRef = useRef<HandleMessageStreamEvent[]>([...(initialEvents ?? [])])
+  const sessionRef = useRef<SessionState>(initialSession ?? { streamIndex: 0 })
+  const persistenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const persistenceChainRef = useRef<Promise<void>>(Promise.resolve())
   const [displayTitle, setDisplayTitle] = useState(conversationTitle)
+
+  function persistConversation(isImmediate = false) {
+    if (persistenceTimerRef.current) clearTimeout(persistenceTimerRef.current)
+    const persist = () => {
+      const session = sessionRef.current
+      const events = [...eventsRef.current]
+      persistenceChainRef.current = persistenceChainRef.current
+        .catch(() => undefined)
+        .then(() => saveConversation(workspaceId, conversationId, session, events, firstMessageRef.current))
+    }
+    if (isImmediate) persist()
+    else persistenceTimerRef.current = setTimeout(persist, 750)
+  }
+
   const agent = useEveAgent({
     headers: { 'x-relay-workspace-id': workspaceId },
     initialEvents,
     initialSession,
+    onEvent: (event) => {
+      eventsRef.current.push(event)
+      persistConversation()
+    },
+    onSessionChange: (session) => {
+      sessionRef.current = session
+      persistConversation()
+    },
     onFinish: async (snapshot) => {
-      await saveConversation(workspaceId, conversationId, snapshot.session, snapshot.events, firstMessageRef.current)
+      eventsRef.current = [...snapshot.events]
+      sessionRef.current = snapshot.session
+      persistConversation(true)
+      await persistenceChainRef.current
       router.refresh()
     },
   })
@@ -57,11 +86,14 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
     if (displayTitle === 'New conversation' && !firstMessageRef.current) {
       firstMessageRef.current = nextMessage
       setDisplayTitle(createConversationTitle(nextMessage))
-      await titleConversation(workspaceId, conversationId, nextMessage)
-      router.refresh()
+      void titleConversation(workspaceId, conversationId, nextMessage).then(() => router.refresh())
     }
     setMessage('')
     await agent.send({ message: nextMessage })
+  }
+
+  async function respondToInput(requestId: string, response: { optionId?: string; text?: string }) {
+    await agent.send({ inputResponses: [{ requestId, ...response }] })
   }
 
   return (
@@ -98,7 +130,9 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
                       <BubbleContent>
                         <div className="flex flex-col gap-3">
                           {item.parts.map((part, partIndex) => {
-                            if (part.type !== 'text') return null
+                            if (part.type !== 'text') {
+                              return <AgentPart key={`${part.type}-${partIndex}`} part={part} isBusy={isBusy} onRespond={respondToInput} />
+                            }
                             if (item.role === 'user') return <p className="whitespace-pre-wrap" key={partIndex}>{part.text}</p>
 
                             const isLatestMessage = messageIndex === agent.data.messages.length - 1
@@ -119,11 +153,6 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
                 </Message>
               </MessageScrollerItem>
             ))}
-            {agent.events.length > 0 && (
-              <MessageScrollerItem scrollAnchor>
-                <AgentActivity events={agent.events} isBusy={isBusy} />
-              </MessageScrollerItem>
-            )}
             {isBusy && (
               <MessageScrollerItem scrollAnchor>
                 <Marker>
