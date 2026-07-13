@@ -16464,7 +16464,7 @@ const createKyselyAdapter = async (config) => {
 	if ("getConnection" in db) dialect = new MysqlDialect(db);
 	if ("connect" in db) dialect = new PostgresDialect({ pool: db });
 	if ("fileControl" in db) {
-		const { BunSqliteDialect } = await import("../_3.mjs");
+		const { BunSqliteDialect } = await import("../_6.mjs");
 		dialect = new BunSqliteDialect({ database: db });
 	}
 	if ("createSession" in db) {
@@ -16480,12 +16480,12 @@ const createKyselyAdapter = async (config) => {
 			if (error !== null && typeof error === "object" && "code" in error && error.code !== "ERR_UNKNOWN_BUILTIN_MODULE") throw error;
 		}
 		if (DatabaseSync && db instanceof DatabaseSync) {
-			const { NodeSqliteDialect } = await import("../_5.mjs");
+			const { NodeSqliteDialect } = await import("../_8.mjs");
 			dialect = new NodeSqliteDialect({ database: db });
 		}
 	}
 	if ("batch" in db && "exec" in db && "prepare" in db) {
-		const { D1SqliteDialect } = await import("../_4.mjs");
+		const { D1SqliteDialect } = await import("../_7.mjs");
 		dialect = new D1SqliteDialect({ database: db });
 	}
 	return {
