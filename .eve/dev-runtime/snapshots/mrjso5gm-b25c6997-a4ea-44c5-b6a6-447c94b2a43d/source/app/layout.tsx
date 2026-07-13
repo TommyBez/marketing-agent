@@ -10,7 +10,7 @@ const newsreader = Newsreader({ subsets: ['latin'], variable: '--font-newsreader
 
 export const metadata: Metadata = {
   title: 'Relay — One marketing mind. A whole team behind it.',
-  description: 'Relay learns your business and coordinates six marketing specialists to turn strategy into ready-to-review marketing work.',
+  description: 'Relay learns your business and coordinates six specialist AI agents to turn strategy into finished marketing work.',
 }
 
 export const viewport: Viewport = { colorScheme: 'light dark', themeColor: [{ media: '(prefers-color-scheme: light)', color: '#f2f0ea' }, { media: '(prefers-color-scheme: dark)', color: '#10110f' }], userScalable: true }

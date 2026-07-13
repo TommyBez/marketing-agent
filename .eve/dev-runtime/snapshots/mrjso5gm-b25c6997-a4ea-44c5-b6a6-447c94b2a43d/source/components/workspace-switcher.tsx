@@ -130,7 +130,7 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {activeWorkspace.name}?</AlertDialogTitle>
-            <AlertDialogDescription>This permanently removes its company brief and all saved conversations. This action cannot be undone.</AlertDialogDescription>
+            <AlertDialogDescription>This permanently removes its company brief and saved conversation. This action cannot be undone.</AlertDialogDescription>
           </AlertDialogHeader>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <AlertDialogFooter>
