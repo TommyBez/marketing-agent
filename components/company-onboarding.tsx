@@ -65,7 +65,12 @@ export function CompanyOnboarding({ isCompact = false, onCreated }: CompanyOnboa
         </CardDescription>
       </CardHeader>
       <CardContent className={isCompact ? 'flex flex-col gap-5 px-0' : 'flex flex-col gap-6 px-6 md:px-10'}>
-        <form action={handleSubmit}>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            void handleSubmit(new FormData(event.currentTarget))
+          }}
+        >
           <FieldGroup>
             <Field data-disabled={isLoading}>
               <FieldLabel htmlFor={isCompact ? 'dialogWebsiteUrl' : 'websiteUrl'}>Company website URL</FieldLabel>

@@ -25,6 +25,11 @@ function getDomain(value: string) {
 export async function analyzeCompany(websiteUrl: string) {
   const userId = await getUserId()
   const parsedUrl = urlSchema.parse(websiteUrl)
+  const domain = getDomain(parsedUrl).toLowerCase()
+  const matchingWorkspace = (await db.select().from(companyProfiles).where(eq(companyProfiles.userId, userId)))
+    .find((workspace) => getDomain(workspace.websiteUrl).toLowerCase() === domain)
+  if (matchingWorkspace) return matchingWorkspace
+
   const apiKey = process.env.CONTEXT_DEV_API_KEY
   if (!apiKey) throw new Error('Context.dev is not configured')
 
@@ -48,12 +53,20 @@ export async function analyzeCompany(websiteUrl: string) {
   const offering = String(brand.offering ?? summary.slice(0, 320))
   const voice = String(brand.voice ?? 'Clear, credible, and customer-focused')
 
-  const [workspace] = await db.insert(companyProfiles).values({
-    userId, websiteUrl: parsedUrl, name, summary, audience, offering, voice,
-    rawContext: { brand, markdown: scrapePayload.markdown?.slice(0, 40_000) },
-  }).returning()
-  revalidatePath('/workspace', 'layout')
-  return workspace
+  try {
+    const [workspace] = await db.insert(companyProfiles).values({
+      userId, websiteUrl: parsedUrl, name, summary, audience, offering, voice,
+      rawContext: { brand, markdown: scrapePayload.markdown?.slice(0, 40_000) },
+    }).returning()
+    revalidatePath('/workspace', 'layout')
+    return workspace
+  } catch (cause) {
+    if (!(cause instanceof Error) || !('code' in cause) || cause.code !== '23505') throw cause
+    const workspace = (await db.select().from(companyProfiles).where(eq(companyProfiles.userId, userId)))
+      .find((candidate) => getDomain(candidate.websiteUrl).toLowerCase() === domain)
+    if (!workspace) throw cause
+    return workspace
+  }
 }
 
 export async function listWorkspaces() {

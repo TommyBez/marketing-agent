@@ -1,7 +1,8 @@
 import { fileURLToPath as __eveFileURLToPath } from "node:url";
 import { dirname as __eveDirname } from "node:path";
 __eveDirname(__eveFileURLToPath(import.meta.url));
-import { $ as assertNotSet, $t as _coercedString, A as createRouter$1, At as createLogger, B as jwtVerify, Bt as ZodBoolean, C as runWithTransaction, Ct as uint32be, D as getCurrentAuthContext, Dt as BetterAuthError, E as runWithRequestState, Et as APIError, F as getAuthTables, G as validateCrit, Gt as email, H as validateClaimsSet, Ht as any, J as checkKeyLength, Jt as object, K as importJWK, Kt as looseObject, L as base64Url, Lt as isDevelopment, M as toResponse, Mt as shouldPublishLog, N as safeJSONParse, O as runWithEndpointContext, Ot as kAPIErrorHeaderSymbol, P as filterOutputFields, Pt as env, Q as isObject, Qt as _coercedBoolean, Rt as isProduction, S as runWithAdapter, St as encode, T as hasRequestState, Tt as createRandomStringGenerator, U as checkKeyType, Ut as array, V as JWTClaimsBuilder, Vt as ZodString, W as validateAlgorithms, Wt as boolean$1, X as isDisjoint, Xt as record, Y as sign, Yt as optional, Z as isJWK, Zt as string$1, _ as createAuthEndpoint, _t as checkEncCryptoKey, a as SocialProviderListEnum, at as isKeyLike, b as getCurrentAdapter, bt as concat, c as isLoopbackHost, ct as JOSENotSupported, d as import_src, dt as JWKInvalid, et as decodeBase64url, f as createRateLimitKey, ft as JWSInvalid, g as normalizePathname, gt as invalidKeyInput, h as deprecate, ht as JWTInvalid, i as initGetFieldName, it as isCryptoKey, j as serializeCookie, jt as logger, k as getBetterAuthVersion, kt as BASE_ERROR_CODES, l as generateId, lt as JWEDecryptionFailed, m as getIp, mt as JWTExpired, nt as unprotected, o as socialProviders, ot as isKeyObject, p as findInvalidTrustedProxies, pt as JWTClaimValidationFailed, q as normalizeKey, qt as number, r as initGetModelName, rt as assertCryptoKey, st as JOSEAlgNotAllowed, tt as digest, u as withSpan, ut as JWEInvalid, v as createAuthMiddleware, vt as decode, w as defineRequestState, wt as uint64be, x as queueAfterTransactionHook, xt as decoder, y as isAPIError, yt as encode$1, z as decodeProtectedHeader, zt as isTest } from "./@better-auth/core+[...].mjs";
+import { G as any, K as array, R as ZodBoolean, V as ZodString, X as email, at as optional, ct as string$1, dt as _coercedBoolean, ft as _coercedString, it as object, ot as record, q as boolean$1, rt as number, tt as looseObject } from "./@ai-sdk/gateway+[...].mjs";
+import { $ as assertNotSet, A as createRouter$1, At as createLogger, B as jwtVerify, C as runWithTransaction, Ct as uint32be, D as getCurrentAuthContext, Dt as BetterAuthError, E as runWithRequestState, Et as APIError, F as getAuthTables, G as validateCrit, H as validateClaimsSet, J as checkKeyLength, K as importJWK, L as base64Url, Lt as isDevelopment, M as toResponse, Mt as shouldPublishLog, N as safeJSONParse, O as runWithEndpointContext, Ot as kAPIErrorHeaderSymbol, P as filterOutputFields, Pt as env, Q as isObject, Rt as isProduction, S as runWithAdapter, St as encode, T as hasRequestState, Tt as createRandomStringGenerator, U as checkKeyType, V as JWTClaimsBuilder, W as validateAlgorithms, X as isDisjoint, Y as sign, Z as isJWK, _ as createAuthEndpoint, _t as checkEncCryptoKey, a as SocialProviderListEnum, at as isKeyLike, b as getCurrentAdapter, bt as concat, c as isLoopbackHost, ct as JOSENotSupported, d as import_src, dt as JWKInvalid, et as decodeBase64url, f as createRateLimitKey, ft as JWSInvalid, g as normalizePathname, gt as invalidKeyInput, h as deprecate, ht as JWTInvalid, i as initGetFieldName, it as isCryptoKey, j as serializeCookie, jt as logger, k as getBetterAuthVersion, kt as BASE_ERROR_CODES, l as generateId, lt as JWEDecryptionFailed, m as getIp, mt as JWTExpired, nt as unprotected, o as socialProviders, ot as isKeyObject, p as findInvalidTrustedProxies, pt as JWTClaimValidationFailed, q as normalizeKey, r as initGetModelName, rt as assertCryptoKey, st as JOSEAlgNotAllowed, tt as digest, u as withSpan, ut as JWEInvalid, v as createAuthMiddleware, vt as decode, w as defineRequestState, wt as uint64be, x as queueAfterTransactionHook, xt as decoder, y as isAPIError, yt as encode$1, z as decodeProtectedHeader, zt as isTest } from "./@better-auth/core+[...].mjs";
 import { n as hkdf, t as sha256 } from "./noble__hashes.mjs";
 import { i as verifyPassword$2, n as binary, r as hashPassword, t as createHMAC } from "./better-auth__utils.mjs";
 import { n as createHash, t as createTelemetry } from "./@better-auth/telemetry+[...].mjs";
@@ -8173,7 +8174,7 @@ async function getBaseAdapter(options, handleDirectDatabase) {
 			acc[key] = [];
 			return acc;
 		}, {});
-		const { memoryAdapter } = await import("./_6.mjs");
+		const { memoryAdapter } = await import("./_9.mjs");
 		adapter = memoryAdapter(memoryDB)(options);
 	} else if (typeof options.database === "function") adapter = options.database(options);
 	else adapter = await handleDirectDatabase(options);
@@ -8189,10 +8190,10 @@ async function getBaseAdapter(options, handleDirectDatabase) {
 //#region node_modules/.pnpm/better-auth@1.6.23_drizzle-orm@0.45.2_@types+pg@8.20.0_kysely@0.29.3_pg@8.22.0_sql.js@1_d0d5e8cd1a00614ff53348d56326887f/node_modules/better-auth/dist/db/adapter-kysely.mjs
 async function getAdapter(options) {
 	return getBaseAdapter(options, async (opts) => {
-		const { createKyselyAdapter } = await import("./_7.mjs");
+		const { createKyselyAdapter } = await import("./_11.mjs");
 		const { kysely, databaseType, transaction } = await createKyselyAdapter(opts);
 		if (!kysely) throw new BetterAuthError("Failed to initialize database adapter");
-		const { kyselyAdapter } = await import("./_7.mjs");
+		const { kyselyAdapter } = await import("./_11.mjs");
 		return kyselyAdapter(kysely, {
 			type: databaseType || "sqlite",
 			debugLogs: opts.database && "debugLogs" in opts.database ? opts.database.debugLogs : false,
