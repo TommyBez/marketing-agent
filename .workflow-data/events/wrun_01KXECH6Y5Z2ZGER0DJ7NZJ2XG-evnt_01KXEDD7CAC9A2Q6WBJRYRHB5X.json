@@ -1,0 +1,16 @@
+{
+  "eventType": "step_completed",
+  "specVersion": 5,
+  "correlationId": "step_01KXECH6Y52CJM824GV5QK0MYD",
+  "eventData": {
+    "stepName": "step//eve@0.22.6//fireSessionCallbackStep",
+    "workflowName": "workflow//eve//workflowEntry",
+    "result": {
+      "__type": "Uint8Array",
+      "data": "ZGV2bC0x"
+    }
+  },
+  "runId": "wrun_01KXECH6Y5Z2ZGER0DJ7NZJ2XG",
+  "eventId": "evnt_01KXEDD7CAC9A2Q6WBJRYRHB5X",
+  "createdAt": "2026-07-13T18:56:36.746Z"
+}
