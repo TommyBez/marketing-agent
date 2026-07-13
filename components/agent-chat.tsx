@@ -1,5 +1,6 @@
 'use client'
 
+import { resetWorkspaceThread, saveWorkspaceThread } from '@/app/actions/thread'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Bubble, BubbleContent } from '@/components/ui/bubble'
 import { Button } from '@/components/ui/button'
@@ -10,18 +11,27 @@ import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker'
 import { Message, MessageContent, MessageHeader } from '@/components/ui/message'
 import { MessageScroller, MessageScrollerButton, MessageScrollerContent, MessageScrollerItem, MessageScrollerProvider, MessageScrollerViewport } from '@/components/ui/message-scroller'
 import { Spinner } from '@/components/ui/spinner'
+import type { HandleMessageStreamEvent, SessionState } from 'eve/client'
 import { useEveAgent } from 'eve/react'
 import { ArrowUp, RotateCcw, Square } from 'lucide-react'
 import { useState } from 'react'
 
 interface AgentChatProps {
   companyName: string
+  initialEvents?: HandleMessageStreamEvent[]
+  initialSession?: SessionState
+  workspaceId: string
 }
 
 const suggestedPrompts = ['Audit our positioning', 'Plan the next 30 days', 'Find SEO opportunities']
 
-export function AgentChat({ companyName }: AgentChatProps) {
-  const agent = useEveAgent()
+export function AgentChat({ companyName, initialEvents, initialSession, workspaceId }: AgentChatProps) {
+  const agent = useEveAgent({
+    headers: { 'x-relay-workspace-id': workspaceId },
+    initialEvents,
+    initialSession,
+    onFinish: (snapshot) => void saveWorkspaceThread(workspaceId, snapshot.session, snapshot.events),
+  })
   const [message, setMessage] = useState('')
   const isBusy = agent.status === 'submitted' || agent.status === 'streaming'
 
@@ -32,13 +42,18 @@ export function AgentChat({ companyName }: AgentChatProps) {
     await agent.send({ message: nextMessage })
   }
 
+  async function resetConversation() {
+    agent.reset()
+    await resetWorkspaceThread(workspaceId)
+  }
+
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-card">
       <CardHeader className="border-b py-3">
         <CardTitle>Marketing Manager</CardTitle>
         <CardDescription>Working for {companyName} · 6 specialists available</CardDescription>
         <CardAction>
-          <Button variant="outline" size="icon" onClick={() => agent.reset()} aria-label="Start new conversation">
+          <Button variant="outline" size="icon" onClick={() => void resetConversation()} aria-label="Start new conversation">
             <RotateCcw />
           </Button>
         </CardAction>

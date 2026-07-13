@@ -1,6 +1,6 @@
 import { db } from '@/lib/db'
 import { companyProfiles } from '@/lib/db/schema'
-import { desc, eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { defineDynamic, defineInstructions } from 'eve/instructions'
 
 const MAX_RAW_CONTEXT_LENGTH = 12_000
@@ -19,15 +19,21 @@ export default defineDynamic({
       if (caller?.principalType !== 'user')
         throw new Error('An authenticated user is required to load company context.')
 
+      const workspaceId = caller.attributes.workspaceId
+      if (typeof workspaceId !== 'string')
+        throw new Error('A verified workspace is required to load company context.')
+
       const [profile] = await db
         .select()
         .from(companyProfiles)
-        .where(eq(companyProfiles.userId, caller.principalId))
-        .orderBy(desc(companyProfiles.updatedAt))
+        .where(and(
+          eq(companyProfiles.id, workspaceId),
+          eq(companyProfiles.userId, caller.principalId),
+        ))
         .limit(1)
 
       if (!profile)
-        throw new Error('Create a company brief before using the marketing manager.')
+        throw new Error('The selected workspace is unavailable.')
 
       const companyBrief = {
         name: profile.name,

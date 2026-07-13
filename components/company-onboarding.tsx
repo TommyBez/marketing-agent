@@ -19,7 +19,12 @@ const analysisStages = [
   'Building the shared company brief',
 ] as const
 
-export function CompanyOnboarding() {
+interface CompanyOnboardingProps {
+  isCompact?: boolean
+  onCreated?: () => void
+}
+
+export function CompanyOnboarding({ isCompact = false, onCreated }: CompanyOnboardingProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [activeStage, setActiveStage] = useState(0)
@@ -38,7 +43,9 @@ export function CompanyOnboarding() {
     setActiveStage(0)
     setError('')
     try {
-      await analyzeCompany(String(formData.get('websiteUrl')))
+      const workspace = await analyzeCompany(String(formData.get('websiteUrl')))
+      onCreated?.()
+      router.push(`/workspace/${workspace.id}`)
       router.refresh()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to analyze this website')
@@ -46,58 +53,69 @@ export function CompanyOnboarding() {
     }
   }
 
-  return (
-    <section className="flex flex-1 items-center justify-center p-5 md:p-10">
-      <Card className="w-full max-w-3xl shadow-2xl">
-        <CardHeader className="gap-3 px-6 md:px-10">
-          <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent-foreground">Initialize workspace</p>
-          <CardTitle className="max-w-xl font-serif text-4xl leading-tight text-balance md:text-5xl">Start with what your company already knows.</CardTitle>
-          <CardDescription className="max-w-xl text-base leading-7">Paste your website. Context.dev will build the shared company brief your marketing manager and specialists use for every operation.</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-6 px-6 md:px-10">
-          <form action={handleSubmit}>
-            <FieldGroup>
-              <Field data-disabled={isLoading}>
-                <FieldLabel htmlFor="websiteUrl">Company website URL</FieldLabel>
-                <div className="flex flex-col gap-3 sm:flex-row">
-                  <Input id="websiteUrl" name="websiteUrl" type="url" required disabled={isLoading} placeholder="https://yourcompany.com" className="h-11 flex-1" />
-                  <Button type="submit" size="lg" disabled={isLoading} aria-busy={isLoading}>
-                    {isLoading && <Spinner data-icon="inline-start" />}
-                    {isLoading ? 'Analyzing brand…' : 'Build company brief'}
-                  </Button>
-                </div>
-                <FieldDescription>Your API key stays server-side and profiles remain private to your account.</FieldDescription>
-              </Field>
-            </FieldGroup>
-          </form>
+  const content = (
+    <>
+      <CardHeader className={isCompact ? 'px-0 pt-0' : 'gap-3 px-6 md:px-10'}>
+        {!isCompact && <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent-foreground">Initialize workspace</p>}
+        <CardTitle className={isCompact ? 'font-serif text-2xl text-balance' : 'max-w-xl font-serif text-4xl leading-tight text-balance md:text-5xl'}>
+          {isCompact ? 'Create another workspace' : 'Start with what your company already knows.'}
+        </CardTitle>
+        <CardDescription className={isCompact ? 'leading-6' : 'max-w-xl text-base leading-7'}>
+          Paste a company website. Context.dev will build a private brief for this workspace.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className={isCompact ? 'flex flex-col gap-5 px-0' : 'flex flex-col gap-6 px-6 md:px-10'}>
+        <form action={handleSubmit}>
+          <FieldGroup>
+            <Field data-disabled={isLoading}>
+              <FieldLabel htmlFor={isCompact ? 'dialogWebsiteUrl' : 'websiteUrl'}>Company website URL</FieldLabel>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Input id={isCompact ? 'dialogWebsiteUrl' : 'websiteUrl'} name="websiteUrl" type="url" required disabled={isLoading} placeholder="https://yourcompany.com" className="h-11 flex-1" />
+                <Button type="submit" size="lg" disabled={isLoading} aria-busy={isLoading}>
+                  {isLoading && <Spinner data-icon="inline-start" />}
+                  {isLoading ? 'Analyzing…' : 'Build workspace'}
+                </Button>
+              </div>
+              <FieldDescription>Each workspace and its conversations remain private to your account.</FieldDescription>
+            </Field>
+          </FieldGroup>
+        </form>
 
-          {isLoading && (
-            <Card size="sm" aria-live="polite" aria-label="Brand analysis progress" className="bg-background">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Spinner />{analysisStages[activeStage]}</CardTitle>
-                <CardDescription>Step {activeStage + 1} of {analysisStages.length}</CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col gap-4">
-                <Progress value={((activeStage + 1) / analysisStages.length) * 100} />
-                <div className="flex flex-col gap-2">
-                  {analysisStages.map((stage, index) => (
-                    <div className="flex items-center gap-3 text-sm" key={stage}>
-                      {index < activeStage ? <Check aria-hidden="true" /> : index === activeStage ? <Spinner /> : <span aria-hidden="true" className="size-4 rounded-full border" />}
-                      <span className={index <= activeStage ? 'text-foreground' : 'text-muted-foreground'}>{stage}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
-        </CardContent>
+        {isLoading && (
+          <Card size="sm" aria-live="polite" aria-label="Brand analysis progress" className="bg-background">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Spinner />{analysisStages[activeStage]}</CardTitle>
+              <CardDescription>Step {activeStage + 1} of {analysisStages.length}</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-4">
+              <Progress value={((activeStage + 1) / analysisStages.length) * 100} />
+              <div className="flex flex-col gap-2">
+                {analysisStages.map((stage, index) => (
+                  <div className="flex items-center gap-3 text-sm" key={stage}>
+                    {index < activeStage ? <Check aria-hidden="true" /> : index === activeStage ? <Spinner /> : <span aria-hidden="true" className="size-4 rounded-full border" />}
+                    <span className={index <= activeStage ? 'text-foreground' : 'text-muted-foreground'}>{stage}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+        {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+      </CardContent>
+      {!isCompact && (
         <CardFooter className="flex-col items-stretch gap-4 bg-transparent px-6 md:px-10">
           <Separator />
           <p className="text-sm leading-6 text-muted-foreground">Company profiles are securely saved and scoped to your authenticated account.</p>
         </CardFooter>
-      </Card>
+      )}
+    </>
+  )
+
+  if (isCompact) return <div className="flex flex-col gap-4">{content}</div>
+
+  return (
+    <section className="flex flex-1 items-center justify-center p-5 md:p-10">
+      <Card className="w-full max-w-3xl shadow-2xl">{content}</Card>
     </section>
   )
 }
