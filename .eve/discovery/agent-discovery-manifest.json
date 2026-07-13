@@ -1,0 +1,439 @@
+{
+  "agentId": "my-project",
+  "agentRoot": "/vercel/share/v0-project/agent",
+  "appRoot": "/vercel/share/v0-project",
+  "channels": [
+    {
+      "sourceKind": "module",
+      "logicalPath": "channels/eve.ts",
+      "sourceId": "channels/eve.ts"
+    },
+    {
+      "sourceKind": "module",
+      "logicalPath": "channels/slack.ts",
+      "sourceId": "channels/slack.ts"
+    }
+  ],
+  "connections": [
+    {
+      "sourceKind": "module",
+      "logicalPath": "connections/context-dev.ts",
+      "sourceId": "connections/context-dev.ts",
+      "connectionName": "context-dev"
+    }
+  ],
+  "diagnosticsSummary": {
+    "errors": 0,
+    "warnings": 0
+  },
+  "extensions": [],
+  "resolvedExtensions": [],
+  "hooks": [],
+  "instructions": [
+    {
+      "definition": {
+        "markdown": "# Marketing Manager\n\nYou are the accountable marketing manager for the user's company. Build strategy, coordinate execution, and synthesize specialist work into clear recommendations.\n\n## Operating rules\n1. Ground every recommendation in the active company profile included by the user or retrieved through available tools.\n2. Clarify the goal, audience, constraints, channel, and success metric before expensive work.\n3. Delegate focused tasks to the six declared specialists. Run independent work in parallel and include all necessary company context because subagents do not see your conversation.\n4. Use Context.dev through `connection_search` for current website, competitor, or market evidence. Never invent findings.\n5. Separate evidence, assumptions, recommendations, and next actions. Include measurable KPIs.\n6. Ask for approval before publishing, spending, deleting, or contacting external people.\n7. Return one coherent plan—not a dump of subagent outputs. Resolve disagreements and explain trade-offs.\n\n## Team\n- seo-content: search, content systems, technical and AI SEO\n- copywriting: brand voice and persuasive copy\n- cro: funnel, signup, onboarding, paywall, experiments\n- growth-retention: loops, lifecycle, referrals, churn\n- paid-social: campaign creative, ads, social distribution\n- strategy-analytics: positioning, pricing, research, launch, analytics\n"
+      },
+      "sourceKind": "markdown",
+      "logicalPath": "instructions.md",
+      "sourceId": "instructions.md"
+    }
+  ],
+  "lib": [],
+  "kind": "eve-agent-discovery-manifest",
+  "sandbox": null,
+  "sandboxWorkspaces": [],
+  "schedules": [],
+  "skills": [
+    {
+      "description": "Use before planning any marketing initiative to establish product, customer, positioning, proof, goals, and constraints.",
+      "logicalPath": "skills/product-marketing/SKILL.md",
+      "markdown": "# Product Marketing Foundation\nAdapted from the open marketingskills operating approach.\n1. Read the active company profile; list gaps instead of guessing.\n2. Define product category, ideal customer, urgent job, alternatives, differentiation, proof, objections, voice, business stage, and goal.\n3. Translate features into outcomes and proof. Preserve exact customer language when available.\n4. State one strategic choice: target, position, promise, primary channel, and success metric.\n5. Route execution to specialists only after this foundation is explicit.\n",
+      "name": "product-marketing",
+      "rootPath": "/vercel/share/v0-project/agent/skills/product-marketing",
+      "skillFilePath": "/vercel/share/v0-project/agent/skills/product-marketing/SKILL.md",
+      "skillId": "product-marketing",
+      "sourceId": "skills/product-marketing/SKILL.md",
+      "sourceKind": "skill-package"
+    }
+  ],
+  "tools": [],
+  "version": 12,
+  "subagents": [
+    {
+      "entryPath": "/vercel/share/v0-project/agent/subagents/copywriting",
+      "logicalPath": "subagents/copywriting",
+      "manifest": {
+        "agentId": "copywriting",
+        "agentRoot": "/vercel/share/v0-project/agent/subagents/copywriting",
+        "appRoot": "/vercel/share/v0-project",
+        "channels": [],
+        "connections": [
+          {
+            "sourceKind": "module",
+            "logicalPath": "connections/context-dev.ts",
+            "sourceId": "connections/context-dev.ts",
+            "connectionName": "context-dev"
+          }
+        ],
+        "diagnosticsSummary": {
+          "errors": 0,
+          "warnings": 0
+        },
+        "extensions": [],
+        "resolvedExtensions": [],
+        "hooks": [],
+        "instructions": [
+          {
+            "definition": {
+              "markdown": "# Copywriting Specialist\nApply the marketingskills copywriting and copy-editing methods. Identify one reader, one awareness stage, one job, and one primary action. Match the company's real voice and claims; do not fabricate proof. Lead with specificity and customer language. Return a recommended draft, useful alternatives, message hierarchy, and rationale. Make every CTA concrete and proportionate to intent.\n"
+            },
+            "sourceKind": "markdown",
+            "logicalPath": "instructions.md",
+            "sourceId": "instructions.md"
+          }
+        ],
+        "lib": [],
+        "kind": "eve-agent-discovery-manifest",
+        "sandbox": null,
+        "sandboxWorkspaces": [],
+        "schedules": [],
+        "skills": [
+          {
+            "description": "Use to write or edit persuasive website, campaign, email, social, video, or SMS copy.",
+            "logicalPath": "skills/copywriting/SKILL.md",
+            "markdown": "# Conversion Copy\nAdapted from coreyhaines31/marketingskills. Establish reader, awareness, source, job, objection, proof, voice, and one desired action. Build hierarchy: specific outcome, differentiated mechanism, evidence, objection handling, action. Prefer customer language and concrete nouns over hype. Draft the recommended version first, then meaningful alternatives. Audit every claim for support and every CTA for clarity.\n",
+            "name": "copywriting",
+            "rootPath": "/vercel/share/v0-project/agent/subagents/copywriting/skills/copywriting",
+            "skillFilePath": "/vercel/share/v0-project/agent/subagents/copywriting/skills/copywriting/SKILL.md",
+            "skillId": "copywriting",
+            "sourceId": "skills/copywriting/SKILL.md",
+            "sourceKind": "skill-package"
+          }
+        ],
+        "tools": [],
+        "version": 12,
+        "subagents": [],
+        "configModule": {
+          "sourceKind": "module",
+          "logicalPath": "agent.ts",
+          "sourceId": "agent.ts"
+        }
+      },
+      "rootPath": "/vercel/share/v0-project/agent/subagents/copywriting",
+      "sourceId": "subagents/copywriting",
+      "subagentId": "copywriting"
+    },
+    {
+      "entryPath": "/vercel/share/v0-project/agent/subagents/cro",
+      "logicalPath": "subagents/cro",
+      "manifest": {
+        "agentId": "cro",
+        "agentRoot": "/vercel/share/v0-project/agent/subagents/cro",
+        "appRoot": "/vercel/share/v0-project",
+        "channels": [],
+        "connections": [
+          {
+            "sourceKind": "module",
+            "logicalPath": "connections/context-dev.ts",
+            "sourceId": "connections/context-dev.ts",
+            "connectionName": "context-dev"
+          }
+        ],
+        "diagnosticsSummary": {
+          "errors": 0,
+          "warnings": 0
+        },
+        "extensions": [],
+        "resolvedExtensions": [],
+        "hooks": [],
+        "instructions": [
+          {
+            "definition": {
+              "markdown": "# Conversion Optimization Specialist\nApply marketingskills CRO, signup, onboarding, popup, paywall, and A/B testing playbooks. Map traffic source, promise, friction, anxiety, and next step before proposing changes. Distinguish observed evidence from hypotheses. Rank tests by expected impact, evidence, and effort. Every experiment needs a hypothesis, primary metric, guardrails, audience, duration rule, and implementation notes.\n"
+            },
+            "sourceKind": "markdown",
+            "logicalPath": "instructions.md",
+            "sourceId": "instructions.md"
+          }
+        ],
+        "lib": [],
+        "kind": "eve-agent-discovery-manifest",
+        "sandbox": null,
+        "sandboxWorkspaces": [],
+        "schedules": [],
+        "skills": [
+          {
+            "description": "Use to audit landing pages, signup, onboarding, paywalls, popups, or design conversion experiments.",
+            "logicalPath": "skills/conversion-optimization/SKILL.md",
+            "markdown": "# Conversion Optimization\nAdapted from coreyhaines31/marketingskills. Map traffic source, visitor intent, promise, information scent, friction, anxiety, distraction, and next step. Label observations separately from hypotheses. Rank opportunities by evidence, impact, and effort. For tests specify hypothesis, variant, audience, primary metric, guardrail, sample/duration rule, instrumentation, and decision rule. Do not test low-traffic changes that should simply be fixed.\n",
+            "name": "conversion-optimization",
+            "rootPath": "/vercel/share/v0-project/agent/subagents/cro/skills/conversion-optimization",
+            "skillFilePath": "/vercel/share/v0-project/agent/subagents/cro/skills/conversion-optimization/SKILL.md",
+            "skillId": "conversion-optimization",
+            "sourceId": "skills/conversion-optimization/SKILL.md",
+            "sourceKind": "skill-package"
+          }
+        ],
+        "tools": [],
+        "version": 12,
+        "subagents": [],
+        "configModule": {
+          "sourceKind": "module",
+          "logicalPath": "agent.ts",
+          "sourceId": "agent.ts"
+        }
+      },
+      "rootPath": "/vercel/share/v0-project/agent/subagents/cro",
+      "sourceId": "subagents/cro",
+      "subagentId": "cro"
+    },
+    {
+      "entryPath": "/vercel/share/v0-project/agent/subagents/growth-retention",
+      "logicalPath": "subagents/growth-retention",
+      "manifest": {
+        "agentId": "growth-retention",
+        "agentRoot": "/vercel/share/v0-project/agent/subagents/growth-retention",
+        "appRoot": "/vercel/share/v0-project",
+        "channels": [],
+        "connections": [],
+        "diagnosticsSummary": {
+          "errors": 0,
+          "warnings": 0
+        },
+        "extensions": [],
+        "resolvedExtensions": [],
+        "hooks": [],
+        "instructions": [
+          {
+            "definition": {
+              "markdown": "# Growth & Retention Specialist\nApply marketingskills referral, free-tool, lead-magnet, churn, community, co-marketing, and directory playbooks. Optimize for compounding systems rather than isolated tactics. Specify trigger, participant value, loop mechanics, channel, instrumentation, abuse controls, and bottleneck. Tie retention work to activation and customer value. Return prioritized experiments with owners and leading indicators.\n"
+            },
+            "sourceKind": "markdown",
+            "logicalPath": "instructions.md",
+            "sourceId": "instructions.md"
+          }
+        ],
+        "lib": [],
+        "kind": "eve-agent-discovery-manifest",
+        "sandbox": null,
+        "sandboxWorkspaces": [],
+        "schedules": [],
+        "skills": [
+          {
+            "description": "Use for growth loops, referrals, free tools, lead magnets, lifecycle, community, partnerships, churn, and retention.",
+            "logicalPath": "skills/growth-retention/SKILL.md",
+            "markdown": "# Growth and Retention Loops\nAdapted from coreyhaines31/marketingskills. Start from customer value and the current bottleneck. Define trigger, actor, action, reward, distribution, re-entry, instrumentation, and abuse controls. Prefer loops that compound over one-off tactics. Tie retention to activation milestones and ongoing value. Return a small portfolio of experiments with owner, effort, leading indicator, success threshold, and stop condition.\n",
+            "name": "growth-retention",
+            "rootPath": "/vercel/share/v0-project/agent/subagents/growth-retention/skills/growth-retention",
+            "skillFilePath": "/vercel/share/v0-project/agent/subagents/growth-retention/skills/growth-retention/SKILL.md",
+            "skillId": "growth-retention",
+            "sourceId": "skills/growth-retention/SKILL.md",
+            "sourceKind": "skill-package"
+          }
+        ],
+        "tools": [],
+        "version": 12,
+        "subagents": [],
+        "configModule": {
+          "sourceKind": "module",
+          "logicalPath": "agent.ts",
+          "sourceId": "agent.ts"
+        }
+      },
+      "rootPath": "/vercel/share/v0-project/agent/subagents/growth-retention",
+      "sourceId": "subagents/growth-retention",
+      "subagentId": "growth-retention"
+    },
+    {
+      "entryPath": "/vercel/share/v0-project/agent/subagents/paid-social",
+      "logicalPath": "subagents/paid-social",
+      "manifest": {
+        "agentId": "paid-social",
+        "agentRoot": "/vercel/share/v0-project/agent/subagents/paid-social",
+        "appRoot": "/vercel/share/v0-project",
+        "channels": [],
+        "connections": [],
+        "diagnosticsSummary": {
+          "errors": 0,
+          "warnings": 0
+        },
+        "extensions": [],
+        "resolvedExtensions": [],
+        "hooks": [],
+        "instructions": [
+          {
+            "definition": {
+              "markdown": "# Paid & Social Specialist\nApply marketingskills advertising, creative, social, and analytics methods. Build campaigns from audience insight, offer, angle, format, and channel behavior—not generic content calendars. Produce a test matrix across hooks, concepts, proof, and CTA. Include targeting assumptions, landing-page match, budget guardrails, creative refresh triggers, and measurement. Never publish or spend without explicit approval.\n"
+            },
+            "sourceKind": "markdown",
+            "logicalPath": "instructions.md",
+            "sourceId": "instructions.md"
+          }
+        ],
+        "lib": [],
+        "kind": "eve-agent-discovery-manifest",
+        "sandbox": null,
+        "sandboxWorkspaces": [],
+        "schedules": [],
+        "skills": [
+          {
+            "description": "Use for paid acquisition, ad creative, campaign structure, social content, and performance measurement.",
+            "logicalPath": "skills/paid-social/SKILL.md",
+            "markdown": "# Paid and Social Distribution\nAdapted from coreyhaines31/marketingskills. Define audience, stage, offer, angle, proof, format, platform behavior, and landing-page match. Build a creative test matrix across concepts, hooks, visuals, proof, and CTAs instead of trivial copy variants. Specify budget guardrails, attribution assumptions, leading metrics, fatigue thresholds, and refresh cadence. Draft only; require human approval before publishing or spending.\n",
+            "name": "paid-social",
+            "rootPath": "/vercel/share/v0-project/agent/subagents/paid-social/skills/paid-social",
+            "skillFilePath": "/vercel/share/v0-project/agent/subagents/paid-social/skills/paid-social/SKILL.md",
+            "skillId": "paid-social",
+            "sourceId": "skills/paid-social/SKILL.md",
+            "sourceKind": "skill-package"
+          }
+        ],
+        "tools": [],
+        "version": 12,
+        "subagents": [],
+        "configModule": {
+          "sourceKind": "module",
+          "logicalPath": "agent.ts",
+          "sourceId": "agent.ts"
+        }
+      },
+      "rootPath": "/vercel/share/v0-project/agent/subagents/paid-social",
+      "sourceId": "subagents/paid-social",
+      "subagentId": "paid-social"
+    },
+    {
+      "entryPath": "/vercel/share/v0-project/agent/subagents/seo-content",
+      "logicalPath": "subagents/seo-content",
+      "manifest": {
+        "agentId": "seo-content",
+        "agentRoot": "/vercel/share/v0-project/agent/subagents/seo-content",
+        "appRoot": "/vercel/share/v0-project",
+        "channels": [],
+        "connections": [
+          {
+            "sourceKind": "module",
+            "logicalPath": "connections/context-dev.ts",
+            "sourceId": "connections/context-dev.ts",
+            "connectionName": "context-dev"
+          }
+        ],
+        "diagnosticsSummary": {
+          "errors": 0,
+          "warnings": 0
+        },
+        "extensions": [],
+        "resolvedExtensions": [],
+        "hooks": [],
+        "instructions": [
+          {
+            "definition": {
+              "markdown": "# SEO & Content Specialist\nUse the marketingskills methods for SEO audits, AI search visibility, programmatic SEO, site architecture, schema, competitor analysis, and content strategy. Start with business context and intent. Use Context.dev evidence. Prioritize findings by impact, confidence, and effort. Never guarantee rankings. Deliver technical fixes, topic opportunities, briefs, internal links, measurement, and a sequenced 30/60/90-day roadmap.\n"
+            },
+            "sourceKind": "markdown",
+            "logicalPath": "instructions.md",
+            "sourceId": "instructions.md"
+          }
+        ],
+        "lib": [],
+        "kind": "eve-agent-discovery-manifest",
+        "sandbox": null,
+        "sandboxWorkspaces": [],
+        "schedules": [],
+        "skills": [
+          {
+            "description": "Use for SEO audits, AI search visibility, site architecture, schema, programmatic SEO, competitor research, or content strategy.",
+            "logicalPath": "skills/seo-content/SKILL.md",
+            "markdown": "# SEO and Content System\nAdapted from coreyhaines31/marketingskills. Establish product context and search intent. Crawl representative templates, then inspect indexability, rendering, metadata, canonicals, internal links, schema, topical coverage, authority, and conversion paths. For AI search, assess quotable facts, entity clarity, source credibility, and retrievability. Prioritize by impact, confidence, and effort. Deliver evidence, exact fixes, owner, KPI, and validation method; never guarantee rankings.\n",
+            "name": "seo-content",
+            "rootPath": "/vercel/share/v0-project/agent/subagents/seo-content/skills/seo-content",
+            "skillFilePath": "/vercel/share/v0-project/agent/subagents/seo-content/skills/seo-content/SKILL.md",
+            "skillId": "seo-content",
+            "sourceId": "skills/seo-content/SKILL.md",
+            "sourceKind": "skill-package"
+          }
+        ],
+        "tools": [],
+        "version": 12,
+        "subagents": [],
+        "configModule": {
+          "sourceKind": "module",
+          "logicalPath": "agent.ts",
+          "sourceId": "agent.ts"
+        }
+      },
+      "rootPath": "/vercel/share/v0-project/agent/subagents/seo-content",
+      "sourceId": "subagents/seo-content",
+      "subagentId": "seo-content"
+    },
+    {
+      "entryPath": "/vercel/share/v0-project/agent/subagents/strategy-analytics",
+      "logicalPath": "subagents/strategy-analytics",
+      "manifest": {
+        "agentId": "strategy-analytics",
+        "agentRoot": "/vercel/share/v0-project/agent/subagents/strategy-analytics",
+        "appRoot": "/vercel/share/v0-project",
+        "channels": [],
+        "connections": [
+          {
+            "sourceKind": "module",
+            "logicalPath": "connections/context-dev.ts",
+            "sourceId": "connections/context-dev.ts",
+            "connectionName": "context-dev"
+          }
+        ],
+        "diagnosticsSummary": {
+          "errors": 0,
+          "warnings": 0
+        },
+        "extensions": [],
+        "resolvedExtensions": [],
+        "hooks": [],
+        "instructions": [
+          {
+            "definition": {
+              "markdown": "# Strategy & Analytics Specialist\nApply marketingskills positioning, customer research, competitor profiling, pricing, offers, launch, PR, revops, sales enablement, and prospecting methods. Frame the decision before researching. Use current evidence, quantify uncertainty, and test alternatives against explicit criteria. Separate facts from inferences. Return a recommendation, rejected options, risks, leading indicators, and a measurement design that can change the decision.\n"
+            },
+            "sourceKind": "markdown",
+            "logicalPath": "instructions.md",
+            "sourceId": "instructions.md"
+          }
+        ],
+        "lib": [],
+        "kind": "eve-agent-discovery-manifest",
+        "sandbox": null,
+        "sandboxWorkspaces": [],
+        "schedules": [],
+        "skills": [
+          {
+            "description": "Use for positioning, customer research, competitor profiling, pricing, offers, launches, PR, revops, sales enablement, or analytics design.",
+            "logicalPath": "skills/strategy-analytics/SKILL.md",
+            "markdown": "# Strategy and Analytics\nAdapted from coreyhaines31/marketingskills. Frame the decision, alternatives, criteria, and information value before research. Gather current evidence and mark confidence. Analyze customer jobs, alternatives, differentiation, willingness to pay, route to market, operating constraints, and second-order effects. Recommend one path, explain rejected options, identify risks, and define leading indicators plus a review trigger that could change the decision.\n",
+            "name": "strategy-analytics",
+            "rootPath": "/vercel/share/v0-project/agent/subagents/strategy-analytics/skills/strategy-analytics",
+            "skillFilePath": "/vercel/share/v0-project/agent/subagents/strategy-analytics/skills/strategy-analytics/SKILL.md",
+            "skillId": "strategy-analytics",
+            "sourceId": "skills/strategy-analytics/SKILL.md",
+            "sourceKind": "skill-package"
+          }
+        ],
+        "tools": [],
+        "version": 12,
+        "subagents": [],
+        "configModule": {
+          "sourceKind": "module",
+          "logicalPath": "agent.ts",
+          "sourceId": "agent.ts"
+        }
+      },
+      "rootPath": "/vercel/share/v0-project/agent/subagents/strategy-analytics",
+      "sourceId": "subagents/strategy-analytics",
+      "subagentId": "strategy-analytics"
+    }
+  ],
+  "configModule": {
+    "sourceKind": "module",
+    "logicalPath": "agent.ts",
+    "sourceId": "agent.ts"
+  }
+}
