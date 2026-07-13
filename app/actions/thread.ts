@@ -122,6 +122,11 @@ export async function saveConversation(workspaceId: string, conversationId: stri
   const parsedEvents = transcriptEventsSchema.parse(events)
   const shouldTitle = conversation.title === 'New conversation' && Boolean(firstMessage?.trim())
   const blobPath = getTranscriptPath(userId, conversation.id)
+  if (parsedSession.streamIndex < conversation.streamIndex) return
+  if (parsedSession.streamIndex === conversation.streamIndex) {
+    const savedEvents = await readTranscript(conversation.events)
+    if (parsedEvents.length < savedEvents.length) return
+  }
 
   await put(blobPath, JSON.stringify(parsedEvents), {
     access: 'private',
