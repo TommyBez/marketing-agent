@@ -1,0 +1,45 @@
+{
+  "eventType": "attr_set",
+  "specVersion": 5,
+  "eventData": {
+    "changes": [
+      {
+        "key": "$eve.model",
+        "value": "xai/grok-4.5"
+      },
+      {
+        "key": "$eve.input_tokens",
+        "value": "10627"
+      },
+      {
+        "key": "$eve.output_tokens",
+        "value": "144"
+      },
+      {
+        "key": "$eve.cache_read_tokens",
+        "value": "5248"
+      },
+      {
+        "key": "$eve.cache_write_tokens",
+        "value": "0"
+      },
+      {
+        "key": "$eve.cost_usd",
+        "value": "0.014246"
+      },
+      {
+        "key": "$eve.tool_count",
+        "value": "17"
+      }
+    ],
+    "writer": {
+      "type": "step",
+      "stepId": "step_01KXECKB7SACVYGS1TGAKJE1BX",
+      "attempt": 1
+    },
+    "allowReservedAttributes": true
+  },
+  "runId": "wrun_01KXECKB7SNJXVR0HX3XH7KN84",
+  "eventId": "evnt_01KXECKEX0STD5DB7ZAJX9A5VB",
+  "createdAt": "2026-07-13T18:42:32.480Z"
+}

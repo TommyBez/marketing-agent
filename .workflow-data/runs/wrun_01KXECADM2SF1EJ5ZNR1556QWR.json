@@ -1,0 +1,32 @@
+{
+  "runId": "wrun_01KXECADM2SF1EJ5ZNR1556QWR",
+  "deploymentId": "dpl_local@5.0.0-beta.27",
+  "workflowName": "workflow//eve//workflowEntry",
+  "specVersion": 5,
+  "executionContext": {
+    "traceCarrier": {},
+    "workflowCoreVersion": "5.0.0-beta.31",
+    "features": {
+      "encryption": false
+    }
+  },
+  "input": {
+    "__type": "Uint8Array",
+    "data": "enN0ZCi1L/1gtgjdKADaVUwPNmBr0wEwDMMwDEOMrird1sPunSKRlHL1Y26yk5QTY6sgECFs2lHWL2i/26z1UiN7ZJ6yIQjMA+IA1gDnADNG+jNK91XgFvFFFTNaKJtgnF1BVscUIuTgujLLWvBvAWZgAIVORCg76jXYWtH2KTRC/Se08YdcWYVc9XQXLGSYiHAY+7f1k3IVYguFk12clN82VwdXmSU+yU6Ze01B6pNlfFyxU39++iu9TjNGv0+qo+JruuqtDixzp4nyNWFrMsXWPG6TKwbjcfkvrcmzJvztEFusyQWcRODXUZxSLXDlFJty1d8iICx22YmlRvGUfCq2xR7P4sq687Qu2AXyrKfAD6OE4wr9tif7Yg7mWf499VvMedZTEva6YBEcECC8il3aHi7k74ghQ8qvJQtllvdw32E7pVF8ryeNr3FyBZ3ijJxbV9N7yskPeZpi+36umDspcylXtuQKt03xnZLQxifD3of8+6I3m+8stRmVH7STcsoapCKdrBXYD1rIyho133dG3yp9W6jlufObll35d1b4YavDrlBPMpfQPAVOoL4qNcrVX4yvjsFChtfQVpMdigG4snAn/QgpIxDxAIA6T+qXI7V8M2fYj2VLHSDBmJBQxk+5pl6kzDK56sdOH+pbKL5KV3FKBcozSihLDLSxfD9k18qTauwaFTsGV9wwvrGEOCXTqBg8V3LGYpeGI2Kxh1Uw2W08IBcBP8rFaTHJsxzsisUiz/oYF0i5Ds/iNqnoi7kJdhGuC3ZxnGc5t9wWMeNvf8N+cDxLemoljmdFuCIyoGA/jBDHs+CEw/GsxxCu1FjDs/g5SEENV7wu2Gq8pW+PsknASYR3pibw1MneAAKcwMllTRw71WLETOYHtWNz+Ul0rCqwJ0dRdNQ2zg1yT5YUWN9+V9opN7iT5QULGaRKS8oecr92ngqpybNNRExm2BXIymaUknKd+N3isTG3fXIPLGigFtwVT6nsAAVFEZiazy6PiYod87bFd2FpYfBWdoM95WIO51ltscZTUM//9cnV2ubg0CBhR5M8OAykQRLGuQiEaZLIgXFOQ0ODufFwxYsrfha7ODietb9un6fFGi4XbLHLw/Es/n1fzHG4hOYxcieGcTyj9NQy3sLJaNMZ701pNA7l0TxYHrulgtJoGk4jgahIAc7S8hAUp2mANA2IaUaGX4UKPR3FaSBNxAFRQf7oKJRHA2kgEC5WoDQRiF6KQ+M4TQOCK2ZMEsqG4ZRV4e0WY7hI5B6Rx0PDaViGGw8J4zgahFkoihiHCMSJ1mkMZHG4QsKcGP5RcrnQGTz1Q2oyAYCHqBGdQQ4ZQiIjgciMRM0YIEKiEDI7DxJA9k3PRsnU7/p/Bp6JQlbBZm4kGjViLZ7g0cPxYNmIYuqGQ1RcdT0ywcQhwKRemWAVJCSEHjZxozv92WZQtLjC+6ewAPidlcAMit8BF2lhbP2LjSapYUXtZpyemM5t4iJLlW9j6BCtOaoyDW8bwPCqsuJQiGvMQWvfutN8ZTTeseCiY961TGCo8KnPYEH1JlpqlbwAzLtmw1UZ/oRHAbqS58ZkzpzzpFgr4+93UAkREO7IelbjcSaxfZ32d8u21i96sikhlhtKVRhS+MAQCb/2lO8q5fDc2wj6uroXg3L8ktm9p2HXUEimwVnYAK6B+q0UORC5UI0hwHi1TOIiCDxtwqVoH7UEP/qOt+P/qtANC9DJhwDyYp5dnIZKP6ZWUr1DxahqtNKoM9pe1A=="
+  },
+  "createdAt": "2026-07-13T18:37:36.281Z",
+  "startedAt": "2026-07-13T18:37:36.320Z",
+  "status": "failed",
+  "error": {
+    "__type": "Uint8Array",
+    "data": "enN0ZCi1L/1gdAMNDgBGn10kMIvoAVhcVbJHL6x0BVrDxX5npOmJ6RJzQFn9dmuWUzKUFBSDUgBMAFkAHKEreyE7028I+9Ip93uXg73Gdgdy9j8nRCdbclagLXFrC8YwTHmY4tYmpr8cOzFNWIkIhbMkz9FfCcZZDHH/LC2IBMOSWD7dDaKj7mAtLESKYe4i3yI/Z6q15nDsx1K3uysd6yQWrPHJXo4mfchf3VvqInS5/vdCZEcoa7Q+F8au0bp9pu41lL1VjK5+3e+IwjIqWapmnBgulexe3waPaFlwowA6pVkaBC9i3oOBIn8lgRSmMKzxQCaB56miD8QwgoYpj+RzgONk0g4hhjWMsTyUZDohBClYw5oHzgnEGE87SJrkxNpzrHBKEMMpG33cMH0aUKjGAQyrYMFAdxWi7AND2QAbo2P8LU1H2CerD1Awi/fpzg0C7NcpVXJKtzANxeIszjcwlprK6o19vuYw40Pi0+FpkGNP0nzt+Tf6DRtTrCwYrlHgskRKExoAq00EAiZG5WKHmQBgoEAwNkQ1LrhqhR86ygypdp5qGC4UYf3xrQDyYXLil8Et33g/yUYbwJp+w9g79tjRuLLFWCxIiDZQZw=="
+  },
+  "errorCode": "USER_ERROR",
+  "completedAt": "2026-07-13T18:37:36.420Z",
+  "updatedAt": "2026-07-13T18:37:36.420Z",
+  "attributes": {
+    "$eve.type": "session",
+    "$eve.trigger": "http",
+    "$eve.title": "[Active company profile] {\"website\":\"https://vercel.com\",\"summary\":\"Vercel is a cloud platform that lets developers build, d…"
+  }
+}

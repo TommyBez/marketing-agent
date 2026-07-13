@@ -1,0 +1,45 @@
+{
+  "eventType": "attr_set",
+  "specVersion": 5,
+  "eventData": {
+    "changes": [
+      {
+        "key": "$eve.model",
+        "value": "openai/gpt-5.6-luna"
+      },
+      {
+        "key": "$eve.input_tokens",
+        "value": "3549"
+      },
+      {
+        "key": "$eve.output_tokens",
+        "value": "70"
+      },
+      {
+        "key": "$eve.cache_read_tokens",
+        "value": "0"
+      },
+      {
+        "key": "$eve.cache_write_tokens",
+        "value": "3546"
+      },
+      {
+        "key": "$eve.cost_usd",
+        "value": "0.0048555"
+      },
+      {
+        "key": "$eve.tool_count",
+        "value": "11"
+      }
+    ],
+    "writer": {
+      "type": "step",
+      "stepId": "step_01KXECH70D7777ZCYE8SB9888T",
+      "attempt": 1
+    },
+    "allowReservedAttributes": true
+  },
+  "runId": "wrun_01KXECH70DVXBGQXZMBJ6H4MDF",
+  "eventId": "evnt_01KXECHA05SGSBSZ7D2X73F3TY",
+  "createdAt": "2026-07-13T18:41:21.925Z"
+}

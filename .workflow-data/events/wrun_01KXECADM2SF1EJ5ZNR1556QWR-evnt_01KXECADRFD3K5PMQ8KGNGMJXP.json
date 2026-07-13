@@ -1,0 +1,15 @@
+{
+  "eventType": "step_failed",
+  "specVersion": 5,
+  "correlationId": "step_01KXECADM20DRM008YK72JN7J7",
+  "eventData": {
+    "stepName": "step//eve@0.22.6//emitTerminalSessionFailureStep",
+    "error": {
+      "__type": "Uint8Array",
+      "data": "enN0ZCi1L/1gLwo9EAC24mcjIG30rP5NVArW/VBEZavbw3skiSNHgonhRd9tpceQGiAIcBddAFcAYACWRi4bV783x/YI7jpb+nX8E+K3sa39s5MGv5lOeFDt/PcECuuErivgCflajGpNMcclXyty/ElDR44TkkXF0iQQEeJPFq1JHAL/HUooFg7KIrn2XgMKMTxIGBio5DKRWu80Sws9l7YuHP3B3ojBpOUXRn5Rj9eltVbjdD4aw+7u2tDNIpGZxjrbH4tf+mcYG8MIbs//syF1Ulnz09e2pDM/DfsdwzhlnT1RCvPn/hlRaIWrQ1OWPiCujXCWdDojyMYV7y/8Uy6XnDEE0DGpKA9zj0dhvOGQkDmlMRCfFh/tUf8J4jHFmmo4kEjgPZqw85oacIo50LUMpxMT88rXlFMEiiNVx1a+tyinnCPtxFMEzoQPimoOyeIcDtdaQ2ncojBaypD02ojHVHuLckyuMY1ZFrYwrlkCWEu4rBOgKYXKf0L2IjBMGWgc0sIEvQdUwHiHVBiJDMf5mRdjuB6i5kh8sU4PldZYlEZp/kE5NHHNd/m1cUUEISBwYqRUlgcLmhNsRyn6nqkALJcYQCBe6R5pyJgESRBZd5ligTR2W0otgAmm01AABKrpwAa3O1CMLl7YRoJabAqYvuO32OQjifGysuWO4ZMcxQA2+MKEG3tsNK66GIthCdEG6gw="
+    }
+  },
+  "runId": "wrun_01KXECADM2SF1EJ5ZNR1556QWR",
+  "eventId": "evnt_01KXECADRFD3K5PMQ8KGNGMJXP",
+  "createdAt": "2026-07-13T18:37:36.399Z"
+}

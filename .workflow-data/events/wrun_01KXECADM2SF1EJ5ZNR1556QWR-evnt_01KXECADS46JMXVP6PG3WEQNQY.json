@@ -1,0 +1,14 @@
+{
+  "eventType": "run_failed",
+  "specVersion": 5,
+  "eventData": {
+    "error": {
+      "__type": "Uint8Array",
+      "data": "enN0ZCi1L/1gdAMNDgBGn10kMIvoAVhcVbJHL6x0BVrDxX5npOmJ6RJzQFn9dmuWUzKUFBSDUgBMAFkAHKEreyE7028I+9Ip93uXg73Gdgdy9j8nRCdbclagLXFrC8YwTHmY4tYmpr8cOzFNWIkIhbMkz9FfCcZZDHH/LC2IBMOSWD7dDaKj7mAtLESKYe4i3yI/Z6q15nDsx1K3uysd6yQWrPHJXo4mfchf3VvqInS5/vdCZEcoa7Q+F8au0bp9pu41lL1VjK5+3e+IwjIqWapmnBgulexe3waPaFlwowA6pVkaBC9i3oOBIn8lgRSmMKzxQCaB56miD8QwgoYpj+RzgONk0g4hhjWMsTyUZDohBClYw5oHzgnEGE87SJrkxNpzrHBKEMMpG33cMH0aUKjGAQyrYMFAdxWi7AND2QAbo2P8LU1H2CerD1Awi/fpzg0C7NcpVXJKtzANxeIszjcwlprK6o19vuYw40Pi0+FpkGNP0nzt+Tf6DRtTrCwYrlHgskRKExoAq00EAiZG5WKHmQBgoEAwNkQ1LrhqhR86ygypdp5qGC4UYf3xrQDyYXLil8Et33g/yUYbwJp+w9g79tjRuLLFWCxIiDZQZw=="
+    },
+    "errorCode": "USER_ERROR"
+  },
+  "runId": "wrun_01KXECADM2SF1EJ5ZNR1556QWR",
+  "eventId": "evnt_01KXECADS46JMXVP6PG3WEQNQY",
+  "createdAt": "2026-07-13T18:37:36.420Z"
+}

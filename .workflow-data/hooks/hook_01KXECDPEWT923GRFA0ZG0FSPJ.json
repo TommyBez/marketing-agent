@@ -1,0 +1,12 @@
+{
+  "runId": "wrun_01KXECDPEWEFR558A0GK7HSPPC",
+  "hookId": "hook_01KXECDPEWT923GRFA0ZG0FSPJ",
+  "token": "wrun_01KXECDPA8T4GEYC8B4YGCBB91:turn-control:0:inbox",
+  "ownerId": "local-owner",
+  "projectId": "local-project",
+  "environment": "local",
+  "createdAt": "2026-07-13T18:39:23.635Z",
+  "specVersion": 5,
+  "isWebhook": false,
+  "isSystem": false
+}

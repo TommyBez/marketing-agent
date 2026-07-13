@@ -1,0 +1,30 @@
+{
+  "runId": "wrun_01KXECH6Y5Z2ZGER0DJ7NZJ2XG",
+  "deploymentId": "dpl_local@5.0.0-beta.27",
+  "workflowName": "workflow//eve//workflowEntry",
+  "specVersion": 5,
+  "executionContext": {
+    "traceCarrier": {},
+    "workflowCoreVersion": "5.0.0-beta.31",
+    "features": {
+      "encryption": false
+    }
+  },
+  "input": {
+    "__type": "Uint8Array",
+    "data": "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"
+  },
+  "createdAt": "2026-07-13T18:41:18.791Z",
+  "status": "running",
+  "startedAt": "2026-07-13T18:41:18.792Z",
+  "updatedAt": "2026-07-13T18:41:18.792Z",
+  "attributes": {
+    "$eve.type": "subagent",
+    "$eve.parent": "wrun_01KXECDPA8T4GEYC8B4YGCBB91",
+    "$eve.parent_call": "call-03b00402-5f6c-48cc-b317-c71e43cd21eb-8",
+    "$eve.parent_turn": "turn_0",
+    "$eve.root": "wrun_01KXECDPA8T4GEYC8B4YGCBB91",
+    "$eve.subagent": "subagents/strategy-analytics",
+    "$eve.trigger": "subagent"
+  }
+}
