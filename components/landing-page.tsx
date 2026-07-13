@@ -29,9 +29,9 @@ function LandingHeader({ isSignedIn }: LandingPageProps) {
     <header className="landing-shell flex items-center justify-between py-4">
       <Link href="/" aria-label="Relay home"><BrandMark /></Link>
       <nav aria-label="Main navigation" className="flex items-center gap-2">
-        <Button variant="ghost" render={<Link href="#how-it-works" />} className="hidden sm:inline-flex">How it works</Button>
-        {!isSignedIn && <Button variant="ghost" render={<Link href="/sign-in" />}>Sign in</Button>}
-        <Button render={<Link href={isSignedIn ? '/workspace' : '/sign-up'} />}>{isSignedIn ? 'Open workspace' : 'Start free'}</Button>
+        <Button variant="ghost" nativeButton={false} render={<Link href="#how-it-works" />} className="hidden sm:inline-flex">How it works</Button>
+        {!isSignedIn && <Button variant="ghost" nativeButton={false} render={<Link href="/sign-in" />}>Sign in</Button>}
+        <Button nativeButton={false} render={<Link href={isSignedIn ? '/workspace' : '/sign-up'} />}>{isSignedIn ? 'Open workspace' : 'Start free'}</Button>
       </nav>
     </header>
   )
@@ -138,8 +138,8 @@ export function LandingPage({ isSignedIn }: LandingPageProps) {
           <h1 className="motion-reveal motion-delay-2">One marketing mind.<br /><span>A whole team behind it.</span></h1>
           <p className="motion-reveal motion-delay-3">Relay learns your business, then coordinates six specialist agents to turn strategy into finished marketing work.</p>
           <div className="flex flex-wrap gap-3">
-            <Button size="lg" render={<Link href={primaryHref} />}>{isSignedIn ? 'Open your workspace' : 'Build your team'}<ArrowRight data-icon="inline-end" /></Button>
-            <Button size="lg" variant="outline" render={<Link href="#how-it-works" />}>See the workflow</Button>
+            <Button size="lg" nativeButton={false} render={<Link href={primaryHref} />}>{isSignedIn ? 'Open your workspace' : 'Build your team'}<ArrowRight data-icon="inline-end" /></Button>
+            <Button size="lg" variant="outline" nativeButton={false} render={<Link href="#how-it-works" />}>See the workflow</Button>
           </div>
           <p className="hero-note">Start with a URL. No prompt engineering required.</p>
         </div>
@@ -150,7 +150,7 @@ export function LandingPage({ isSignedIn }: LandingPageProps) {
         <WorkflowSection number="2.0" verb="ASSEMBLE" title="The right specialists enter the room." body="One manager delegates across search, copy, conversion, growth, distribution, and analytics—without making you brief six separate tools."><SpecialistGrid /></WorkflowSection>
         <WorkflowSection number="3.0" verb="MOVE" title="Ask once. Get coordinated work." body="Start with an outcome, not a workflow. Relay turns the request into a shared plan, routes the work, and returns one coherent answer."><ExecutionCard /></WorkflowSection>
       </div>
-      <footer className="landing-shell landing-footer"><div className="hero-copy"><p className="panel-label">READY WHEN YOU ARE</p><h2 className="font-serif text-5xl leading-none tracking-tight text-balance md:text-7xl">Give your marketing work one place to move.</h2><Button size="lg" render={<Link href={primaryHref} />}>{isSignedIn ? 'Return to workspace' : 'Start with your website'}<ArrowRight data-icon="inline-end" /></Button></div><div className="footer-bottom"><BrandMark /><p>One manager. Six specialists. Your company context.</p><Link href={primaryHref}>{isSignedIn ? 'Workspace' : 'Get started'} →</Link></div></footer>
+      <footer className="landing-shell landing-footer"><div className="hero-copy"><p className="panel-label">READY WHEN YOU ARE</p><h2 className="font-serif text-5xl leading-none tracking-tight text-balance md:text-7xl">Give your marketing work one place to move.</h2><Button size="lg" nativeButton={false} render={<Link href={primaryHref} />}>{isSignedIn ? 'Return to workspace' : 'Start with your website'}<ArrowRight data-icon="inline-end" /></Button></div><div className="footer-bottom"><BrandMark /><p>One manager. Six specialists. Your company context.</p><Link href={primaryHref}>{isSignedIn ? 'Workspace' : 'Get started'} →</Link></div></footer>
     </main>
   )
 }
