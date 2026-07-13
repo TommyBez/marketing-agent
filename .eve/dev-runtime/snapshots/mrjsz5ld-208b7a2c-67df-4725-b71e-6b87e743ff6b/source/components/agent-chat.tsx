@@ -1,6 +1,6 @@
 'use client'
 
-import { saveConversation, titleConversation } from '@/app/actions/thread'
+import { saveConversation } from '@/app/actions/thread'
 import { AgentActivity } from '@/components/agent-activity'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Bubble, BubbleContent } from '@/components/ui/bubble'
@@ -15,7 +15,6 @@ import { Spinner } from '@/components/ui/spinner'
 import type { HandleMessageStreamEvent, SessionState } from 'eve/client'
 import { useEveAgent } from 'eve/react'
 import { ArrowUp, Square } from 'lucide-react'
-import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
 
 interface AgentChatProps {
@@ -29,23 +28,13 @@ interface AgentChatProps {
 
 const suggestedPrompts = ['Audit our positioning', 'Plan the next 30 days', 'Find SEO opportunities']
 
-function createConversationTitle(message: string) {
-  const normalized = message.replace(/\s+/g, ' ').trim()
-  return normalized.length > 64 ? `${normalized.slice(0, 61).trimEnd()}…` : normalized
-}
-
 export function AgentChat({ companyName, conversationId, conversationTitle, initialEvents, initialSession, workspaceId }: AgentChatProps) {
-  const router = useRouter()
   const firstMessageRef = useRef('')
-  const [displayTitle, setDisplayTitle] = useState(conversationTitle)
   const agent = useEveAgent({
     headers: { 'x-relay-workspace-id': workspaceId },
     initialEvents,
     initialSession,
-    onFinish: async (snapshot) => {
-      await saveConversation(workspaceId, conversationId, snapshot.session, snapshot.events, firstMessageRef.current)
-      router.refresh()
-    },
+    onFinish: (snapshot) => void saveConversation(workspaceId, conversationId, snapshot.session, snapshot.events, firstMessageRef.current),
   })
   const [message, setMessage] = useState('')
   const isBusy = agent.status === 'submitted' || agent.status === 'streaming'
@@ -53,12 +42,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
   async function sendMessage() {
     const nextMessage = message.trim()
     if (!nextMessage || isBusy) return
-    if (displayTitle === 'New conversation' && !firstMessageRef.current) {
-      firstMessageRef.current = nextMessage
-      setDisplayTitle(createConversationTitle(nextMessage))
-      await titleConversation(workspaceId, conversationId, nextMessage)
-      router.refresh()
-    }
+    if (!firstMessageRef.current) firstMessageRef.current = nextMessage
     setMessage('')
     await agent.send({ message: nextMessage })
   }
@@ -66,7 +50,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-card">
       <CardHeader className="border-b py-3">
-        <CardTitle className="truncate">{displayTitle}</CardTitle>
+        <CardTitle className="truncate">{conversationTitle}</CardTitle>
         <CardDescription>Marketing Manager for {companyName} · 6 specialists available</CardDescription>
       </CardHeader>
 
