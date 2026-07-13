@@ -1,0 +1,38 @@
+{
+  "runId": "wrun_01KXEVMR1HBQ6E9MWX66K0J46D",
+  "deploymentId": "dpl_local@5.0.0-beta.27",
+  "workflowName": "workflow//eve//turnWorkflow",
+  "specVersion": 5,
+  "executionContext": {
+    "traceCarrier": {},
+    "workflowCoreVersion": "5.0.0-beta.31",
+    "features": {
+      "encryption": false
+    }
+  },
+  "input": {
+    "__type": "Uint8Array",
+    "data": "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"
+  },
+  "createdAt": "2026-07-13T23:05:23.254Z",
+  "startedAt": "2026-07-13T23:05:23.254Z",
+  "status": "completed",
+  "output": {
+    "__type": "Uint8Array",
+    "data": "ZGV2bC0x"
+  },
+  "completedAt": "2026-07-13T23:05:25.156Z",
+  "updatedAt": "2026-07-13T23:05:25.156Z",
+  "attributes": {
+    "$eve.type": "turn",
+    "$eve.parent": "wrun_01KXEVMQZSWHRDQG892VZP12Y9",
+    "$eve.root": "wrun_01KXEVMQZSWHRDQG892VZP12Y9",
+    "$eve.model": "xai/grok-4.5",
+    "$eve.input_tokens": "5533",
+    "$eve.output_tokens": "33",
+    "$eve.cache_read_tokens": "128",
+    "$eve.cache_write_tokens": "0",
+    "$eve.cost_usd": "0.011072",
+    "$eve.tool_count": "17"
+  }
+}

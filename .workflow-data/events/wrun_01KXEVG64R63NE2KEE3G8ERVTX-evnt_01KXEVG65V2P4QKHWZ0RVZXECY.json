@@ -1,0 +1,13 @@
+{
+  "eventType": "step_started",
+  "specVersion": 5,
+  "correlationId": "step_01KXEVG64RMHAT45KV43VAZ2F2",
+  "eventData": {
+    "stepName": "step//eve@0.22.6//emitTerminalSessionFailureStep",
+    "workflowName": "workflow//eve//workflowEntry",
+    "ownerMessageId": "msg_01KXEVG64TF0B5V3AZGKCV8BCM"
+  },
+  "runId": "wrun_01KXEVG64R63NE2KEE3G8ERVTX",
+  "eventId": "evnt_01KXEVG65V2P4QKHWZ0RVZXECY",
+  "createdAt": "2026-07-13T23:02:53.883Z"
+}
