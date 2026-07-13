@@ -1,7 +1,6 @@
 'use client'
 
 import { authClient } from '@/lib/auth-client'
-import { ArrowRight, Loader2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -27,8 +26,8 @@ export function AuthForm({ mode }: AuthFormProps) {
       {mode === 'sign-up' && <label className="flex flex-col gap-2 text-sm font-medium">Name<input required name="name" autoComplete="name" className="h-12 rounded-lg border bg-background px-4 font-normal outline-none focus:ring-2" /></label>}
       <label className="flex flex-col gap-2 text-sm font-medium">Work email<input required type="email" name="email" autoComplete="email" className="h-12 rounded-lg border bg-background px-4 font-normal outline-none focus:ring-2" /></label>
       <label className="flex flex-col gap-2 text-sm font-medium">Password<input required minLength={8} type="password" name="password" autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'} className="h-12 rounded-lg border bg-background px-4 font-normal outline-none focus:ring-2" /></label>
-      {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-      <button disabled={isLoading} className="flex h-12 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground disabled:opacity-60">{isLoading ? <Loader2 className="size-4 animate-spin" /> : <>{mode === 'sign-up' ? 'Create workspace' : 'Continue'}<ArrowRight className="size-4" /></>}</button>
+      {error && <p role="alert" className="ui-state-enter text-sm text-destructive">{error}</p>}
+      <button disabled={isLoading} aria-busy={isLoading} className="pressable-motion flex h-12 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground disabled:opacity-60"><span key={isLoading ? 'loading' : 'idle'} className="ui-state-enter">{isLoading ? 'Checking your details…' : mode === 'sign-up' ? 'Create workspace' : 'Continue'}</span></button>
     </form>
   )
 }

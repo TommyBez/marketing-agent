@@ -48,8 +48,8 @@
 .landing-nav-link:hover { color: var(--color-landing-ink); }
 .landing-nav-link:focus-visible, .landing-button:focus-visible, .landing-footer a:focus-visible { outline: 2px solid var(--color-landing-accent); outline-offset: 3px; }
 .landing-button { display: inline-flex; min-height: 3rem; align-items: center; justify-content: center; gap: .5rem; border-radius: var(--radius-landing-sm); background: var(--color-landing-accent); padding-inline: 1.25rem; color: var(--color-landing-accent-ink); font-size: .875rem; font-weight: 650; white-space: nowrap; transition: transform var(--dur-landing-fast) var(--ease-landing-out), background-color var(--dur-landing-short) var(--ease-landing-out); }
-.landing-button:hover { background: color-mix(in oklch, var(--color-landing-accent) 88%, var(--color-landing-ink)); transform: translateY(-1.5px); }
-.landing-button:active { transform: translateY(1px); transition-duration: var(--dur-landing-fast); }
+.landing-button:hover { background: color-mix(in oklch, var(--color-landing-accent) 88%, var(--color-landing-ink)); }
+.landing-button:active { transform: scale(.97); transition-duration: var(--dur-landing-fast); }
 .landing-button-small { min-height: 2.5rem; padding-inline: 1rem; }
 .landing-button-quiet { border: var(--rule-landing); background: transparent; color: var(--color-landing-ink); }
 .landing-button-quiet:hover { background: var(--color-landing-paper-raised); }
@@ -93,6 +93,31 @@
 .footer-bottom a { color: var(--color-landing-ink); white-space: nowrap; }
 
 @keyframes status-pulse { 50% { opacity: .35; } }
+@keyframes motion-enter { from { opacity: 0; transform: translateY(.5rem); } to { opacity: 1; transform: translateY(0); } }
+@keyframes meter-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes specialist-enter { from { opacity: .35; transform: translateY(.375rem); } to { opacity: 1; transform: translateY(0); } }
+@keyframes workflow-progress { 0%, 25% { opacity: .35; transform: scale(.96); } 45%, 100% { opacity: 1; transform: scale(1); } }
+
+.motion-reveal { opacity: 0; animation: motion-enter .44s var(--ease-landing-out) forwards; }
+.motion-delay-1 { animation-delay: .04s; }
+.motion-delay-2 { animation-delay: .1s; }
+.motion-delay-3 { animation-delay: .16s; }
+.motion-delay-4 { animation-delay: .24s; }
+.scroll-reveal { animation: motion-enter .42s var(--ease-landing-out) both; animation-timeline: view(); animation-range: entry 10% cover 28%; }
+.context-meter-motion::before { transform: scaleX(0); transform-origin: left; animation: meter-fill .7s var(--ease-landing-out) forwards; animation-timeline: view(); animation-range: entry 5% cover 30%; }
+.specialist-card-motion { animation: specialist-enter .32s var(--ease-landing-out) both; animation-timeline: view(); animation-range: entry 5% cover 25%; }
+.specialist-card-motion:nth-child(2) { animation-range: entry 8% cover 28%; }
+.specialist-card-motion:nth-child(3) { animation-range: entry 11% cover 31%; }
+.specialist-card-motion:nth-child(4) { animation-range: entry 14% cover 34%; }
+.specialist-card-motion:nth-child(5) { animation-range: entry 17% cover 37%; }
+.specialist-card-motion:nth-child(6) { animation-range: entry 20% cover 40%; }
+.execution-node { animation: workflow-progress .7s var(--ease-landing-out) both; animation-timeline: view(); animation-range: entry 5% cover 28%; }
+.execution-node:nth-of-type(2) { animation-range: entry 12% cover 35%; }
+.execution-node:nth-of-type(3) { animation-range: entry 19% cover 42%; }
+.ui-state-enter { animation: motion-enter .18s var(--ease-landing-out) both; }
+.message-enter { animation: motion-enter .18s var(--ease-landing-out) both; }
+.pressable-motion { transition-property: transform, background-color, border-color, color, opacity; transition-duration: 150ms; transition-timing-function: cubic-bezier(.23, 1, .32, 1); }
+.pressable-motion:active { transform: scale(.97); }
 
 @media (min-width: 40rem) {
   .landing-shell { width: min(100% - 3rem, 80rem); }
@@ -110,7 +135,12 @@
   .specialist-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .landing-button:hover { transform: translateY(-1.5px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .command-status span, .agent-chip-active span { animation: none; }
-  .landing-button { transition-duration: .01ms; }
+  .landing-button, .pressable-motion { transition-duration: .01ms; }
+  .motion-reveal, .scroll-reveal, .context-meter-motion::before, .specialist-card-motion, .execution-node, .ui-state-enter, .message-enter { opacity: 1; transform: none; animation: none; }
 }
