@@ -114,21 +114,6 @@ export async function saveConversation(workspaceId: string, conversationId: stri
   revalidatePath(`/workspace/${workspaceId}`)
 }
 
-export async function titleConversation(workspaceId: string, conversationId: string, firstMessage: string) {
-  const userId = await getUserId()
-  const conversation = await requireConversation(userId, workspaceId, conversationId)
-  if (conversation.title !== 'New conversation') return conversation.title
-
-  const title = createTitle(firstMessage)
-  await db.update(agentThreads).set({ title, updatedAt: new Date() }).where(and(
-    eq(agentThreads.id, conversation.id),
-    eq(agentThreads.userId, userId),
-    eq(agentThreads.title, 'New conversation'),
-  ))
-  revalidatePath(`/workspace/${workspaceId}`)
-  return title
-}
-
 export async function renameConversation(workspaceId: string, conversationId: string, title: string) {
   const userId = await getUserId()
   const conversation = await requireConversation(userId, workspaceId, conversationId)
