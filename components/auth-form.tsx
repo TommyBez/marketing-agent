@@ -19,7 +19,7 @@ export function AuthForm({ mode }: AuthFormProps) {
       ? await authClient.signUp.email({ email, password, name: String(formData.get('name')) })
       : await authClient.signIn.email({ email, password })
     if (result.error) { setError(result.error.message ?? 'Authentication failed'); setIsLoading(false); return }
-    router.push('/'); router.refresh()
+    router.push('/workspace'); router.refresh()
   }
 
   return (
