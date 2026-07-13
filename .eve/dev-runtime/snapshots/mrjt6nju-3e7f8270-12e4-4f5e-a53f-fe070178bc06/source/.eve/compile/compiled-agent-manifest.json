@@ -1,6 +1,6 @@
 {
-  "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source/agent",
-  "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source",
+  "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source/agent",
+  "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source",
   "channels": [
     {
       "kind": "channel",
@@ -160,8 +160,8 @@
   "subagents": [
     {
       "agent": {
-        "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source/agent/subagents/copywriting",
-        "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source",
+        "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source/agent/subagents/copywriting",
+        "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source",
         "channels": [],
         "connections": [
           {
@@ -245,8 +245,8 @@
     },
     {
       "agent": {
-        "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source/agent/subagents/cro",
-        "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source",
+        "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source/agent/subagents/cro",
+        "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source",
         "channels": [],
         "connections": [
           {
@@ -330,8 +330,8 @@
     },
     {
       "agent": {
-        "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source/agent/subagents/growth-retention",
-        "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source",
+        "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source/agent/subagents/growth-retention",
+        "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source",
         "channels": [],
         "connections": [],
         "config": {
@@ -405,8 +405,8 @@
     },
     {
       "agent": {
-        "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source/agent/subagents/paid-social",
-        "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source",
+        "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source/agent/subagents/paid-social",
+        "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source",
         "channels": [],
         "connections": [],
         "config": {
@@ -480,8 +480,8 @@
     },
     {
       "agent": {
-        "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source/agent/subagents/seo-content",
-        "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source",
+        "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source/agent/subagents/seo-content",
+        "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source",
         "channels": [],
         "connections": [
           {
@@ -565,8 +565,8 @@
     },
     {
       "agent": {
-        "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source/agent/subagents/strategy-analytics",
-        "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjqlj1j-719501a2-5e2e-48fa-8b6e-e1eda1e5a8c2/source",
+        "agentRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source/agent/subagents/strategy-analytics",
+        "appRoot": "/vercel/share/v0-project/.eve/dev-runtime/snapshots/mrjt6nju-3e7f8270-12e4-4f5e-a53f-fe070178bc06/source",
         "channels": [],
         "connections": [
           {
