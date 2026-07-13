@@ -20,5 +20,7 @@ async function betterAuthSession(request: Request) {
 }
 
 export default eveChannel({
-  auth: [betterAuthSession, vercelOidc(), localDev()],
+  auth: process.env.NODE_ENV === 'development'
+    ? [betterAuthSession, vercelOidc(), localDev()]
+    : [betterAuthSession, vercelOidc()],
 })
