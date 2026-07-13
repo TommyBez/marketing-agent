@@ -17,6 +17,7 @@ import { useEveAgent } from 'eve/react'
 import { ArrowUp, Square } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
+import { Streamdown } from 'streamdown'
 
 interface AgentChatProps {
   companyName: string
@@ -88,15 +89,29 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
                   </div>
                 </EmptyContent>
               </Empty>
-            ) : agent.data.messages.map((item) => (
-              <MessageScrollerItem key={item.id} scrollAnchor>
+            ) : agent.data.messages.map((item, messageIndex) => (
+              <MessageScrollerItem key={item.id} messageId={item.id} scrollAnchor={item.role === 'user'}>
                 <Message align={item.role === 'user' ? 'end' : 'start'}>
                   <MessageContent>
                     <MessageHeader>{item.role === 'user' ? 'You' : 'Manager'}</MessageHeader>
                     <Bubble variant={item.role === 'user' ? 'default' : 'ghost'} align={item.role === 'user' ? 'end' : 'start'}>
                       <BubbleContent>
                         <div className="flex flex-col gap-3">
-                          {item.parts.map((part, index) => part.type === 'text' ? <p className="whitespace-pre-wrap" key={index}>{part.text}</p> : null)}
+                          {item.parts.map((part, partIndex) => {
+                            if (part.type !== 'text') return null
+                            if (item.role === 'user') return <p className="whitespace-pre-wrap" key={partIndex}>{part.text}</p>
+
+                            const isLatestMessage = messageIndex === agent.data.messages.length - 1
+                            return (
+                              <Streamdown
+                                className="min-w-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
+                                key={partIndex}
+                                mode={isBusy && isLatestMessage ? 'streaming' : 'static'}
+                              >
+                                {part.text}
+                              </Streamdown>
+                            )
+                          })}
                         </div>
                       </BubbleContent>
                     </Bubble>

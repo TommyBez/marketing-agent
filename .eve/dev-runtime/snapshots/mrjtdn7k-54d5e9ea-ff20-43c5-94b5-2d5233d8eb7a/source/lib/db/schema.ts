@@ -1,4 +1,4 @@
-import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { boolean, index, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -45,14 +45,12 @@ export const companyProfiles = pgTable('company_profiles', {
 
 export const agentThreads = pgTable('agent_threads', {
   id: uuid('id').primaryKey().defaultRandom(), userId: text('userId').notNull(), companyProfileId: uuid('companyProfileId').notNull(),
+  title: text('title').notNull().default('New conversation'),
   eveSessionId: text('eveSessionId'), continuationToken: text('continuationToken'), streamIndex: integer('streamIndex').notNull().default(0),
   events: jsonb('events').notNull().default([]), channel: text('channel').notNull().default('web'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-}, (table) => [
-  index('agent_threads_user_workspace_idx').on(table.userId, table.companyProfileId),
-  uniqueIndex('agent_threads_workspace_channel_unique').on(table.userId, table.companyProfileId, table.channel),
-])
+}, (table) => [index('agent_threads_user_company_updated_idx').on(table.userId, table.companyProfileId, table.updatedAt)])
 
 export interface CompanyContext {
   name?: string

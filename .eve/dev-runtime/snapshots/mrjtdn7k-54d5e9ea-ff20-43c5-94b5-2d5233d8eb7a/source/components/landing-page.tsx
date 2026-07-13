@@ -8,12 +8,12 @@ import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
 const specialists = [
-  { name: 'SEO & Content', detail: 'Demand and discovery', code: 'SC' },
-  { name: 'Copywriting', detail: 'Words that move', code: 'CW' },
+  { name: 'SEO & Content', detail: 'Search demand and discovery', code: 'SC' },
+  { name: 'Copywriting', detail: 'Copy that converts', code: 'CW' },
   { name: 'CRO', detail: 'Friction and conversion', code: 'CR' },
   { name: 'Growth', detail: 'Retention and loops', code: 'GR' },
   { name: 'Paid & Social', detail: 'Distribution systems', code: 'PS' },
-  { name: 'Analytics', detail: 'Signal over noise', code: 'AN' },
+  { name: 'Analytics', detail: 'Clear performance insights', code: 'AN' },
 ]
 
 interface LandingPageProps {
@@ -29,9 +29,9 @@ function LandingHeader({ isSignedIn }: LandingPageProps) {
     <header className="landing-shell flex items-center justify-between py-4">
       <Link href="/" aria-label="Relay home"><BrandMark /></Link>
       <nav aria-label="Main navigation" className="flex items-center gap-2">
-        <Button variant="ghost" render={<Link href="#how-it-works" />} className="hidden sm:inline-flex">How it works</Button>
-        {!isSignedIn && <Button variant="ghost" render={<Link href="/sign-in" />}>Sign in</Button>}
-        <Button render={<Link href={isSignedIn ? '/workspace' : '/sign-up'} />}>{isSignedIn ? 'Open workspace' : 'Start free'}</Button>
+        <Button variant="ghost" nativeButton={false} render={<Link href="#how-it-works" />} className="hidden sm:inline-flex">How it works</Button>
+        {!isSignedIn && <Button variant="ghost" nativeButton={false} render={<Link href="/sign-in" />}>Sign in</Button>}
+        <Button nativeButton={false} render={<Link href={isSignedIn ? '/workspace' : '/sign-up'} />}>{isSignedIn ? 'Open workspace' : 'Start free'}</Button>
       </nav>
     </header>
   )
@@ -75,7 +75,7 @@ function ContextCard() {
           </div>
         ))}
       </CardContent>
-      <CardFooter><p className="text-xs leading-5 text-muted-foreground">Every specialist starts from the same company truth.</p></CardFooter>
+      <CardFooter><p className="text-xs leading-5 text-muted-foreground">Every specialist starts with the same company context.</p></CardFooter>
     </Card>
   )
 }
@@ -134,23 +134,23 @@ export function LandingPage({ isSignedIn }: LandingPageProps) {
       <LandingHeader isSignedIn={isSignedIn} />
       <section className="landing-shell hero-section">
         <div className="hero-copy">
-          <Badge variant="outline" className="motion-reveal motion-delay-1">Your company context, in motion</Badge>
+          <Badge variant="outline" className="motion-reveal motion-delay-1">Marketing grounded in your business</Badge>
           <h1 className="motion-reveal motion-delay-2">One marketing mind.<br /><span>A whole team behind it.</span></h1>
-          <p className="motion-reveal motion-delay-3">Relay learns your business, then coordinates six specialist agents to turn strategy into finished marketing work.</p>
+          <p className="motion-reveal motion-delay-3">Relay learns your business, then coordinates six marketing specialists to turn strategy into ready-to-review marketing work.</p>
           <div className="flex flex-wrap gap-3">
-            <Button size="lg" render={<Link href={primaryHref} />}>{isSignedIn ? 'Open your workspace' : 'Build your team'}<ArrowRight data-icon="inline-end" /></Button>
-            <Button size="lg" variant="outline" render={<Link href="#how-it-works" />}>See the workflow</Button>
+            <Button size="lg" nativeButton={false} render={<Link href={primaryHref} />}>{isSignedIn ? 'Open workspace' : 'Start free'}<ArrowRight data-icon="inline-end" /></Button>
+            <Button size="lg" variant="outline" nativeButton={false} render={<Link href="#how-it-works" />}>See the workflow</Button>
           </div>
           <p className="hero-note">Start with a URL. No prompt engineering required.</p>
         </div>
         <CommandPreview />
       </section>
       <div id="how-it-works" className="landing-shell workflow">
-        <WorkflowSection number="1.0" verb="UNDERSTAND" title="Your website becomes working memory." body="Relay reads the source material you already have and distills the positioning, audience, offers, and language every agent needs."><ContextCard /></WorkflowSection>
-        <WorkflowSection number="2.0" verb="ASSEMBLE" title="The right specialists enter the room." body="One manager delegates across search, copy, conversion, growth, distribution, and analytics—without making you brief six separate tools."><SpecialistGrid /></WorkflowSection>
+        <WorkflowSection number="1.0" verb="UNDERSTAND" title="Your website becomes working memory." body="Relay reads the source material you already have and distills the positioning, audience, offers, and language every specialist needs."><ContextCard /></WorkflowSection>
+        <WorkflowSection number="2.0" verb="ASSEMBLE" title="The right specialists enter the room." body="One manager coordinates search, copy, conversion, growth, distribution, and analytics—without making you brief six specialists separately."><SpecialistGrid /></WorkflowSection>
         <WorkflowSection number="3.0" verb="MOVE" title="Ask once. Get coordinated work." body="Start with an outcome, not a workflow. Relay turns the request into a shared plan, routes the work, and returns one coherent answer."><ExecutionCard /></WorkflowSection>
       </div>
-      <footer className="landing-shell landing-footer"><div className="hero-copy"><p className="panel-label">READY WHEN YOU ARE</p><h2 className="font-serif text-5xl leading-none tracking-tight text-balance md:text-7xl">Give your marketing work one place to move.</h2><Button size="lg" render={<Link href={primaryHref} />}>{isSignedIn ? 'Return to workspace' : 'Start with your website'}<ArrowRight data-icon="inline-end" /></Button></div><div className="footer-bottom"><BrandMark /><p>One manager. Six specialists. Your company context.</p><Link href={primaryHref}>{isSignedIn ? 'Workspace' : 'Get started'} →</Link></div></footer>
+      <footer className="landing-shell landing-footer"><div className="hero-copy"><p className="panel-label">READY WHEN YOU ARE</p><h2 className="font-serif text-5xl leading-none tracking-tight text-balance md:text-7xl">Bring your marketing work together.</h2><Button size="lg" nativeButton={false} render={<Link href={primaryHref} />}>{isSignedIn ? 'Open workspace' : 'Start free'}<ArrowRight data-icon="inline-end" /></Button></div><div className="footer-bottom"><BrandMark /><p>One manager. Six specialists. Your company context.</p><Link href={primaryHref}>{isSignedIn ? 'Open workspace' : 'Start free'} →</Link></div></footer>
     </main>
   )
 }

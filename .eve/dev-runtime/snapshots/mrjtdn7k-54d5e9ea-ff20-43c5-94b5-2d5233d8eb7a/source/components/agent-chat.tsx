@@ -1,10 +1,11 @@
 'use client'
 
-import { resetWorkspaceThread, saveWorkspaceThread } from '@/app/actions/thread'
+import { saveConversation, titleConversation } from '@/app/actions/thread'
+import { AgentActivity } from '@/components/agent-activity'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Bubble, BubbleContent } from '@/components/ui/bubble'
 import { Button } from '@/components/ui/button'
-import { Card, CardAction, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
 import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group'
 import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker'
@@ -13,11 +14,14 @@ import { MessageScroller, MessageScrollerButton, MessageScrollerContent, Message
 import { Spinner } from '@/components/ui/spinner'
 import type { HandleMessageStreamEvent, SessionState } from 'eve/client'
 import { useEveAgent } from 'eve/react'
-import { ArrowUp, RotateCcw, Square } from 'lucide-react'
-import { useState } from 'react'
+import { ArrowUp, Square } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useRef, useState } from 'react'
 
 interface AgentChatProps {
   companyName: string
+  conversationId: string
+  conversationTitle: string
   initialEvents?: HandleMessageStreamEvent[]
   initialSession?: SessionState
   workspaceId: string
@@ -25,12 +29,23 @@ interface AgentChatProps {
 
 const suggestedPrompts = ['Audit our positioning', 'Plan the next 30 days', 'Find SEO opportunities']
 
-export function AgentChat({ companyName, initialEvents, initialSession, workspaceId }: AgentChatProps) {
+function createConversationTitle(message: string) {
+  const normalized = message.replace(/\s+/g, ' ').trim()
+  return normalized.length > 64 ? `${normalized.slice(0, 61).trimEnd()}…` : normalized
+}
+
+export function AgentChat({ companyName, conversationId, conversationTitle, initialEvents, initialSession, workspaceId }: AgentChatProps) {
+  const router = useRouter()
+  const firstMessageRef = useRef('')
+  const [displayTitle, setDisplayTitle] = useState(conversationTitle)
   const agent = useEveAgent({
     headers: { 'x-relay-workspace-id': workspaceId },
     initialEvents,
     initialSession,
-    onFinish: (snapshot) => void saveWorkspaceThread(workspaceId, snapshot.session, snapshot.events),
+    onFinish: async (snapshot) => {
+      await saveConversation(workspaceId, conversationId, snapshot.session, snapshot.events, firstMessageRef.current)
+      router.refresh()
+    },
   })
   const [message, setMessage] = useState('')
   const isBusy = agent.status === 'submitted' || agent.status === 'streaming'
@@ -38,25 +53,21 @@ export function AgentChat({ companyName, initialEvents, initialSession, workspac
   async function sendMessage() {
     const nextMessage = message.trim()
     if (!nextMessage || isBusy) return
+    if (displayTitle === 'New conversation' && !firstMessageRef.current) {
+      firstMessageRef.current = nextMessage
+      setDisplayTitle(createConversationTitle(nextMessage))
+      await titleConversation(workspaceId, conversationId, nextMessage)
+      router.refresh()
+    }
     setMessage('')
     await agent.send({ message: nextMessage })
-  }
-
-  async function resetConversation() {
-    agent.reset()
-    await resetWorkspaceThread(workspaceId)
   }
 
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-card">
       <CardHeader className="border-b py-3">
-        <CardTitle>Marketing Manager</CardTitle>
-        <CardDescription>Working for {companyName} · 6 specialists available</CardDescription>
-        <CardAction>
-          <Button variant="outline" size="icon" onClick={() => void resetConversation()} aria-label="Start new conversation">
-            <RotateCcw />
-          </Button>
-        </CardAction>
+        <CardTitle className="truncate">{displayTitle}</CardTitle>
+        <CardDescription>Marketing Manager for {companyName} · 6 specialists available</CardDescription>
       </CardHeader>
 
       <MessageScrollerProvider>
@@ -66,7 +77,7 @@ export function AgentChat({ companyName, initialEvents, initialSession, workspac
             {agent.data.messages.length === 0 ? (
               <Empty className="min-h-full items-start justify-end text-left">
                 <EmptyHeader className="items-start text-left">
-                  <EmptyTitle className="font-serif text-3xl text-balance">What should we move forward today?</EmptyTitle>
+                  <EmptyTitle className="font-serif text-3xl text-balance">What should we work on today?</EmptyTitle>
                   <EmptyDescription className="max-w-xl leading-6">Ask for a launch plan, SEO audit, landing page rewrite, campaign brief, or a coordinated review.</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="max-w-none items-start">
@@ -93,6 +104,11 @@ export function AgentChat({ companyName, initialEvents, initialSession, workspac
                 </Message>
               </MessageScrollerItem>
             ))}
+            {agent.events.length > 0 && (
+              <MessageScrollerItem scrollAnchor>
+                <AgentActivity events={agent.events} isBusy={isBusy} />
+              </MessageScrollerItem>
+            )}
             {isBusy && (
               <MessageScrollerItem scrollAnchor>
                 <Marker>
