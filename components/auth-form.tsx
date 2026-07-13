@@ -63,7 +63,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <Field>
           <Button type="submit" size="lg" disabled={isLoading} aria-busy={isLoading} className="w-full">
             {isLoading && <Spinner data-icon="inline-start" />}
-            {isLoading ? 'Checking your details…' : mode === 'sign-up' ? 'Create workspace' : 'Continue'}
+            {isLoading ? (mode === 'sign-up' ? 'Creating account…' : 'Signing in…') : mode === 'sign-up' ? 'Create account' : 'Sign in'}
           </Button>
           <FieldError className="sr-only">{error}</FieldError>
         </Field>

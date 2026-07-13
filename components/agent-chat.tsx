@@ -61,7 +61,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
             {agent.data.messages.length === 0 ? (
               <Empty className="min-h-full items-start justify-end text-left">
                 <EmptyHeader className="items-start text-left">
-                  <EmptyTitle className="font-serif text-3xl text-balance">What should we move forward today?</EmptyTitle>
+                  <EmptyTitle className="font-serif text-3xl text-balance">What should we work on today?</EmptyTitle>
                   <EmptyDescription className="max-w-xl leading-6">Ask for a launch plan, SEO audit, landing page rewrite, campaign brief, or a coordinated review.</EmptyDescription>
                 </EmptyHeader>
                 <EmptyContent className="max-w-none items-start">
