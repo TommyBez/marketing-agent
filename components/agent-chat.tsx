@@ -1,6 +1,7 @@
 'use client'
 
 import { resetWorkspaceThread, saveWorkspaceThread } from '@/app/actions/thread'
+import { AgentActivity } from '@/components/agent-activity'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Bubble, BubbleContent } from '@/components/ui/bubble'
 import { Button } from '@/components/ui/button'
@@ -93,6 +94,11 @@ export function AgentChat({ companyName, initialEvents, initialSession, workspac
                 </Message>
               </MessageScrollerItem>
             ))}
+            {agent.events.length > 0 && (
+              <MessageScrollerItem scrollAnchor>
+                <AgentActivity events={agent.events} isBusy={isBusy} />
+              </MessageScrollerItem>
+            )}
             {isBusy && (
               <MessageScrollerItem scrollAnchor>
                 <Marker>
