@@ -41,16 +41,6 @@
       "sourceId": "channels/eve.ts",
       "sourceKind": "module",
       "adapterKind": "http"
-    },
-    {
-      "kind": "channel",
-      "name": "slack",
-      "logicalPath": "channels/slack.ts",
-      "method": "POST",
-      "urlPath": "/eve/v1/slack",
-      "sourceId": "channels/slack.ts",
-      "sourceKind": "module",
-      "adapterKind": "slack"
     }
   ],
   "connections": [

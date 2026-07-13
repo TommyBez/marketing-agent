@@ -8,18 +8,17 @@ installEveWorkflowQueueNamespace("my-project");
 
 import * as module_0 from "/vercel/share/v0-project/agent/agent.ts";
 import * as module_1 from "/vercel/share/v0-project/agent/channels/eve.ts";
-import * as module_2 from "/vercel/share/v0-project/agent/channels/slack.ts";
-import * as module_3 from "/vercel/share/v0-project/agent/connections/context-dev.ts";
-import * as module_4 from "/vercel/share/v0-project/agent/subagents/copywriting/agent.ts";
-import * as module_5 from "/vercel/share/v0-project/agent/subagents/copywriting/connections/context-dev.ts";
-import * as module_6 from "/vercel/share/v0-project/agent/subagents/cro/agent.ts";
-import * as module_7 from "/vercel/share/v0-project/agent/subagents/cro/connections/context-dev.ts";
-import * as module_8 from "/vercel/share/v0-project/agent/subagents/growth-retention/agent.ts";
-import * as module_9 from "/vercel/share/v0-project/agent/subagents/paid-social/agent.ts";
-import * as module_10 from "/vercel/share/v0-project/agent/subagents/seo-content/agent.ts";
-import * as module_11 from "/vercel/share/v0-project/agent/subagents/seo-content/connections/context-dev.ts";
-import * as module_12 from "/vercel/share/v0-project/agent/subagents/strategy-analytics/agent.ts";
-import * as module_13 from "/vercel/share/v0-project/agent/subagents/strategy-analytics/connections/context-dev.ts";
+import * as module_2 from "/vercel/share/v0-project/agent/connections/context-dev.ts";
+import * as module_3 from "/vercel/share/v0-project/agent/subagents/copywriting/agent.ts";
+import * as module_4 from "/vercel/share/v0-project/agent/subagents/copywriting/connections/context-dev.ts";
+import * as module_5 from "/vercel/share/v0-project/agent/subagents/cro/agent.ts";
+import * as module_6 from "/vercel/share/v0-project/agent/subagents/cro/connections/context-dev.ts";
+import * as module_7 from "/vercel/share/v0-project/agent/subagents/growth-retention/agent.ts";
+import * as module_8 from "/vercel/share/v0-project/agent/subagents/paid-social/agent.ts";
+import * as module_9 from "/vercel/share/v0-project/agent/subagents/seo-content/agent.ts";
+import * as module_10 from "/vercel/share/v0-project/agent/subagents/seo-content/connections/context-dev.ts";
+import * as module_11 from "/vercel/share/v0-project/agent/subagents/strategy-analytics/agent.ts";
+import * as module_12 from "/vercel/share/v0-project/agent/subagents/strategy-analytics/connections/context-dev.ts";
 
 const moduleMap = Object.freeze({
   "nodes": Object.freeze({
@@ -27,42 +26,41 @@ const moduleMap = Object.freeze({
               "modules": Object.freeze({
                   "agent.ts": module_0,
                   "channels/eve.ts": module_1,
-                  "channels/slack.ts": module_2,
-                  "connections/context-dev.ts": module_3
+                  "connections/context-dev.ts": module_2
                 })
             }),
       "subagents/copywriting": Object.freeze({
               "modules": Object.freeze({
-                  "agent.ts": module_4,
-                  "connections/context-dev.ts": module_5
+                  "agent.ts": module_3,
+                  "connections/context-dev.ts": module_4
                 })
             }),
       "subagents/cro": Object.freeze({
               "modules": Object.freeze({
-                  "agent.ts": module_6,
-                  "connections/context-dev.ts": module_7
+                  "agent.ts": module_5,
+                  "connections/context-dev.ts": module_6
                 })
             }),
       "subagents/growth-retention": Object.freeze({
               "modules": Object.freeze({
-                  "agent.ts": module_8
+                  "agent.ts": module_7
                 })
             }),
       "subagents/paid-social": Object.freeze({
               "modules": Object.freeze({
-                  "agent.ts": module_9
+                  "agent.ts": module_8
                 })
             }),
       "subagents/seo-content": Object.freeze({
               "modules": Object.freeze({
-                  "agent.ts": module_10,
-                  "connections/context-dev.ts": module_11
+                  "agent.ts": module_9,
+                  "connections/context-dev.ts": module_10
                 })
             }),
       "subagents/strategy-analytics": Object.freeze({
               "modules": Object.freeze({
-                  "agent.ts": module_12,
-                  "connections/context-dev.ts": module_13
+                  "agent.ts": module_11,
+                  "connections/context-dev.ts": module_12
                 })
             })
     })
@@ -72,7 +70,7 @@ const metadata = {
   "compile": {
     "moduleMap": {
       "path": ".eve/compile/module-map.mjs",
-      "sha256": "1384a1b9ad3cae2c70d43102b0976f604f14b7ec073315fb989bdb1dc2a59bca"
+      "sha256": "44ac6115943ff45f7ba84843b3461e97074f5e24842414dd5e85c91498c115f7"
     }
   },
   "discovery": {
@@ -82,9 +80,9 @@ const metadata = {
     },
     "manifest": {
       "path": ".eve/discovery/agent-discovery-manifest.json",
-      "sha256": "414fb6f22104c0806c2d306e246c84dd71d022a0a83607f2a4ec704a58b84fcc"
+      "sha256": "204193f9fbf36b8a87cb08b24a1242ecd55c9b238139d61b494a44b6f97301e0"
     },
-    "sourceGraphHash": "04cf36edf6e9099f3e968765f3dd38876e0e3f02217e6fde7401cf9e6bbe6657",
+    "sourceGraphHash": "fb17d93e75618a25f0f94199c93b24d1f8f4cf48d31646244d2d8360d3d85505",
     "summary": {
       "errors": 0,
       "warnings": 0
@@ -142,16 +140,6 @@ const manifest = {
       "sourceId": "channels/eve.ts",
       "sourceKind": "module",
       "adapterKind": "http"
-    },
-    {
-      "kind": "channel",
-      "name": "slack",
-      "logicalPath": "channels/slack.ts",
-      "method": "POST",
-      "urlPath": "/eve/v1/slack",
-      "sourceId": "channels/slack.ts",
-      "sourceKind": "module",
-      "adapterKind": "slack"
     }
   ],
   "connections": [

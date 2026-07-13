@@ -7,11 +7,6 @@
       "sourceKind": "module",
       "logicalPath": "channels/eve.ts",
       "sourceId": "channels/eve.ts"
-    },
-    {
-      "sourceKind": "module",
-      "logicalPath": "channels/slack.ts",
-      "sourceId": "channels/slack.ts"
     }
   ],
   "connections": [

@@ -62,14 +62,6 @@
       "type": "http",
       "logicalPath": "channels/eve.ts",
       "adapterKind": "http"
-    },
-    {
-      "name": "slack",
-      "method": "POST",
-      "urlPath": "/eve/v1/slack",
-      "type": "slack",
-      "logicalPath": "channels/slack.ts",
-      "adapterKind": "slack"
     }
   ],
   "sandbox": null,

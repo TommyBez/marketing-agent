@@ -19,60 +19,53 @@ var health_default$1 = health_default$2;
 var health_default = health_default$2;
 //#endregion
 //#region #nitro/virtual/eve-channel/GET /eve/v1/connections/:name/callback/:token
-const config$7 = {
-	"appRoot": "/vercel/share/v0-project",
-	"dev": false
-};
-var _token_default$2 = (event) => dispatchChannelRequest(event, "GET /eve/v1/connections/:name/callback/:token", config$7);
-//#endregion
-//#region #nitro/virtual/eve-channel/POST /eve/v1/connections/:name/callback/:token
 const config$6 = {
 	"appRoot": "/vercel/share/v0-project",
 	"dev": false
 };
-var _token_default$1 = (event) => dispatchChannelRequest(event, "POST /eve/v1/connections/:name/callback/:token", config$6);
+var _token_default$2 = (event) => dispatchChannelRequest(event, "GET /eve/v1/connections/:name/callback/:token", config$6);
 //#endregion
-//#region #nitro/virtual/eve-channel/POST /eve/v1/callback/:token
+//#region #nitro/virtual/eve-channel/POST /eve/v1/connections/:name/callback/:token
 const config$5 = {
 	"appRoot": "/vercel/share/v0-project",
 	"dev": false
 };
-var _token_default = (event) => dispatchChannelRequest(event, "POST /eve/v1/callback/:token", config$5);
+var _token_default$1 = (event) => dispatchChannelRequest(event, "POST /eve/v1/connections/:name/callback/:token", config$5);
 //#endregion
-//#region #nitro/virtual/eve-channel/GET /eve/v1/info
+//#region #nitro/virtual/eve-channel/POST /eve/v1/callback/:token
 const config$4 = {
 	"appRoot": "/vercel/share/v0-project",
 	"dev": false
 };
-var info_default = (event) => dispatchChannelRequest(event, "GET /eve/v1/info", config$4);
+var _token_default = (event) => dispatchChannelRequest(event, "POST /eve/v1/callback/:token", config$4);
 //#endregion
-//#region #nitro/virtual/eve-channel/POST /eve/v1/session
+//#region #nitro/virtual/eve-channel/GET /eve/v1/info
 const config$3 = {
 	"appRoot": "/vercel/share/v0-project",
 	"dev": false
 };
-var session_default = (event) => dispatchChannelRequest(event, "POST /eve/v1/session", config$3);
+var info_default = (event) => dispatchChannelRequest(event, "GET /eve/v1/info", config$3);
 //#endregion
-//#region #nitro/virtual/eve-channel/POST /eve/v1/session/:sessionId
+//#region #nitro/virtual/eve-channel/POST /eve/v1/session
 const config$2 = {
 	"appRoot": "/vercel/share/v0-project",
 	"dev": false
 };
-var _sessionId_default = (event) => dispatchChannelRequest(event, "POST /eve/v1/session/:sessionId", config$2);
+var session_default = (event) => dispatchChannelRequest(event, "POST /eve/v1/session", config$2);
 //#endregion
-//#region #nitro/virtual/eve-channel/GET /eve/v1/session/:sessionId/stream
+//#region #nitro/virtual/eve-channel/POST /eve/v1/session/:sessionId
 const config$1 = {
 	"appRoot": "/vercel/share/v0-project",
 	"dev": false
 };
-var stream_default = (event) => dispatchChannelRequest(event, "GET /eve/v1/session/:sessionId/stream", config$1);
+var _sessionId_default = (event) => dispatchChannelRequest(event, "POST /eve/v1/session/:sessionId", config$1);
 //#endregion
-//#region #nitro/virtual/eve-channel/POST /eve/v1/slack
+//#region #nitro/virtual/eve-channel/GET /eve/v1/session/:sessionId/stream
 const config = {
 	"appRoot": "/vercel/share/v0-project",
 	"dev": false
 };
-var slack_default = (event) => dispatchChannelRequest(event, "POST /eve/v1/slack", config);
+var stream_default = (event) => dispatchChannelRequest(event, "GET /eve/v1/session/:sessionId/stream", config);
 //#endregion
 //#region .eve/nitro/workflow/workflows-handler.mjs
 var workflows_handler_default = async ({ req }) => {
@@ -81,68 +74,68 @@ var workflows_handler_default = async ({ req }) => {
 //#endregion
 //#region #nitro/virtual/public-assets-data
 var public_assets_data_default = {
-	"/icon.svg": {
-		"type": "image/svg+xml",
-		"etag": "\"518-9M+7JU4r6V/KOpL+LPj+dv/tp9E\"",
-		"mtime": "2026-07-13T18:34:46.404Z",
-		"size": 1304,
-		"path": "../public/icon.svg"
-	},
 	"/apple-icon.png": {
 		"type": "image/png",
 		"etag": "\"a42-o953JxvIavDjStfvW8JRF7vWLk4\"",
-		"mtime": "2026-07-13T18:34:46.404Z",
+		"mtime": "2026-07-13T18:44:33.748Z",
 		"size": 2626,
 		"path": "../public/apple-icon.png"
-	},
-	"/placeholder-logo.svg": {
-		"type": "image/svg+xml",
-		"etag": "\"c88-Vv8IA2xgjEZAiN2dErxBClzvxAM\"",
-		"mtime": "2026-07-13T18:34:46.404Z",
-		"size": 3208,
-		"path": "../public/placeholder-logo.svg"
 	},
 	"/icon-dark-32x32.png": {
 		"type": "image/png",
 		"etag": "\"249-Eje7mf5IYnUOzvWahZHzVZgkxwI\"",
-		"mtime": "2026-07-13T18:34:46.404Z",
+		"mtime": "2026-07-13T18:44:33.748Z",
 		"size": 585,
 		"path": "../public/icon-dark-32x32.png"
 	},
 	"/icon-light-32x32.png": {
 		"type": "image/png",
 		"etag": "\"236-1LCyzDLVe8SSrsZvG9eS1rhTvHw\"",
-		"mtime": "2026-07-13T18:34:46.404Z",
+		"mtime": "2026-07-13T18:44:33.748Z",
 		"size": 566,
 		"path": "../public/icon-light-32x32.png"
+	},
+	"/icon.svg": {
+		"type": "image/svg+xml",
+		"etag": "\"518-9M+7JU4r6V/KOpL+LPj+dv/tp9E\"",
+		"mtime": "2026-07-13T18:44:33.748Z",
+		"size": 1304,
+		"path": "../public/icon.svg"
 	},
 	"/placeholder-logo.png": {
 		"type": "image/png",
 		"etag": "\"238-pS23KseK6wWmMHqaT+IrH57MhUI\"",
-		"mtime": "2026-07-13T18:34:46.404Z",
+		"mtime": "2026-07-13T18:44:33.752Z",
 		"size": 568,
 		"path": "../public/placeholder-logo.png"
+	},
+	"/placeholder-logo.svg": {
+		"type": "image/svg+xml",
+		"etag": "\"c88-Vv8IA2xgjEZAiN2dErxBClzvxAM\"",
+		"mtime": "2026-07-13T18:44:33.752Z",
+		"size": 3208,
+		"path": "../public/placeholder-logo.svg"
 	},
 	"/placeholder-user.jpg": {
 		"type": "image/jpeg",
 		"etag": "\"663-C3c0t/BkPcGmoKQMFVHBP6o+6fQ\"",
-		"mtime": "2026-07-13T18:34:46.404Z",
+		"mtime": "2026-07-13T18:44:33.752Z",
 		"size": 1635,
 		"path": "../public/placeholder-user.jpg"
-	},
-	"/placeholder.svg": {
-		"type": "image/svg+xml",
-		"etag": "\"cb5-3cfZ/x0uNhX4kurZGAkOBE4K/G0\"",
-		"mtime": "2026-07-13T18:34:46.404Z",
-		"size": 3253,
-		"path": "../public/placeholder.svg"
 	},
 	"/placeholder.jpg": {
 		"type": "image/jpeg",
 		"etag": "\"428-IKS5JfbV4RoTBDDc/wuWqgR2Qhw\"",
-		"mtime": "2026-07-13T18:34:46.404Z",
+		"mtime": "2026-07-13T18:44:33.752Z",
 		"size": 1064,
 		"path": "../public/placeholder.jpg"
+	},
+	"/placeholder.svg": {
+		"type": "image/svg+xml",
+		"etag": "\"cb5-3cfZ/x0uNhX4kurZGAkOBE4K/G0\"",
+		"mtime": "2026-07-13T18:44:33.752Z",
+		"size": 3253,
+		"path": "../public/placeholder.svg"
 	}
 };
 //#endregion
@@ -234,29 +227,25 @@ const findRoute = /* @__PURE__ */ (() => {
 		method: "POST",
 		handler: toEventHandler(session_default)
 	}, $5 = {
-		route: "/eve/v1/slack",
-		method: "POST",
-		handler: toEventHandler(slack_default)
-	}, $6 = {
 		route: "/.well-known/workflow/v1/flow",
 		handler: toEventHandler(workflows_handler_default)
-	}, $7 = {
+	}, $6 = {
 		route: "/eve/v1/connections/:name/callback/:token",
 		method: "GET",
 		handler: toEventHandler(_token_default$2)
-	}, $8 = {
+	}, $7 = {
 		route: "/eve/v1/connections/:name/callback/:token",
 		method: "POST",
 		handler: toEventHandler(_token_default$1)
-	}, $9 = {
+	}, $8 = {
 		route: "/eve/v1/callback/:token",
 		method: "POST",
 		handler: toEventHandler(_token_default)
-	}, $10 = {
+	}, $9 = {
 		route: "/eve/v1/session/:sessionId",
 		method: "POST",
 		handler: toEventHandler(_sessionId_default)
-	}, $11 = {
+	}, $10 = {
 		route: "/eve/v1/session/:sessionId/stream",
 		method: "GET",
 		handler: toEventHandler(stream_default)
@@ -272,9 +261,7 @@ const findRoute = /* @__PURE__ */ (() => {
 			if (m === "GET") return { data: $3 };
 		} else if (p === "/eve/v1/session") {
 			if (m === "POST") return { data: $4 };
-		} else if (p === "/eve/v1/slack") {
-			if (m === "POST") return { data: $5 };
-		} else if (p === "/.well-known/workflow/v1/flow") return { data: $6 };
+		} else if (p === "/.well-known/workflow/v1/flow") return { data: $5 };
 		let s = p.split("/"), l = s.length;
 		if (l > 1) {
 			if (s[1] === "eve") {
@@ -287,7 +274,7 @@ const findRoute = /* @__PURE__ */ (() => {
 										if (l === 7 || l === 6) {
 											if (m === "GET") {
 												if (l > 6) return {
-													data: $7,
+													data: $6,
 													params: {
 														"name": s[4],
 														"token": s[6]
@@ -296,7 +283,7 @@ const findRoute = /* @__PURE__ */ (() => {
 											}
 											if (m === "POST") {
 												if (l > 6) return {
-													data: $8,
+													data: $7,
 													params: {
 														"name": s[4],
 														"token": s[6]
@@ -310,7 +297,7 @@ const findRoute = /* @__PURE__ */ (() => {
 								if (l === 5 || l === 4) {
 									if (m === "POST") {
 										if (l > 4) return {
-											data: $9,
+											data: $8,
 											params: { "token": s[4] }
 										};
 									}
@@ -319,14 +306,14 @@ const findRoute = /* @__PURE__ */ (() => {
 								if (l === 5 || l === 4) {
 									if (m === "POST") {
 										if (l > 4) return {
-											data: $10,
+											data: $9,
 											params: { "sessionId": s[4] }
 										};
 									}
 								} else if (s[5] === "stream") {
 									if (l === 6) {
 										if (m === "GET") return {
-											data: $11,
+											data: $10,
 											params: { "sessionId": s[4] }
 										};
 									}
