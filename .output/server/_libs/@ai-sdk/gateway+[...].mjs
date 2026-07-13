@@ -783,13 +783,13 @@ const uuid = (version) => {
 	return new RegExp(`^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-${version}[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$`);
 };
 /** Practical email validation */
-const email = /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/;
+const email$1 = /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/;
 const _emoji$1 = `^(\\p{Extended_Pictographic}|\\p{Emoji_Component})+$`;
 function emoji() {
 	return new RegExp(_emoji$1, "u");
 }
-const ipv4 = /^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/;
-const ipv6 = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))$/;
+const ipv4$1 = /^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])$/;
+const ipv6$1 = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:))$/;
 const cidrv4 = /^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\/([0-9]|[1-2][0-9]|3[0-2])$/;
 const cidrv6 = /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|::|([0-9a-fA-F]{1,4})?::([0-9a-fA-F]{1,4}:?){0,6})\/(12[0-8]|1[01][0-9]|[1-9]?[0-9])$/;
 const base64 = /^$|^(?:[0-9a-zA-Z+/]{4})*(?:(?:[0-9a-zA-Z+/]{2}==)|(?:[0-9a-zA-Z+/]{3}=))?$/;
@@ -1353,7 +1353,7 @@ const $ZodUUID = /*@__PURE__*/ $constructor("$ZodUUID", (inst, def) => {
 	$ZodStringFormat.init(inst, def);
 });
 const $ZodEmail = /*@__PURE__*/ $constructor("$ZodEmail", (inst, def) => {
-	def.pattern ?? (def.pattern = email);
+	def.pattern ?? (def.pattern = email$1);
 	$ZodStringFormat.init(inst, def);
 });
 const $ZodURL = /*@__PURE__*/ $constructor("$ZodURL", (inst, def) => {
@@ -1463,12 +1463,12 @@ const $ZodISODuration = /*@__PURE__*/ $constructor("$ZodISODuration", (inst, def
 	$ZodStringFormat.init(inst, def);
 });
 const $ZodIPv4 = /*@__PURE__*/ $constructor("$ZodIPv4", (inst, def) => {
-	def.pattern ?? (def.pattern = ipv4);
+	def.pattern ?? (def.pattern = ipv4$1);
 	$ZodStringFormat.init(inst, def);
 	inst._zod.bag.format = `ipv4`;
 });
 const $ZodIPv6 = /*@__PURE__*/ $constructor("$ZodIPv6", (inst, def) => {
-	def.pattern ?? (def.pattern = ipv6);
+	def.pattern ?? (def.pattern = ipv6$1);
 	$ZodStringFormat.init(inst, def);
 	inst._zod.bag.format = `ipv6`;
 	inst._zod.check = (payload) => {
@@ -2597,6 +2597,14 @@ function _string(Class, params) {
 	});
 }
 // @__NO_SIDE_EFFECTS__
+function _coercedString(Class, params) {
+	return new Class({
+		type: "string",
+		coerce: true,
+		...normalizeParams(params)
+	});
+}
+// @__NO_SIDE_EFFECTS__
 function _email(Class, params) {
 	return new Class({
 		type: "string",
@@ -2886,6 +2894,14 @@ function _int(Class, params) {
 function _boolean(Class, params) {
 	return new Class({
 		type: "boolean",
+		...normalizeParams(params)
+	});
+}
+// @__NO_SIDE_EFFECTS__
+function _coercedBoolean(Class, params) {
+	return new Class({
+		type: "boolean",
+		coerce: true,
 		...normalizeParams(params)
 	});
 }
@@ -4187,6 +4203,9 @@ const ZodEmail = /*@__PURE__*/ $constructor("ZodEmail", (inst, def) => {
 	$ZodEmail.init(inst, def);
 	ZodStringFormat.init(inst, def);
 });
+function email(params) {
+	return /* @__PURE__ */ _email(ZodEmail, params);
+}
 const ZodGUID = /*@__PURE__*/ $constructor("ZodGUID", (inst, def) => {
 	$ZodGUID.init(inst, def);
 	ZodStringFormat.init(inst, def);
@@ -4236,10 +4255,16 @@ const ZodIPv4 = /*@__PURE__*/ $constructor("ZodIPv4", (inst, def) => {
 	$ZodIPv4.init(inst, def);
 	ZodStringFormat.init(inst, def);
 });
+function ipv4(params) {
+	return /* @__PURE__ */ _ipv4(ZodIPv4, params);
+}
 const ZodIPv6 = /*@__PURE__*/ $constructor("ZodIPv6", (inst, def) => {
 	$ZodIPv6.init(inst, def);
 	ZodStringFormat.init(inst, def);
 });
+function ipv6(params) {
+	return /* @__PURE__ */ _ipv6(ZodIPv6, params);
+}
 const ZodCIDRv4 = /*@__PURE__*/ $constructor("ZodCIDRv4", (inst, def) => {
 	$ZodCIDRv4.init(inst, def);
 	ZodStringFormat.init(inst, def);
@@ -4475,6 +4500,14 @@ function strictObject(shape, params) {
 		type: "object",
 		shape,
 		catchall: never(),
+		...normalizeParams(params)
+	});
+}
+function looseObject(shape, params) {
+	return new ZodObject$1({
+		type: "object",
+		shape,
+		catchall: unknown(),
 		...normalizeParams(params)
 	});
 }
@@ -10853,7 +10886,7 @@ var require_get_vercel_oidc_token = /* @__PURE__ */ __commonJSMin(((exports, mod
 			err = error;
 		}
 		try {
-			const [{ getTokenPayload, isExpired }, { refreshToken }] = await Promise.all([await import("../_.mjs").then((m) => /* @__PURE__ */ __toESM(m.default)), await import("../_6.mjs").then((m) => /* @__PURE__ */ __toESM(m.default))]);
+			const [{ getTokenPayload, isExpired }, { refreshToken }] = await Promise.all([await import("../_.mjs").then((m) => /* @__PURE__ */ __toESM(m.default)), await import("../_10.mjs").then((m) => /* @__PURE__ */ __toESM(m.default))]);
 			if (!token || isExpired(getTokenPayload(token), options?.expirationBufferMs)) {
 				await refreshToken(options);
 				token = getVercelOidcTokenSync();
@@ -13264,4 +13297,4 @@ function assertGatewayRealtimeServerEnvironment() {
 	if (typeof globalThis.window !== "undefined") throw new Error("AI Gateway realtime client secrets must be minted server-side: minting needs your Gateway credential, which must never reach the browser. Call gateway.experimental_realtime.getToken() from your server and pass the returned token to the client.");
 }
 //#endregion
-export { union as $, resolve as A, _null as B, isFullMediaType as C, lazySchema as D, jsonSchema as E, validateTypes as F, lazy as G, boolean as H, withUserAgentSuffix as I, number as J, literal as K, zodSchema as L, safeParseJSON as M, safeValidateTypes as N, parseJsonEventStream as O, tool as P, string as Q, _enum as R, isExecutableTool as S, isUrlSupported as T, custom as U, array as V, discriminatedUnion as W, record as X, object as Y, strictObject as Z, fetchWithValidatedRedirects as _, require_token_util as a, JSONParseError as at, isAbortError as b, DownloadError as c, getErrorMessage as ct, cancelResponseBody as d, unknown as et, convertBase64ToUint8Array as f, executeTool as g, detectMediaType as h, gateway as i, InvalidPromptError as it, retryWithExponentialBackoff as j, readResponseWithSizeLimit as k, asArray as l, createIdGenerator as m, GatewayError as n, APICallError as nt, require_token_error as o, TypeValidationError as ot, convertUint8ArrayToBase64 as p, never as q, createGateway as r, EmptyResponseBodyError as rt, DelayedPromise as s, UnsupportedFunctionalityError as st, GatewayAuthenticationError as t, AISDKError as tt, asSchema as u, filterNullable as v, isProviderReference as w, isBuffer as x, getRuntimeEnvironmentUserAgent as y, _instanceof as z };
+export { lazy as $, resolve as A, ZodOptional$1 as B, isFullMediaType as C, lazySchema as D, jsonSchema as E, validateTypes as F, any as G, _enum as H, withUserAgentSuffix as I, custom as J, array as K, zodSchema as L, safeParseJSON as M, safeValidateTypes as N, parseJsonEventStream as O, tool as P, ipv6 as Q, ZodBoolean$1 as R, isExecutableTool as S, isUrlSupported as T, _instanceof as U, ZodString$1 as V, _null as W, email as X, discriminatedUnion as Y, ipv4 as Z, fetchWithValidatedRedirects as _, JSONParseError as _t, require_token_util as a, optional as at, isAbortError as b, getErrorMessage as bt, DownloadError as c, string as ct, cancelResponseBody as d, _coercedBoolean as dt, literal as et, convertBase64ToUint8Array as f, _coercedString as ft, executeTool as g, InvalidPromptError as gt, detectMediaType as h, EmptyResponseBodyError as ht, gateway as i, object as it, retryWithExponentialBackoff as j, readResponseWithSizeLimit as k, asArray as l, union as lt, createIdGenerator as m, APICallError as mt, GatewayError as n, never as nt, require_token_error as o, record as ot, convertUint8ArrayToBase64 as p, AISDKError as pt, boolean as q, createGateway as r, number as rt, DelayedPromise as s, strictObject as st, GatewayAuthenticationError as t, looseObject as tt, asSchema as u, unknown as ut, filterNullable as v, TypeValidationError as vt, isProviderReference as w, isBuffer as x, getRuntimeEnvironmentUserAgent as y, UnsupportedFunctionalityError as yt, ZodObject$1 as z };

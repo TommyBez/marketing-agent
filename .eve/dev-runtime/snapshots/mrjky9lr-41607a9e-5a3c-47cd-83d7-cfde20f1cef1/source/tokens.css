@@ -1,0 +1,29 @@
+/* Hallmark · macrostructure: Narrative Workflow · tone: atmospheric editorial · anchor hue: signal green
+ * genre: atmospheric · theme: Midnight · enrichment: product composition · nav: N13 · footer: Ft5
+ */
+:root {
+  --color-landing-paper: oklch(14% 0.012 145);
+  --color-landing-paper-raised: oklch(18% 0.014 145);
+  --color-landing-paper-high: oklch(22% 0.016 145);
+  --color-landing-ink: oklch(94% 0.01 80);
+  --color-landing-muted: oklch(68% 0.012 95);
+  --color-landing-accent: oklch(76% 0.18 145);
+  --color-landing-accent-ink: oklch(17% 0.04 145);
+  --font-landing-display: var(--font-newsreader);
+  --font-landing-body: var(--font-geist);
+  --font-landing-mono: var(--font-geist-mono);
+  --space-landing-xs: 0.5rem;
+  --space-landing-sm: 1rem;
+  --space-landing-md: 1.5rem;
+  --space-landing-lg: 2rem;
+  --space-landing-xl: 4rem;
+  --text-landing-display: clamp(3.25rem, 9vw, 7.75rem);
+  --text-landing-section: clamp(2.25rem, 5vw, 4.75rem);
+  --ease-landing-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-landing-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --dur-landing-fast: 100ms;
+  --dur-landing-short: 180ms;
+  --radius-landing-sm: 0.75rem;
+  --radius-landing-md: 1.25rem;
+  --rule-landing: 1px solid color-mix(in oklch, var(--color-landing-ink) 12%, transparent);
+}
