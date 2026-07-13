@@ -1,6 +1,15 @@
 'use client'
 
 import { analyzeCompany } from '@/app/actions/company'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Progress } from '@/components/ui/progress'
+import { Separator } from '@/components/ui/separator'
+import { Spinner } from '@/components/ui/spinner'
+import { Check } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 
@@ -39,45 +48,56 @@ export function CompanyOnboarding() {
 
   return (
     <section className="flex flex-1 items-center justify-center p-5 md:p-10">
-      <div className="flex w-full max-w-3xl flex-col gap-8 rounded-2xl border bg-card p-6 shadow-2xl md:p-10">
-        <div className="flex flex-col gap-3">
+      <Card className="w-full max-w-3xl shadow-2xl">
+        <CardHeader className="gap-3 px-6 md:px-10">
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent-foreground">Initialize workspace</p>
-          <h1 className="max-w-xl font-serif text-4xl leading-tight text-balance md:text-5xl">Start with what your company already knows.</h1>
-          <p className="max-w-xl text-base leading-7 text-muted-foreground">Paste your website. Context.dev will build the shared company brief your marketing manager and specialists use for every operation.</p>
-        </div>
-
-        <form action={handleSubmit} className="flex flex-col gap-3 sm:flex-row">
-          <label className="sr-only" htmlFor="websiteUrl">Company website URL</label>
-          <input id="websiteUrl" name="websiteUrl" type="url" required disabled={isLoading} placeholder="https://yourcompany.com" className="h-13 min-w-0 flex-1 rounded-lg border bg-background px-4 text-base outline-none focus:ring-2 disabled:opacity-60" />
-          <button disabled={isLoading} aria-busy={isLoading} className="pressable-motion flex h-13 items-center justify-center rounded-lg bg-primary px-5 text-sm font-semibold text-primary-foreground disabled:opacity-70">
-            {isLoading ? 'Analyzing brand…' : 'Build company brief'}
-          </button>
-        </form>
-
-        {isLoading && (
-          <div aria-live="polite" aria-label="Brand analysis progress" className="ui-state-enter flex flex-col gap-4 rounded-xl border bg-background p-4">
-            <div className="flex items-center justify-between gap-4">
-              <p className="text-sm font-medium">{analysisStages[activeStage]}</p>
-              <p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Step {activeStage + 1} of {analysisStages.length}</p>
-            </div>
-            <div className="h-1 overflow-hidden rounded-full bg-muted">
-              <div className="h-full origin-left rounded-full bg-accent-foreground transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none" style={{ transform: `scaleX(${(activeStage + 1) / analysisStages.length})` }} />
-            </div>
-            <div className="flex flex-col gap-2">
-              {analysisStages.map((stage, index) => (
-                <div className="flex items-center gap-3 text-sm" key={stage}>
-                  <span aria-hidden="true" className={`size-2 rounded-full transition-colors ${index <= activeStage ? 'bg-accent-foreground' : 'bg-muted'}`} />
-                  <span className={index <= activeStage ? 'text-foreground' : 'text-muted-foreground'}>{stage}</span>
+          <CardTitle className="max-w-xl font-serif text-4xl leading-tight text-balance md:text-5xl">Start with what your company already knows.</CardTitle>
+          <CardDescription className="max-w-xl text-base leading-7">Paste your website. Context.dev will build the shared company brief your marketing manager and specialists use for every operation.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-6 px-6 md:px-10">
+          <form action={handleSubmit}>
+            <FieldGroup>
+              <Field data-disabled={isLoading}>
+                <FieldLabel htmlFor="websiteUrl">Company website URL</FieldLabel>
+                <div className="flex flex-col gap-3 sm:flex-row">
+                  <Input id="websiteUrl" name="websiteUrl" type="url" required disabled={isLoading} placeholder="https://yourcompany.com" className="h-11 flex-1" />
+                  <Button type="submit" size="lg" disabled={isLoading} aria-busy={isLoading}>
+                    {isLoading && <Spinner data-icon="inline-start" />}
+                    {isLoading ? 'Analyzing brand…' : 'Build company brief'}
+                  </Button>
                 </div>
-              ))}
-            </div>
-            <p className="text-xs leading-5 text-muted-foreground">Keep this page open while we retrieve and securely save your company context.</p>
-          </div>
-        )}
+                <FieldDescription>Your API key stays server-side and profiles remain private to your account.</FieldDescription>
+              </Field>
+            </FieldGroup>
+          </form>
 
-        {error && <p role="alert" className="ui-state-enter text-sm text-destructive">{error}</p>}
-        <p className="border-t pt-5 text-sm leading-6 text-muted-foreground">Your API key stays server-side. Company profiles are private and scoped to your account.</p>
-      </div>
+          {isLoading && (
+            <Card size="sm" aria-live="polite" aria-label="Brand analysis progress" className="bg-background">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Spinner />{analysisStages[activeStage]}</CardTitle>
+                <CardDescription>Step {activeStage + 1} of {analysisStages.length}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-4">
+                <Progress value={((activeStage + 1) / analysisStages.length) * 100} />
+                <div className="flex flex-col gap-2">
+                  {analysisStages.map((stage, index) => (
+                    <div className="flex items-center gap-3 text-sm" key={stage}>
+                      {index < activeStage ? <Check aria-hidden="true" /> : index === activeStage ? <Spinner /> : <span aria-hidden="true" className="size-4 rounded-full border" />}
+                      <span className={index <= activeStage ? 'text-foreground' : 'text-muted-foreground'}>{stage}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+        </CardContent>
+        <CardFooter className="flex-col items-stretch gap-4 bg-transparent px-6 md:px-10">
+          <Separator />
+          <p className="text-sm leading-6 text-muted-foreground">Company profiles are securely saved and scoped to your authenticated account.</p>
+        </CardFooter>
+      </Card>
     </section>
   )
 }
