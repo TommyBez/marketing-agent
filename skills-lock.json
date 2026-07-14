@@ -6,6 +6,12 @@
       "sourceType": "github",
       "skillPath": "skills/ai-elements/SKILL.md",
       "computedHash": "c5faf42a5aa6bf02f7310dfcf0b6c45d956c98afa520cb16ec048df7ee263af5"
+    },
+    "eve": {
+      "source": "vercel/eve",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "79a1e606ecf33eed33c1f3adc1cc266de391e19aa9237ca37e4f3aa3fba6b228"
     }
   }
 }

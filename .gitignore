@@ -18,3 +18,5 @@ node_modules
 .output/
 .eve/
 .workflow-data/
+.vercel
+.env*
