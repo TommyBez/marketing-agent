@@ -56,6 +56,9 @@ importers:
       context.dev:
         specifier: ^2.5.0
         version: 2.5.0
+      dotenv:
+        specifier: ^17.4.2
+        version: 17.4.2
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@types/pg@8.20.0)(kysely@0.29.3)(pg@8.22.0)(sql.js@1.14.1)
