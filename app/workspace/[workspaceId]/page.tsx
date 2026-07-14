@@ -43,7 +43,7 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
   return (
     <main className="workspace-shell flex h-dvh min-h-[640px] p-2 md:p-3">
       <Card className="workspace-frame min-w-0 flex-1 overflow-hidden p-0">
-        <SidebarProvider className="min-h-0 flex-1">
+        <SidebarProvider className="workspace-sidebar min-h-0 flex-1">
           <ConversationSidebar workspaceId={workspaceId} conversations={initialConversations} activeConversationId={activeConversationId ?? ''} />
           <SidebarInset className="workspace-inset min-h-0 overflow-hidden">
             <header className="workspace-header flex h-15 shrink-0 items-center justify-between gap-2 border-b px-3 md:px-4">

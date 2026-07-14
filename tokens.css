@@ -55,9 +55,14 @@
   --font-landing-mono: var(--font-geist-mono);
   --text-landing-display: clamp(3.4rem, 4.25vw, 4.9rem);
   --text-landing-section: clamp(2.5rem, 5.2vw, 5.6rem);
-  --ease-landing-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Mirrored as numeric Motion values in lib/landing-motion-tokens.ts. */
+  --ease-landing-out: cubic-bezier(0.23, 1, 0.32, 1);
   --dur-landing-fast: 120ms;
+  --dur-landing-press: 160ms;
   --dur-landing-short: 220ms;
+  --dur-landing-reveal: 600ms;
+  --dur-landing-media: 760ms;
+  --dur-landing-stagger: 70ms;
 }
 
 @media (prefers-color-scheme: dark) {

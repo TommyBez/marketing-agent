@@ -94,7 +94,8 @@
 .context-copy li { display: grid; grid-template-columns: 1.15rem 1fr; gap: .4rem; font-size: .9rem; font-weight: 580; line-height: 1.5; }
 .context-copy li::before { color: var(--brand-accent); content: '↳'; }
 .context-image { min-width: 0; overflow: hidden; border-radius: 1.125rem; background: var(--brand-surface); box-shadow: var(--elevation-4); }
-.context-image img { display: block; width: 100%; max-height: 46rem; object-fit: cover; }
+.context-parallax-layer { width: 100%; transform-origin: center; }
+.context-image img { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; }
 
 .workflow-section { padding-block: 2rem 7rem; scroll-margin-top: 2rem; }
 .workflow-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 1.25rem; margin-bottom: 3rem; }
@@ -115,6 +116,7 @@
 
 .workspace-shell { background: var(--app-backdrop); }
 .workspace-frame { border: 1px solid color-mix(in oklch, var(--foreground) 12%, transparent); background: var(--card); box-shadow: var(--elevation-5); }
+.workspace-sidebar { position: relative; }
 .workspace-header { background: color-mix(in oklch, var(--card) 92%, transparent); backdrop-filter: blur(18px); }
 .chat-shell { background: color-mix(in oklch, var(--card) 95%, var(--background)); }
 .chat-heading { font-size: 1rem; font-weight: 720; letter-spacing: -.025em; }
@@ -126,14 +128,17 @@
 .auth-panel h1 { font-size: 2.4rem; font-weight: 720; line-height: .98; letter-spacing: -.055em; }
 .auth-brandline { color: var(--primary); font-family: var(--font-mono); font-size: .68rem; font-weight: 580; letter-spacing: .11em; text-transform: uppercase; }
 
-@keyframes landing-enter { from { opacity: 0; transform: translateY(.7rem); } to { opacity: 1; transform: translateY(0); } }
-@keyframes visual-enter { from { opacity: .25; transform: scale(.985); } to { opacity: 1; transform: scale(1); } }
+.landing-cta {
+  transition-duration: var(--dur-landing-fast);
+  transition-property: color, background-color, border-color, transform;
+  transition-timing-function: var(--ease-landing-out);
+}
 
 @media (prefers-reduced-motion: no-preference) {
-  .hero-copy { animation: landing-enter .65s var(--ease-landing-out) both; }
-  .hero-visual { animation: visual-enter .8s .08s var(--ease-landing-out) both; }
-  .context-image img { transition: transform .75s var(--ease-landing-out); }
-  .context-image:hover img { transform: scale(1.018); }
+  .landing-cta:active:not(:disabled):not([aria-disabled='true']) {
+    transform: scale(.97);
+    transition-duration: var(--dur-landing-press);
+  }
 }
 
 @media (min-width: 40rem) {
@@ -146,8 +151,20 @@
 }
 
 @media (min-width: 48rem) {
-  /* The workspace frame owns the shell radius; neutralize the nested inset geometry. */
-  .workspace-frame .workspace-inset { margin: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+  /* The workspace frame owns the shell geometry, including the desktop sidebar bounds. */
+  .workspace-frame .workspace-sidebar [data-slot='sidebar-container'] {
+    position: absolute;
+    inset-block: 0;
+    height: 100%;
+    padding: 0;
+  }
+
+  .workspace-frame .workspace-inset {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
   .hero-section { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: clamp(2rem, 5vw, 5rem); padding-block: 3.5rem 5rem; }
   .context-section { grid-template-columns: minmax(0, .82fr) minmax(0, 1.18fr); gap: clamp(3rem, 8vw, 7rem); padding-block: 9rem; }
   .workflow-heading { margin-bottom: 4rem; }
@@ -162,5 +179,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  html { scroll-behavior: auto; }
+  .landing-cta { transition-property: color, background-color, border-color; }
+  *, *::before, *::after {
+    animation: none;
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, opacity;
+  }
 }

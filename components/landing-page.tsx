@@ -1,8 +1,86 @@
 import { BrandMark } from '@/components/brand-mark'
+import { LandingContextParallax, LandingMotionConfig } from '@/components/landing-motion'
 import { Button } from '@/components/ui/button'
+import {
+  LANDING_EASE_OUT,
+  LANDING_MEDIA_DURATION,
+  LANDING_REVEAL_DURATION,
+  LANDING_STAGGER,
+  LANDING_TRAVEL,
+} from '@/lib/landing-motion-tokens'
 import { ArrowRight } from 'lucide-react'
+import type { Variants } from 'motion/react'
+import * as motion from 'motion/react-client'
 import Image from 'next/image'
 import Link from 'next/link'
+
+function createLandingRevealVariants(delay = 0): Variants {
+  return {
+    hidden: {
+      opacity: 0,
+      transform: `translate3d(0, ${LANDING_TRAVEL}, 0)`,
+    },
+    visible: {
+      opacity: 1,
+      transform: 'translate3d(0, 0rem, 0)',
+      transition: {
+        delay,
+        duration: LANDING_REVEAL_DURATION,
+        ease: LANDING_EASE_OUT,
+      },
+    },
+  }
+}
+
+const landingRevealVariants = createLandingRevealVariants()
+
+const landingHeroMediaVariants = {
+  hidden: {
+    opacity: 0.75,
+    transform: 'translate3d(0, 0rem, 0) scale(0.97)',
+  },
+  visible: {
+    opacity: 1,
+    transform: 'translate3d(0, 0rem, 0) scale(1)',
+    transition: {
+      delay: LANDING_STAGGER * 2,
+      duration: LANDING_MEDIA_DURATION,
+      ease: LANDING_EASE_OUT,
+    },
+  },
+} satisfies Variants
+
+const landingContextMediaVariants = {
+  hidden: landingRevealVariants.hidden,
+  visible: {
+    ...landingRevealVariants.visible,
+    transition: {
+      duration: LANDING_MEDIA_DURATION,
+      ease: LANDING_EASE_OUT,
+    },
+  },
+} satisfies Variants
+
+const landingLoadMotion = {
+  initial: 'hidden',
+  animate: 'visible',
+} as const
+
+const landingViewMotion = {
+  initial: 'hidden',
+  whileInView: 'visible',
+  viewport: { once: true, amount: 0.25 },
+} as const
+
+const landingRailViewMotion = {
+  initial: 'hidden',
+  whileInView: 'visible',
+  viewport: {
+    once: true,
+    amount: 0.6,
+    margin: '0px 0px -12% 0px',
+  },
+} as const
 
 const specialists = [
   { name: 'Strategy', detail: 'Positioning and market signals' },
@@ -28,7 +106,7 @@ function LandingHeader({ isSignedIn }: LandingPageProps) {
       <nav aria-label="Main navigation" className="landing-nav">
         <Link className="landing-nav-link" href="#how-it-works">How it works</Link>
         {!isSignedIn && <Link className="landing-nav-link" href="/sign-in">Sign in</Link>}
-        <Button nativeButton={false} render={<Link href={primaryHref} />}>
+        <Button className="landing-cta" nativeButton={false} render={<Link href={primaryHref} />}>
           {isSignedIn ? 'Open workspace' : 'Start free'}
         </Button>
       </nav>
@@ -38,19 +116,34 @@ function LandingHeader({ isSignedIn }: LandingPageProps) {
 
 function DisciplineRail() {
   return (
-    <section className="landing-shell discipline-rail" aria-label="Marketing specialists">
-      <p>One brief, six disciplines</p>
+    <motion.section
+      className="landing-shell discipline-rail"
+      aria-label="Marketing specialists"
+      {...landingRailViewMotion}
+    >
+      <motion.p variants={landingRevealVariants}>One brief, six disciplines</motion.p>
       <div>
-        {specialists.map(({ name }) => <span key={name}>{name}</span>)}
+        {specialists.map(({ name }, index) => (
+          <motion.span
+            key={name}
+            variants={createLandingRevealVariants((index + 1) * LANDING_STAGGER)}
+          >
+            {name}
+          </motion.span>
+        ))}
       </div>
-    </section>
+    </motion.section>
   )
 }
 
 function ContextSection() {
   return (
     <section className="landing-shell context-section">
-      <div className="context-copy">
+      <motion.div
+        className="context-copy"
+        variants={landingRevealVariants}
+        {...landingViewMotion}
+      >
         <h2>Your brand is the brief.</h2>
         <p>Branderize studies your positioning, audience, offers, and voice before the first specialist starts working.</p>
         <ul>
@@ -58,16 +151,22 @@ function ContextSection() {
           <li>Company context that persists between conversations</li>
           <li>Work that sounds recognizably yours</li>
         </ul>
-      </div>
-      <figure className="context-image">
-        <Image
-          src="/branderize-system.webp"
-          alt="A tactile brand system made from typographic proofs and color materials"
-          width={1200}
-          height={1500}
-          sizes="(max-width: 767px) 100vw, 52vw"
-        />
-      </figure>
+      </motion.div>
+      <motion.figure
+        className="context-image"
+        variants={landingContextMediaVariants}
+        {...landingViewMotion}
+      >
+        <LandingContextParallax>
+          <Image
+            src="/branderize-workspace-context.webp"
+            alt="Branderize workspace showing Northline positioning, audience, offer, and voice as a shared brand brief"
+            width={1000}
+            height={1250}
+            sizes="(max-width: 767px) 100vw, 52vw"
+          />
+        </LandingContextParallax>
+      </motion.figure>
     </section>
   )
 }
@@ -75,26 +174,34 @@ function ContextSection() {
 function WorkflowSection() {
   return (
     <section id="how-it-works" className="landing-shell workflow-section">
-      <div className="workflow-heading">
+      <motion.div
+        className="workflow-heading"
+        variants={landingRevealVariants}
+        {...landingViewMotion}
+      >
         <h2>Brief once. Move as one.</h2>
         <p>Give Branderize an outcome. The manager assembles the right specialists and returns one coordinated answer.</p>
-      </div>
+      </motion.div>
       <div className="workflow-grid">
-        <article className="workflow-lead">
+        <motion.article className="workflow-lead" variants={landingRevealVariants} {...landingViewMotion}>
           <span>Understand</span>
           <h3>Start with the business, not a blank prompt.</h3>
           <p>Add your website once. Branderize turns it into durable context for every project that follows.</p>
-        </article>
-        <article>
+        </motion.article>
+        <motion.article variants={createLandingRevealVariants(LANDING_STAGGER)} {...landingViewMotion}>
           <span>Orchestrate</span>
           <h3>The right minds enter the room.</h3>
           <p>Strategy, search, copy, conversion, growth, and distribution collaborate without six separate briefs.</p>
-        </article>
-        <article className="workflow-accent">
+        </motion.article>
+        <motion.article
+          className="workflow-accent"
+          variants={createLandingRevealVariants(LANDING_STAGGER * 2)}
+          {...landingViewMotion}
+        >
           <span>Deliver</span>
           <h3>One answer, ready to shape.</h3>
           <p>Ideas arrive connected, traceable, and grounded in the same brand truth.</p>
-        </article>
+        </motion.article>
       </div>
     </section>
   )
@@ -105,50 +212,60 @@ export function LandingPage({ isSignedIn }: LandingPageProps) {
   const primaryLabel = isSignedIn ? 'Open workspace' : 'Start free'
 
   return (
-    <main className="landing-page">
-      <LandingHeader isSignedIn={isSignedIn} />
-      <section className="landing-shell hero-section">
-        <div className="hero-copy">
-          <p className="hero-kicker">AI marketing workspace</p>
-          <h1>Make every channel <span>sound like you.</span></h1>
-          <p>Branderize learns your business and directs six specialists from one shared source of truth.</p>
-          <div className="hero-actions">
-            <Button size="lg" nativeButton={false} render={<Link href={primaryHref} />}>
+    <LandingMotionConfig>
+      <main className="landing-page">
+        <LandingHeader isSignedIn={isSignedIn} />
+        <section className="landing-shell hero-section">
+          <div className="hero-copy">
+            <motion.p className="hero-kicker" variants={landingRevealVariants} {...landingLoadMotion}>AI marketing workspace</motion.p>
+            <motion.h1 variants={createLandingRevealVariants(LANDING_STAGGER)} {...landingLoadMotion}>Make every channel <span>sound like you.</span></motion.h1>
+            <motion.p variants={createLandingRevealVariants(LANDING_STAGGER * 2)} {...landingLoadMotion}>Branderize learns your business and directs six specialists from one shared source of truth.</motion.p>
+            <motion.div
+              className="hero-actions"
+              variants={createLandingRevealVariants(LANDING_STAGGER * 3)}
+              {...landingLoadMotion}
+            >
+              <Button className="landing-cta" size="lg" nativeButton={false} render={<Link href={primaryHref} />}>
+                {primaryLabel}<ArrowRight data-icon="inline-end" />
+              </Button>
+              <Button className="landing-cta" size="lg" variant="outline" nativeButton={false} render={<Link href="#how-it-works" />}>
+                See how it works
+              </Button>
+            </motion.div>
+          </div>
+          <motion.figure className="hero-visual" variants={landingHeroMediaVariants} {...landingLoadMotion}>
+            <Image
+              src="/branderize-workspace-launch.webp"
+              alt="Branderize workspace coordinating six marketing disciplines for a Northline launch"
+              width={1200}
+              height={900}
+              priority
+              sizes="(max-width: 767px) 100vw, 52vw"
+            />
+          </motion.figure>
+        </section>
+        <DisciplineRail />
+        <ContextSection />
+        <WorkflowSection />
+        <motion.footer
+          className="landing-shell landing-footer"
+          variants={landingRevealVariants}
+          {...landingViewMotion}
+        >
+          <div>
+            <p>Ready when you are</p>
+            <h2>Put your whole marketing team on the same page.</h2>
+            <Button className="landing-cta" size="lg" nativeButton={false} render={<Link href={primaryHref} />}>
               {primaryLabel}<ArrowRight data-icon="inline-end" />
             </Button>
-            <Button size="lg" variant="outline" nativeButton={false} render={<Link href="#how-it-works" />}>
-              See how it works
-            </Button>
           </div>
-        </div>
-        <figure className="hero-visual">
-          <Image
-            src="/branderize-studio.webp"
-            alt="Contemporary brand materials in black, cobalt, and vermilion"
-            width={1600}
-            height={1200}
-            priority
-            sizes="(max-width: 767px) 100vw, 52vw"
-          />
-        </figure>
-      </section>
-      <DisciplineRail />
-      <ContextSection />
-      <WorkflowSection />
-      <footer className="landing-shell landing-footer">
-        <div>
-          <p>Ready when you are</p>
-          <h2>Put your whole marketing team on the same page.</h2>
-          <Button size="lg" nativeButton={false} render={<Link href={primaryHref} />}>
-            {primaryLabel}<ArrowRight data-icon="inline-end" />
-          </Button>
-        </div>
-        <div className="footer-bottom">
-          <BrandMark />
-          <p>One manager. Six specialists. Your company context.</p>
-          <p>Built for focused marketing teams.</p>
-        </div>
-      </footer>
-    </main>
+          <div className="footer-bottom">
+            <BrandMark />
+            <p>One manager. Six specialists. Your company context.</p>
+            <p>Built for focused marketing teams.</p>
+          </div>
+        </motion.footer>
+      </main>
+    </LandingMotionConfig>
   )
 }
