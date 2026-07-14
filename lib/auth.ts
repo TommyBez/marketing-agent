@@ -1,15 +1,23 @@
 import { betterAuth } from 'better-auth'
 import { pool } from '@/lib/db'
 
-type DeploymentEnvironment = 'production' | 'preview' | 'development'
+type DeploymentEnvironment =
+  | 'production'
+  | 'preview'
+  | 'development'
+  | 'external-production'
 
 // VERCEL_ENV is a Vercel system environment variable set to "production",
-// "preview", or "development". It is undefined outside Vercel (e.g. local
-// `next dev`), which we treat as development.
+// "preview", or "development". Outside Vercel it is undefined; those runs are
+// classified by NODE_ENV so that a production process without Vercel system
+// variables (self-hosted `next start`, system env vars disabled) is never
+// given the softened development config.
 function getDeploymentEnvironment(): DeploymentEnvironment {
   const env = process.env.VERCEL_ENV
-  if (env === 'production' || env === 'preview') return env
-  return 'development'
+  if (env === 'production' || env === 'preview' || env === 'development') {
+    return env
+  }
+  return process.env.NODE_ENV === 'production' ? 'external-production' : 'development'
 }
 
 function requireEnv(name: string): string {
@@ -50,6 +58,12 @@ function getEnvironmentAuthConfig(): EnvironmentAuthConfig {
           : [deploymentUrl],
         softenChecks: false,
       }
+    }
+    case 'external-production': {
+      // Production traffic outside Vercel: no Vercel system variables exist,
+      // so BETTER_AUTH_URL (read natively by Better Auth) is the single URL
+      // source for this environment, and all checks stay strict.
+      return { trustedOrigins: [], softenChecks: false }
     }
     case 'development':
       return {
