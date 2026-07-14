@@ -41,16 +41,16 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
   const activeWorkspace = { id: workspace.id, name: workspace.name, websiteUrl: workspace.websiteUrl }
 
   return (
-    <main className="flex h-dvh min-h-[640px] p-2 md:p-3">
-      <Card className="min-w-0 flex-1 overflow-hidden p-0 shadow-2xl">
+    <main className="workspace-shell flex h-dvh min-h-[640px] p-2 md:p-3">
+      <Card className="workspace-frame min-w-0 flex-1 overflow-hidden p-0">
         <SidebarProvider className="min-h-0 flex-1">
           <ConversationSidebar workspaceId={workspaceId} conversations={initialConversations} activeConversationId={activeConversationId ?? ''} />
-          <SidebarInset className="min-h-0 overflow-hidden md:m-0 md:rounded-none md:shadow-none">
-            <header className="flex h-15 shrink-0 items-center justify-between gap-2 border-b px-3 md:px-4">
+          <SidebarInset className="workspace-inset min-h-0 overflow-hidden">
+            <header className="workspace-header flex h-15 shrink-0 items-center justify-between gap-2 border-b px-3 md:px-4">
               <div className="flex min-w-0 items-center gap-2">
                 <SidebarTrigger />
                 <WorkspaceSwitcher activeWorkspace={activeWorkspace} workspaces={workspaceSummaries} isCompact />
-                <Badge variant="secondary" className="hidden font-mono text-[10px] uppercase tracking-widest lg:flex">Command center</Badge>
+                <Badge variant="secondary" className="hidden font-mono text-[10px] uppercase tracking-widest lg:flex">Brand command</Badge>
               </div>
               <div className="flex shrink-0 items-center gap-2"><span className="hidden text-xs text-muted-foreground lg:inline">{currentSession.user.email}</span><SignOutButton /></div>
             </header>

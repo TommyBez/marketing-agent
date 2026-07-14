@@ -345,10 +345,10 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
     && lastMessage.parts.at(-1)?.type === 'text'
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col bg-card">
+    <section className="chat-shell flex min-h-0 flex-1 flex-col">
       <CardHeader className="border-b py-3">
-        <CardTitle className="truncate font-serif text-lg">{displayTitle}</CardTitle>
-        <CardDescription>Marketing Manager for {companyName} · 6 specialists available</CardDescription>
+        <CardTitle className="chat-heading truncate">{displayTitle}</CardTitle>
+        <CardDescription className="chat-subheading">Brand director for {companyName}, with 6 specialists available</CardDescription>
       </CardHeader>
 
       <Conversation className="min-h-0 flex-1">
@@ -357,14 +357,14 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
             <ConversationEmptyState className="flex-1 items-start justify-end p-0 text-left">
               <div className="flex w-full flex-col items-start gap-4">
                 <div className="space-y-2">
-                  <h2 className="font-serif text-3xl text-balance">What should we work on today?</h2>
+                  <h2 className="chat-empty-title">What should we make unmistakably yours?</h2>
                   <p className="max-w-xl leading-6 text-muted-foreground">
                     Ask for a launch plan, SEO audit, landing page rewrite, campaign brief, or a coordinated review.
                   </p>
                 </div>
                 <Suggestions className="w-full">
                   {suggestedPrompts.map((prompt) => (
-                    <Suggestion key={prompt} suggestion={prompt} disabled={isBusy} onClick={(suggestion) => void sendMessage(suggestion)} />
+                    <Suggestion className="h-auto min-h-10 rounded-xl border-border/70 bg-background/60 px-4 py-2 text-xs" key={prompt} suggestion={prompt} disabled={isBusy} onClick={(suggestion) => void sendMessage(suggestion)} />
                   ))}
                 </Suggestions>
               </div>
@@ -418,19 +418,20 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
         <ConversationScrollButton />
       </Conversation>
 
-      <div className="mx-auto w-full max-w-3xl p-3 md:px-6 md:pb-5">
+      <div className="composer-shell w-full p-3 md:px-6 md:pb-5">
+        <div className="mx-auto w-full max-w-3xl">
         <PromptInput onSubmit={handleSubmit}>
           <PromptInputBody>
             <PromptInputTextarea
               value={message}
               onChange={(event) => setMessage(event.target.value)}
-              placeholder="Ask your marketing manager…"
+              placeholder="Ask your brand director…"
               aria-label="Message"
             />
           </PromptInputBody>
           <PromptInputFooter>
             <PromptInputTools>
-              <span className="px-1 text-muted-foreground text-xs">Enter to send · Shift+Enter for a new line</span>
+              <span className="px-1 text-muted-foreground text-xs">Enter to send / Shift+Enter for a new line</span>
             </PromptInputTools>
             <PromptInputSubmit
               status={isRestoring ? 'submitted' : agent.status}
@@ -439,6 +440,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
             />
           </PromptInputFooter>
         </PromptInput>
+        </div>
       </div>
     </section>
   )

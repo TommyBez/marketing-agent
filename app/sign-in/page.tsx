@@ -10,12 +10,12 @@ export default async function SignInPage() {
   if (session?.user) redirect('/workspace')
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-6 p-5">
-      <Link href="/" aria-label="Relay home"><BrandMark /></Link>
-      <section className="flex w-full max-w-md flex-col gap-8 rounded-2xl border bg-card p-7 shadow-2xl md:p-8">
+    <main className="auth-shell flex min-h-dvh flex-col items-center justify-center gap-6 p-5">
+      <Link href="/" aria-label="Branderize home"><BrandMark /></Link>
+      <section className="auth-panel flex w-full max-w-md flex-col gap-8 rounded-2xl p-7 md:p-8">
         <div>
-          <p className="mb-2 font-mono text-xs uppercase tracking-widest text-accent-foreground">Relay workspace</p>
-          <h1 className="font-serif text-3xl text-balance">Welcome back</h1>
+          <p className="auth-brandline mb-3">Branderize workspace</p>
+          <h1 className="text-balance">Welcome back</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">Your marketing team is ready to pick up where you left off.</p>
         </div>
         <AuthForm mode="sign-in" />

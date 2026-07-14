@@ -33,7 +33,7 @@ function formatName(value: string) {
 function getToolTitle(part: EveToolPart) {
   const name = formatName(part.toolMetadata?.eve?.name ?? part.toolName)
   if (part.toolMetadata?.eve?.kind === 'subagent-call' && !/specialist/i.test(name)) return `${name} specialist`
-  if (part.toolMetadata?.eve?.kind === 'load-skill') return `Skill · ${name}`
+  if (part.toolMetadata?.eve?.kind === 'load-skill') return `Skill / ${name}`
   return name
 }
 

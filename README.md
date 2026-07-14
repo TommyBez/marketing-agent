@@ -1,4 +1,6 @@
-# marketing-agent
+# branderize
+
+An AI marketing workspace that learns a company once, then coordinates six specialists from shared brand context.
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
 
