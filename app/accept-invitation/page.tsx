@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { auth } from '@/lib/auth'
+import { getPendingInvitationSignInContext } from '@/lib/invitation-access'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -21,8 +22,9 @@ export default async function AcceptInvitationPage({ searchParams }: AcceptInvit
   const requestHeaders = await headers()
   const currentSession = await auth.api.getSession({ headers: requestHeaders })
   if (!currentSession?.user) {
-    const callbackURL = `/accept-invitation?id=${encodeURIComponent(invitationId)}`
-    redirect(`/sign-in?callbackURL=${encodeURIComponent(callbackURL)}`)
+    const invitationContext = await getPendingInvitationSignInContext(invitationId)
+    if (!invitationContext) return <InvalidInvitation />
+    redirect(`/sign-in?invitationId=${encodeURIComponent(invitationId)}`)
   }
 
   const invitation = await auth.api.getInvitation({
