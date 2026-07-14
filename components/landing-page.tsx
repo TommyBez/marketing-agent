@@ -45,7 +45,7 @@ interface LandingPageProps {
 }
 
 function LandingHeader({ isSignedIn }: LandingPageProps) {
-  const primaryHref = isSignedIn ? '/workspace' : '/sign-up'
+  const primaryHref = isSignedIn ? '/workspace' : '/sign-in'
   const primaryLabel = isSignedIn ? 'Open workspace' : 'Create your workspace'
 
   return (
@@ -151,7 +151,7 @@ function OrchestrationStory() {
 }
 
 export function LandingPage({ isSignedIn }: LandingPageProps) {
-  const primaryHref = isSignedIn ? '/workspace' : '/sign-up'
+  const primaryHref = isSignedIn ? '/workspace' : '/sign-in'
   const primaryLabel = isSignedIn ? 'Open workspace' : 'Create your workspace'
 
   return (

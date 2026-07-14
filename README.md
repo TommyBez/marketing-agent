@@ -24,6 +24,25 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Passwordless authentication
+
+Branderize signs users in with a six-digit code sent through Resend. Configure these server-side environment variables before using the authentication flow:
+
+```bash
+RESEND_API_KEY=re_xxxxxxxxx
+RESEND_FROM_EMAIL="Branderize <auth@your-verified-domain.com>"
+```
+
+The sender address must belong to a domain verified in Resend. To preview the React Email template locally, run `pnpm email:preview` and open [http://localhost:3001](http://localhost:3001).
+
+To opt into the development-only authentication bypass, create `.env.development.local` with:
+
+```bash
+LOCAL_AUTH_BYPASS=1
+```
+
+The bypass is disabled by default and never activates on Vercel. When enabled under `next dev`, authentication emails are not sent and any six-digit code is accepted.
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 ## Learn More
