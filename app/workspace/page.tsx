@@ -13,7 +13,7 @@ export default async function WorkspacePage() {
   if (workspace) redirect(`/workspace/${workspace.id}`)
 
   return (
-    <main className="flex min-h-dvh bg-background p-2 md:p-3">
+    <main className="flex min-h-dvh p-2 md:p-3">
       <Card className="min-w-0 flex-1 overflow-hidden p-0 shadow-2xl">
         <CompanyOnboarding />
       </Card>

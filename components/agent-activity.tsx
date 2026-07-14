@@ -114,7 +114,7 @@ function HumanInput({ isBusy, onRespond, part, request }: {
       </ConfirmationActions>
       <ConfirmationAccepted>
         <span className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Check className="size-4 text-green-600" />
+          <Check className="size-4 text-success" />
           Approved
         </span>
       </ConfirmationAccepted>

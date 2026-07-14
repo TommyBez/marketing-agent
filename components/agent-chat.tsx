@@ -203,7 +203,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-card">
       <CardHeader className="border-b py-3">
-        <CardTitle className="truncate">{displayTitle}</CardTitle>
+        <CardTitle className="truncate font-serif text-lg">{displayTitle}</CardTitle>
         <CardDescription>Marketing Manager for {companyName} · 6 specialists available</CardDescription>
       </CardHeader>
 

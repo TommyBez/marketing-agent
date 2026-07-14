@@ -1,6 +1,7 @@
 'use client'
 
 import { createConversation, deleteConversation, renameConversation, type ConversationSummary } from '@/app/actions/thread'
+import { BrandMark } from '@/components/brand-mark'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -82,7 +83,8 @@ export function ConversationSidebar({ activeConversationId, conversations, works
   return (
     <>
       <Sidebar collapsible="offcanvas" variant="inset">
-        <SidebarHeader>
+        <SidebarHeader className="gap-3">
+          <BrandMark className="px-1 pt-1 text-sm" />
           <Button onClick={handleNewConversation} disabled={isPending} className="w-full justify-start">
             {isPending ? <Spinner data-icon="inline-start" /> : <Plus data-icon="inline-start" />}
             New conversation
