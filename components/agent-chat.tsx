@@ -1,23 +1,39 @@
 'use client'
 
 import { saveConversation, titleConversation } from '@/app/actions/thread'
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from '@/components/ai-elements/conversation'
+import {
+  Message,
+  MessageAction,
+  MessageActions,
+  MessageContent,
+  MessageResponse,
+} from '@/components/ai-elements/message'
+import {
+  PromptInput,
+  PromptInputBody,
+  PromptInputFooter,
+  type PromptInputMessage,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputTools,
+} from '@/components/ai-elements/prompt-input'
+import { Shimmer } from '@/components/ai-elements/shimmer'
+import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion'
 import { AgentPart } from '@/components/agent-activity'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Bubble, BubbleContent } from '@/components/ui/bubble'
-import { Button } from '@/components/ui/button'
 import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Empty, EmptyContent, EmptyDescription, EmptyHeader, EmptyTitle } from '@/components/ui/empty'
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupTextarea } from '@/components/ui/input-group'
-import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker'
-import { Message, MessageContent, MessageHeader } from '@/components/ui/message'
-import { MessageScroller, MessageScrollerButton, MessageScrollerContent, MessageScrollerItem, MessageScrollerProvider, MessageScrollerViewport } from '@/components/ui/message-scroller'
-import { Spinner } from '@/components/ui/spinner'
+import type { EveMessage } from 'eve/client'
 import { Client, type HandleMessageStreamEvent, type SessionState } from 'eve/client'
 import { useEveAgent } from 'eve/react'
-import { ArrowUp, Square } from 'lucide-react'
+import { Check, Copy } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
-import { Streamdown } from 'streamdown'
 
 interface AgentChatProps {
   companyName: string
@@ -28,11 +44,42 @@ interface AgentChatProps {
   workspaceId: string
 }
 
-const suggestedPrompts = ['Audit our positioning', 'Plan the next 30 days', 'Find SEO opportunities']
+const suggestedPrompts = [
+  'Audit our positioning',
+  'Plan the next 30 days',
+  'Find SEO opportunities',
+  'Draft a campaign brief',
+  'Rewrite our landing page',
+]
 
 function createConversationTitle(message: string) {
   const normalized = message.replace(/\s+/g, ' ').trim()
   return normalized.length > 64 ? `${normalized.slice(0, 61).trimEnd()}…` : normalized
+}
+
+function getMessageText(message: EveMessage) {
+  return message.parts
+    .filter((part) => part.type === 'text')
+    .map((part) => part.text)
+    .join('\n\n')
+}
+
+function CopyMessageAction({ text }: { text: string }) {
+  const [isCopied, setIsCopied] = useState(false)
+
+  return (
+    <MessageAction
+      label="Copy message"
+      tooltip={isCopied ? 'Copied' : 'Copy'}
+      onClick={() => {
+        void navigator.clipboard.writeText(text)
+        setIsCopied(true)
+        setTimeout(() => setIsCopied(false), 2000)
+      }}
+    >
+      {isCopied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
+    </MessageAction>
+  )
 }
 
 export function AgentChat({ companyName, conversationId, conversationTitle, initialEvents, initialSession, workspaceId }: AgentChatProps) {
@@ -127,8 +174,8 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
     }
   }, [])
 
-  async function sendMessage() {
-    const nextMessage = message.trim()
+  async function sendMessage(text: string) {
+    const nextMessage = text.trim()
     if (!nextMessage || isBusy) return
     if (displayTitle === 'New conversation' && !firstMessageRef.current) {
       firstMessageRef.current = nextMessage
@@ -143,6 +190,16 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
     await agent.send({ inputResponses: [{ requestId, ...response }] })
   }
 
+  function handleSubmit(promptMessage: PromptInputMessage) {
+    void sendMessage(promptMessage.text ?? message)
+  }
+
+  const messages = agent.data.messages
+  const lastMessage = messages.at(-1)
+  const isStreamingText = agent.status === 'streaming'
+    && lastMessage?.role === 'assistant'
+    && lastMessage.parts.at(-1)?.type === 'text'
+
   return (
     <section className="flex min-h-0 flex-1 flex-col bg-card">
       <CardHeader className="border-b py-3">
@@ -150,102 +207,91 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
         <CardDescription>Marketing Manager for {companyName} · 6 specialists available</CardDescription>
       </CardHeader>
 
-      <MessageScrollerProvider>
-        <MessageScroller className="flex-1">
-          <MessageScrollerViewport>
-          <MessageScrollerContent className="p-4 md:p-6">
-            {agent.data.messages.length === 0 ? (
-              <Empty className="min-h-full items-start justify-end text-left">
-                <EmptyHeader className="items-start text-left">
-                  <EmptyTitle className="font-serif text-3xl text-balance">What should we work on today?</EmptyTitle>
-                  <EmptyDescription className="max-w-xl leading-6">Ask for a launch plan, SEO audit, landing page rewrite, campaign brief, or a coordinated review.</EmptyDescription>
-                </EmptyHeader>
-                <EmptyContent className="max-w-none items-start">
-                  <div className="flex flex-wrap gap-2">
-                    {suggestedPrompts.map((prompt) => (
-                      <Button key={prompt} variant="outline" size="sm" onClick={() => setMessage(prompt)}>{prompt}</Button>
-                    ))}
-                  </div>
-                </EmptyContent>
-              </Empty>
-            ) : agent.data.messages.map((item, messageIndex) => (
-              <MessageScrollerItem key={item.id} messageId={item.id} scrollAnchor={item.role === 'user'}>
-                <Message align={item.role === 'user' ? 'end' : 'start'}>
-                  <MessageContent>
-                    <MessageHeader>{item.role === 'user' ? 'You' : 'Manager'}</MessageHeader>
-                    <Bubble variant={item.role === 'user' ? 'default' : 'ghost'} align={item.role === 'user' ? 'end' : 'start'}>
-                      <BubbleContent>
-                        <div className="flex flex-col gap-3">
-                          {item.parts.map((part, partIndex) => {
-                            if (part.type !== 'text') {
-                              return <AgentPart key={`${part.type}-${partIndex}`} part={part} isBusy={isBusy} onRespond={respondToInput} />
-                            }
-                            if (item.role === 'user') return <p className="whitespace-pre-wrap" key={partIndex}>{part.text}</p>
+      <Conversation className="min-h-0 flex-1">
+        <ConversationContent className="mx-auto min-h-full w-full max-w-3xl gap-6 p-4 md:p-6">
+          {messages.length === 0 ? (
+            <ConversationEmptyState className="flex-1 items-start justify-end p-0 text-left">
+              <div className="flex w-full flex-col items-start gap-4">
+                <div className="space-y-2">
+                  <h2 className="font-serif text-3xl text-balance">What should we work on today?</h2>
+                  <p className="max-w-xl leading-6 text-muted-foreground">
+                    Ask for a launch plan, SEO audit, landing page rewrite, campaign brief, or a coordinated review.
+                  </p>
+                </div>
+                <Suggestions className="w-full">
+                  {suggestedPrompts.map((prompt) => (
+                    <Suggestion key={prompt} suggestion={prompt} disabled={isBusy} onClick={(suggestion) => void sendMessage(suggestion)} />
+                  ))}
+                </Suggestions>
+              </div>
+            </ConversationEmptyState>
+          ) : messages.map((item, messageIndex) => {
+            const isLatestMessage = messageIndex === messages.length - 1
+            const messageText = getMessageText(item)
 
-                            const isLatestMessage = messageIndex === agent.data.messages.length - 1
-                            return (
-                              <Streamdown
-                                className="min-w-0 [&>*:first-child]:mt-0 [&>*:last-child]:mb-0"
-                                key={partIndex}
-                                mode={isBusy && isLatestMessage ? 'streaming' : 'static'}
-                              >
-                                {part.text}
-                              </Streamdown>
-                            )
-                          })}
-                        </div>
-                      </BubbleContent>
-                    </Bubble>
-                  </MessageContent>
-                </Message>
-              </MessageScrollerItem>
-            ))}
-            {isBusy && (
-              <MessageScrollerItem scrollAnchor>
-                <Marker>
-                  <MarkerIcon><Spinner /></MarkerIcon>
-                  <MarkerContent>The manager is coordinating the team…</MarkerContent>
-                </Marker>
-              </MessageScrollerItem>
-            )}
-            {agent.error && (
-              <MessageScrollerItem scrollAnchor>
-                <Alert variant="destructive"><AlertDescription>{agent.error.message}</AlertDescription></Alert>
-              </MessageScrollerItem>
-            )}
-          </MessageScrollerContent>
-        </MessageScrollerViewport>
-          <MessageScrollerButton />
-        </MessageScroller>
-      </MessageScrollerProvider>
+            return (
+              <Message from={item.role} key={item.id}>
+                <MessageContent className="group-[.is-assistant]:w-full">
+                  {item.parts.map((part, partIndex) => {
+                    if (part.type !== 'text') {
+                      return <AgentPart key={`${part.type}-${partIndex}`} part={part} isBusy={isBusy} onRespond={respondToInput} />
+                    }
+                    if (item.role === 'user') return <p className="whitespace-pre-wrap" key={partIndex}>{part.text}</p>
 
-      <div className="border-t p-3 md:p-4">
-        <InputGroup className="h-auto min-h-28 items-end">
-          <InputGroupTextarea
-            value={message}
-            onChange={(event) => setMessage(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing || event.keyCode === 229) return
-              event.preventDefault()
-              void sendMessage()
-            }}
-            placeholder="Ask your marketing manager…"
-            disabled={isBusy}
-            aria-label="Message"
-            className="min-h-24 pb-12"
-          />
-          <InputGroupAddon align="block-end" className="absolute inset-x-0 bottom-0 justify-end">
-            {isBusy ? (
-              <InputGroupButton size="icon-sm" variant="secondary" onClick={() => agent.stop()} aria-label="Stop generating">
-                <Square />
-              </InputGroupButton>
-            ) : (
-              <InputGroupButton size="icon-sm" variant="default" onClick={() => void sendMessage()} disabled={!message.trim()} aria-label="Send message">
-                <ArrowUp />
-              </InputGroupButton>
-            )}
-          </InputGroupAddon>
-        </InputGroup>
+                    const isAnimating = isBusy && isLatestMessage && part.state === 'streaming'
+                    return (
+                      <MessageResponse
+                        className="min-w-0"
+                        key={partIndex}
+                        mode={isAnimating ? 'streaming' : 'static'}
+                        isAnimating={isAnimating}
+                      >
+                        {part.text}
+                      </MessageResponse>
+                    )
+                  })}
+                </MessageContent>
+                {item.role === 'assistant' && messageText && !(isBusy && isLatestMessage) && (
+                  <MessageActions className="-ml-2">
+                    <CopyMessageAction text={messageText} />
+                  </MessageActions>
+                )}
+              </Message>
+            )
+          })}
+          {isBusy && !isStreamingText && (
+            <Shimmer className="text-sm" duration={1.5}>
+              {isRestoring ? 'Reconnecting to the team…' : 'The manager is coordinating the team…'}
+            </Shimmer>
+          )}
+          {agent.error && (
+            <Alert variant="destructive"><AlertDescription>{agent.error.message}</AlertDescription></Alert>
+          )}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
+
+      <div className="mx-auto w-full max-w-3xl p-3 md:px-6 md:pb-5">
+        <PromptInput onSubmit={handleSubmit}>
+          <PromptInputBody>
+            <PromptInputTextarea
+              value={message}
+              onChange={(event) => setMessage(event.target.value)}
+              placeholder="Ask your marketing manager…"
+              aria-label="Message"
+            />
+          </PromptInputBody>
+          <PromptInputFooter>
+            <PromptInputTools>
+              <span className="px-1 text-muted-foreground text-xs">Enter to send · Shift+Enter for a new line</span>
+            </PromptInputTools>
+            <PromptInputSubmit
+              status={isRestoring ? 'submitted' : agent.status}
+              onStop={() => agent.stop()}
+              disabled={isBusy ? isRestoring : !message.trim()}
+            />
+          </PromptInputFooter>
+        </PromptInput>
       </div>
     </section>
   )

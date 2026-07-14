@@ -1,11 +1,21 @@
 'use client'
 
+import {
+  Confirmation,
+  ConfirmationAccepted,
+  ConfirmationAction,
+  ConfirmationActions,
+  ConfirmationRejected,
+  ConfirmationRequest,
+  ConfirmationTitle,
+} from '@/components/ai-elements/confirmation'
+import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-elements/reasoning'
+import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from '@/components/ai-elements/tool'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { EveMessageInputRequest, EveMessagePart } from 'eve/react'
-import { Bot, Check, ExternalLink, FileText, LoaderCircle, LockKeyhole, Wrench } from 'lucide-react'
+import { Check, ExternalLink, FileText, LockKeyhole, X } from 'lucide-react'
 import { useState } from 'react'
 
 interface AgentPartProps {
@@ -14,22 +24,29 @@ interface AgentPartProps {
   part: EveMessagePart
 }
 
+type EveToolPart = Extract<EveMessagePart, { type: 'dynamic-tool' }>
+
 function formatName(value: string) {
   return value.replaceAll('_', ' ').replaceAll('-', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
-function getToolStatus(part: Extract<EveMessagePart, { type: 'dynamic-tool' }>) {
-  if (part.state === 'output-available') return 'Completed'
-  if (part.state === 'output-error') return 'Failed'
-  if (part.state === 'output-denied') return 'Declined'
-  if (part.state === 'approval-requested') return 'Needs input'
-  if (part.state === 'approval-responded') return 'Responding'
-  return 'Running'
+function getToolTitle(part: EveToolPart) {
+  const name = formatName(part.toolMetadata?.eve?.name ?? part.toolName)
+  if (part.toolMetadata?.eve?.kind === 'subagent-call' && !/specialist/i.test(name)) return `${name} specialist`
+  if (part.toolMetadata?.eve?.kind === 'load-skill') return `Skill · ${name}`
+  return name
 }
 
-function HumanInput({ isBusy, onRespond, request }: {
+function hasContent(value: unknown) {
+  if (value === undefined || value === null) return false
+  if (typeof value === 'object' && Object.keys(value as object).length === 0) return false
+  return true
+}
+
+function HumanInput({ isBusy, onRespond, part, request }: {
   isBusy: boolean
   onRespond: AgentPartProps['onRespond']
+  part: EveToolPart
   request: EveMessageInputRequest
 }) {
   const [freeform, setFreeform] = useState('')
@@ -45,28 +62,23 @@ function HumanInput({ isBusy, onRespond, request }: {
     }
   }
 
+  const approval = part.approval && part.approval.approved !== undefined
+    ? { id: part.approval.id, approved: part.approval.approved, reason: part.approval.reason }
+    : { id: part.approval?.id ?? request.requestId }
+
   return (
-    <Alert className="mt-2 border-primary/30 bg-primary/5">
-      <LockKeyhole />
-      <AlertTitle>Manager approval</AlertTitle>
-      <AlertDescription className="flex flex-col gap-3">
-        <p>{request.prompt}</p>
-        {request.options && request.options.length > 0 && (
-          <div className="flex flex-wrap gap-2">
-            {request.options.map((option) => (
-              <Button
-                key={option.id}
-                size="sm"
-                variant={option.style === 'danger' ? 'destructive' : option.style === 'primary' ? 'default' : 'outline'}
-                disabled={isBusy || isSubmitting}
-                onClick={() => void respond({ optionId: option.id })}
-                title={option.description}
-              >
-                {option.label}
-              </Button>
-            ))}
-          </div>
-        )}
+    <Confirmation
+      approval={approval}
+      state={part.state}
+      className="border-primary/30 bg-primary/5"
+    >
+      <ConfirmationTitle>
+        <span className="flex items-start gap-2 font-medium">
+          <LockKeyhole className="mt-0.5 size-4 shrink-0" />
+          {request.prompt}
+        </span>
+      </ConfirmationTitle>
+      <ConfirmationRequest>
         {(request.allowFreeform || request.display === 'text') && (
           <form
             className="flex gap-2"
@@ -86,25 +98,55 @@ function HumanInput({ isBusy, onRespond, request }: {
             <Button type="submit" size="sm" disabled={!freeform.trim() || isBusy || isSubmitting}>Send</Button>
           </form>
         )}
-      </AlertDescription>
-    </Alert>
+      </ConfirmationRequest>
+      <ConfirmationActions className="flex-wrap justify-start self-start">
+        {request.options?.map((option) => (
+          <ConfirmationAction
+            key={option.id}
+            variant={option.style === 'danger' ? 'destructive' : option.style === 'primary' ? 'default' : 'outline'}
+            disabled={isBusy || isSubmitting}
+            onClick={() => void respond({ optionId: option.id })}
+            title={option.description}
+          >
+            {option.label}
+          </ConfirmationAction>
+        ))}
+      </ConfirmationActions>
+      <ConfirmationAccepted>
+        <span className="flex items-center gap-2 text-muted-foreground text-sm">
+          <Check className="size-4 text-green-600" />
+          Approved
+        </span>
+      </ConfirmationAccepted>
+      <ConfirmationRejected>
+        <span className="flex items-center gap-2 text-muted-foreground text-sm">
+          <X className="size-4 text-destructive" />
+          Declined
+        </span>
+      </ConfirmationRejected>
+    </Confirmation>
   )
 }
 
-function ToolPart({ isBusy, onRespond, part }: AgentPartProps & { part: Extract<EveMessagePart, { type: 'dynamic-tool' }> }) {
+function ToolPart({ isBusy, onRespond, part }: AgentPartProps & { part: EveToolPart }) {
   const request = part.toolMetadata?.eve?.inputRequest
-  const hasPendingRequest = Boolean(request && !part.toolMetadata?.eve?.inputResponse)
-  const isFailed = part.state === 'output-error'
+  const showInput = part.state !== 'input-streaming' && hasContent(part.input)
 
   return (
-    <div className="rounded-lg border bg-muted/30 p-3">
-      <div className="flex items-center gap-2 text-sm">
-        <Wrench className="text-muted-foreground" />
-        <span className="min-w-0 flex-1 truncate font-medium">{formatName(part.toolMetadata?.eve?.name ?? part.toolName)}</span>
-        <Badge variant={isFailed ? 'destructive' : 'outline'}>{getToolStatus(part)}</Badge>
-      </div>
-      {part.state === 'output-error' && <p className="mt-2 text-sm text-destructive">{part.errorText}</p>}
-      {hasPendingRequest && request && <HumanInput isBusy={isBusy} onRespond={onRespond} request={request} />}
+    <div className="flex w-full flex-col gap-2">
+      <Tool defaultOpen={part.state === 'output-error'} className="mb-0">
+        <ToolHeader
+          type="dynamic-tool"
+          toolName={part.toolName}
+          title={getToolTitle(part)}
+          state={part.state}
+        />
+        <ToolContent>
+          {showInput && <ToolInput input={part.input} />}
+          <ToolOutput output={part.state === 'output-available' ? part.output : undefined} errorText={part.errorText} />
+        </ToolContent>
+      </Tool>
+      {request && <HumanInput isBusy={isBusy} onRespond={onRespond} part={part} request={request} />}
     </div>
   )
 }
@@ -141,24 +183,22 @@ export function AgentPart({ isBusy, onRespond, part }: AgentPartProps) {
   if (part.type === 'dynamic-tool') return <ToolPart isBusy={isBusy} onRespond={onRespond} part={part} />
   if (part.type === 'authorization') return <AuthorizationPart part={part} />
   if (part.type === 'reasoning') {
+    if (!part.text.trim()) return null
     return (
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        {part.state === 'streaming' ? <LoaderCircle className="animate-spin" /> : <Check />}
-        <span>{part.state === 'streaming' ? 'Planning the next step' : 'Plan completed'}</span>
-      </div>
+      <Reasoning className="mb-0 w-full" isStreaming={part.state === 'streaming'}>
+        <ReasoningTrigger />
+        <ReasoningContent>{part.text}</ReasoningContent>
+      </Reasoning>
     )
   }
   if (part.type === 'file') {
     return (
-      <div className="flex items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
-        <FileText className="text-muted-foreground" />
+      <div className="flex w-full items-center gap-2 rounded-lg border bg-muted/30 p-3 text-sm">
+        <FileText className="size-4 text-muted-foreground" />
         <span className="min-w-0 flex-1 truncate">{part.filename ?? 'Attachment'}</span>
         {part.url && <Button render={<a href={part.url} target="_blank" rel="noreferrer" />} variant="ghost" size="sm">Open <ExternalLink /></Button>}
       </div>
     )
-  }
-  if (part.type === 'step-start') {
-    return <div className="flex items-center gap-2 text-xs text-muted-foreground"><Bot /><span>Specialist step started</span></div>
   }
   return null
 }
