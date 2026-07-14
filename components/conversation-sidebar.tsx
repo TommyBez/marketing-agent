@@ -82,17 +82,17 @@ export function ConversationSidebar({ activeConversationId, conversations, works
 
   return (
     <>
-      <Sidebar collapsible="offcanvas" variant="inset">
-        <SidebarHeader className="gap-3">
-          <BrandMark className="px-1 pt-1 text-sm" />
-          <Button onClick={handleNewConversation} disabled={isPending} className="w-full justify-start">
+      <Sidebar collapsible="offcanvas" variant="inset" className="border-r-0">
+        <SidebarHeader className="gap-4 px-3 pt-4">
+          <BrandMark className="px-1 text-sm" />
+          <Button onClick={handleNewConversation} disabled={isPending} className="h-10 w-full justify-start">
             {isPending ? <Spinner data-icon="inline-start" /> : <Plus data-icon="inline-start" />}
             New conversation
           </Button>
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Conversation history</SidebarGroupLabel>
+            <SidebarGroupLabel className="font-mono text-[10px] uppercase tracking-[0.12em]">Conversation history</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {conversations.map((conversation) => (

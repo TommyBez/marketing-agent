@@ -108,7 +108,7 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rename workspace</DialogTitle>
-            <DialogDescription>Update the name shown throughout Relay. Company context will not change.</DialogDescription>
+            <DialogDescription>Update the name shown throughout Branderize. Company context will not change.</DialogDescription>
           </DialogHeader>
           <form action={handleRename} className="flex flex-col gap-4">
             <FieldGroup>

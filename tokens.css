@@ -1,30 +1,113 @@
-/* Hallmark · macrostructure: Narrative Workflow · tone: atmospheric editorial · anchor hue: signal green
- * genre: atmospheric · theme: Midnight · enrichment: product composition · nav: N13 · footer: Ft5
- * contrast: pass (40–41) · slop: pass (42–58)
+/* branderize design tokens
+ * Direction: cold editorial surfaces, ink typography, vermilion action.
+ * Shape rule: 12px product surfaces, 999px only for compact controls.
  */
 :root {
-  --color-landing-paper: oklch(14% 0.012 145);
-  --color-landing-paper-raised: oklch(18% 0.014 145);
-  --color-landing-paper-high: oklch(22% 0.016 145);
-  --color-landing-ink: oklch(94% 0.01 80);
-  --color-landing-muted: oklch(68% 0.012 95);
-  --color-landing-accent: oklch(76% 0.18 145);
-  --color-landing-accent-ink: oklch(17% 0.04 145);
-  --font-landing-display: var(--font-newsreader);
+  color-scheme: light;
+
+  --background: oklch(0.965 0.006 255);
+  --foreground: oklch(0.18 0.014 255);
+  --card: oklch(0.992 0.003 255);
+  --card-foreground: oklch(0.18 0.014 255);
+  --popover: oklch(0.992 0.003 255);
+  --popover-foreground: oklch(0.18 0.014 255);
+  --primary: oklch(0.66 0.2 35);
+  --primary-foreground: oklch(0.16 0.018 35);
+  --secondary: oklch(0.92 0.008 255);
+  --secondary-foreground: oklch(0.23 0.014 255);
+  --muted: oklch(0.93 0.006 255);
+  --muted-foreground: oklch(0.46 0.012 255);
+  --accent: oklch(0.9 0.055 35);
+  --accent-foreground: oklch(0.26 0.06 35);
+  --destructive: oklch(0.56 0.2 26);
+  --border: oklch(0.855 0.008 255);
+  --input: oklch(0.82 0.008 255);
+  --ring: oklch(0.66 0.2 35);
+  --success: oklch(0.5 0.13 155);
+  --success-foreground: oklch(0.98 0.006 100);
+
+  --sidebar: oklch(0.925 0.009 255);
+  --sidebar-foreground: oklch(0.2 0.014 255);
+  --sidebar-border: oklch(0.84 0.009 255);
+  --sidebar-accent: oklch(0.88 0.018 255);
+  --sidebar-accent-foreground: oklch(0.18 0.014 255);
+
+  --radius: 0.75rem;
+  --shadow-ink: oklch(0.2 0.025 255);
+  --elevation-1: 0 1px 2px color-mix(in oklch, var(--shadow-ink) 6%, transparent);
+  --elevation-2: 0 1px 3px color-mix(in oklch, var(--shadow-ink) 7%, transparent), 0 8px 24px -16px color-mix(in oklch, var(--shadow-ink) 18%, transparent);
+  --elevation-3: 0 2px 6px color-mix(in oklch, var(--shadow-ink) 8%, transparent), 0 18px 42px -22px color-mix(in oklch, var(--shadow-ink) 22%, transparent);
+  --elevation-4: 0 4px 12px color-mix(in oklch, var(--shadow-ink) 8%, transparent), 0 30px 70px -28px color-mix(in oklch, var(--shadow-ink) 26%, transparent);
+  --elevation-5: 0 8px 20px color-mix(in oklch, var(--shadow-ink) 10%, transparent), 0 42px 90px -30px color-mix(in oklch, var(--shadow-ink) 30%, transparent);
+  --elevation-6: 0 12px 30px color-mix(in oklch, var(--shadow-ink) 12%, transparent), 0 60px 120px -36px color-mix(in oklch, var(--shadow-ink) 34%, transparent);
+
+  --brand-ink: oklch(0.16 0.018 255);
+  --brand-paper: oklch(0.965 0.006 255);
+  --brand-surface: oklch(0.992 0.003 255);
+  --brand-muted: oklch(0.48 0.012 255);
+  --brand-accent: oklch(0.66 0.2 35);
+  --brand-accent-ink: oklch(0.15 0.018 35);
+  --brand-rule: color-mix(in oklch, var(--brand-ink) 16%, transparent);
+  --app-backdrop: linear-gradient(145deg, color-mix(in oklch, var(--primary) 3%, var(--background)), var(--background) 34%, color-mix(in oklch, var(--foreground) 2%, var(--background)));
+
+  --font-landing-display: var(--font-geist);
   --font-landing-body: var(--font-geist);
   --font-landing-mono: var(--font-geist-mono);
-  --space-landing-xs: 0.5rem;
-  --space-landing-sm: 1rem;
-  --space-landing-md: 1.5rem;
-  --space-landing-lg: 2rem;
-  --space-landing-xl: 4rem;
-  --text-landing-display: clamp(3.25rem, 9vw, 7.75rem);
-  --text-landing-section: clamp(2.25rem, 5vw, 4.75rem);
-  --ease-landing-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-landing-in: cubic-bezier(0.7, 0, 0.84, 0);
-  --dur-landing-fast: 100ms;
-  --dur-landing-short: 180ms;
-  --radius-landing-sm: 0.75rem;
-  --radius-landing-md: 1.25rem;
-  --rule-landing: 1px solid color-mix(in oklch, var(--color-landing-ink) 12%, transparent);
+  --text-landing-display: clamp(3.4rem, 4.25vw, 4.9rem);
+  --text-landing-section: clamp(2.5rem, 5.2vw, 5.6rem);
+  /* Mirrored as numeric Motion values in lib/landing-motion-tokens.ts. */
+  --ease-landing-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --dur-landing-fast: 120ms;
+  --dur-landing-press: 160ms;
+  --dur-landing-short: 220ms;
+  --dur-landing-reveal: 600ms;
+  --dur-landing-media: 760ms;
+  --dur-landing-stagger: 70ms;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --background: oklch(0.145 0.009 255);
+    --foreground: oklch(0.94 0.007 90);
+    --card: oklch(0.18 0.011 255);
+    --card-foreground: oklch(0.94 0.007 90);
+    --popover: oklch(0.19 0.012 255);
+    --popover-foreground: oklch(0.94 0.007 90);
+    --primary: oklch(0.7 0.19 35);
+    --primary-foreground: oklch(0.14 0.018 35);
+    --secondary: oklch(0.24 0.012 255);
+    --secondary-foreground: oklch(0.92 0.007 90);
+    --muted: oklch(0.235 0.011 255);
+    --muted-foreground: oklch(0.69 0.009 90);
+    --accent: oklch(0.29 0.055 35);
+    --accent-foreground: oklch(0.86 0.11 35);
+    --destructive: oklch(0.66 0.18 27);
+    --border: oklch(0.3 0.012 255);
+    --input: oklch(0.34 0.012 255);
+    --ring: oklch(0.7 0.19 35);
+    --success: oklch(0.7 0.14 155);
+    --success-foreground: oklch(0.15 0.02 155);
+    --sidebar: oklch(0.165 0.012 255);
+    --sidebar-foreground: oklch(0.94 0.007 90);
+    --sidebar-border: oklch(0.27 0.012 255);
+    --sidebar-accent: oklch(0.24 0.018 255);
+    --sidebar-accent-foreground: oklch(0.95 0.007 90);
+    --shadow-ink: oklch(0.03 0.01 255);
+    --brand-ink: oklch(0.94 0.007 90);
+    --brand-paper: oklch(0.145 0.009 255);
+    --brand-surface: oklch(0.18 0.011 255);
+    --brand-muted: oklch(0.68 0.009 90);
+    --brand-accent: oklch(0.7 0.19 35);
+    --brand-accent-ink: oklch(0.14 0.018 35);
+    --brand-rule: color-mix(in oklch, var(--brand-ink) 18%, transparent);
+  }
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+.light {
+  color-scheme: light;
 }

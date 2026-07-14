@@ -56,12 +56,12 @@ export function CompanyOnboarding({ isCompact = false, onCreated }: CompanyOnboa
   const content = (
     <>
       <CardHeader className={isCompact ? 'px-0 pt-0' : 'gap-3 px-6 md:px-10'}>
-        {!isCompact && <p className="font-mono text-xs uppercase tracking-[0.2em] text-accent-foreground">Create workspace</p>}
-        <CardTitle className={isCompact ? 'font-serif text-2xl text-balance' : 'max-w-xl font-serif text-4xl leading-tight text-balance md:text-5xl'}>
+        {!isCompact && <p className="auth-brandline">Create workspace</p>}
+        <CardTitle className={isCompact ? 'text-2xl font-bold tracking-tight text-balance' : 'max-w-xl text-4xl font-bold leading-[1.02] tracking-[-0.05em] text-balance md:text-5xl'}>
           {isCompact ? 'Create another workspace' : 'Start with what your company already knows.'}
         </CardTitle>
         <CardDescription className={isCompact ? 'leading-6' : 'max-w-xl text-base leading-7'}>
-          Paste your company website. Relay will analyze it and build a private company brief.
+          Paste your company website. Branderize will analyze it and build a private company brief.
         </CardDescription>
       </CardHeader>
       <CardContent className={isCompact ? 'flex flex-col gap-5 px-0' : 'flex flex-col gap-6 px-6 md:px-10'}>
@@ -120,7 +120,7 @@ export function CompanyOnboarding({ isCompact = false, onCreated }: CompanyOnboa
 
   return (
     <section className="flex flex-1 items-center justify-center p-5 md:p-10">
-      <Card className="w-full max-w-3xl shadow-2xl">{content}</Card>
+      <Card className="auth-panel w-full max-w-3xl">{content}</Card>
     </section>
   )
 }

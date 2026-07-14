@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180" role="img" aria-label="branderize">
+  <style>
+    .surface { fill: #f3562e; }
+    .ink { fill: #120806; }
+    .outline { stroke: #120806; }
+    @media (prefers-color-scheme: dark) {
+      .surface { fill: #fd6844; }
+      .ink { fill: #100705; }
+      .outline { stroke: #100705; }
+    }
+  </style>
+  <rect class="surface" width="180" height="180" rx="58.5" />
+  <rect class="outline" x="2.8" y="2.8" width="174.4" height="174.4" rx="55.7" fill="none" stroke-opacity=".11" stroke-width="5.6" />
+  <path class="ink" transform="translate(45.69 117.2) scale(.085 -.085)" d="M399.5-12Q342.7-12 302.4 11.6T239.1 78.2L236.1 0H58.4V710h183V461.4q22.7 40.2 62.9 64.9T399.5 551q67.3 0 116.95-34.9t76.75-98.25q27.1-63.35 27.1-148.35t-27.1-148.35Q566.1 57.8 516.45 22.9T399.5-12Zm-59.9 133.1q40.9 0 66.85 38.6t25.95 109.8q0 71.3-25.05 109.85t-67.55 38.55q-31 0-53.4-17.2t-33.7-50.4q-11.3-33.2-11.3-80.8 0-46.5 11.3-79.75t33.65-50.95q22.35-17.7 53.25-17.7Z" />
+  <path class="ink" opacity=".7" transform="translate(93.545 117.2) scale(.085 -.085)" d="M39.16-110 334.28 750h86.84L126-110Z" />
+</svg>
