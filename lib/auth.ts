@@ -67,9 +67,15 @@ function getEnvironmentAuthConfig(): EnvironmentAuthConfig {
     }
     case 'external-production': {
       // Production traffic outside Vercel: no Vercel system variables exist,
-      // so BETTER_AUTH_URL (read natively by Better Auth) is the single URL
-      // source for this environment, and all checks stay strict.
-      return { trustedOrigins: [], softenChecks: false }
+      // so BETTER_AUTH_URL is the single URL source for this environment and
+      // must be set explicitly — failing fast beats letting Better Auth
+      // infer the base URL from the incoming request's host.
+      const url = requireEnv('BETTER_AUTH_URL')
+      return {
+        baseURL: url,
+        trustedOrigins: [new URL(url).origin],
+        softenChecks: false,
+      }
     }
     case 'development':
       return {
