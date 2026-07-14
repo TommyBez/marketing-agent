@@ -10,7 +10,11 @@ import {
   ConfirmationTitle,
 } from '@/components/ai-elements/confirmation'
 import { Reasoning, ReasoningContent, ReasoningTrigger } from '@/components/ai-elements/reasoning'
-import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from '@/components/ai-elements/tool'
+import { ToolInput, ToolOutput } from '@/components/ai-elements/tool'
+import {
+  SpecialistActivityItem,
+  type SpecialistActivityStatus,
+} from '@/components/specialist-activity-item'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -41,6 +45,14 @@ function hasContent(value: unknown) {
   if (value === undefined || value === null) return false
   if (typeof value === 'object' && Object.keys(value as object).length === 0) return false
   return true
+}
+
+function getActivityStatus(state: EveToolPart['state']): SpecialistActivityStatus {
+  if (state === 'input-streaming') return 'queued'
+  if (state === 'input-available' || state === 'approval-responded') return 'running'
+  if (state === 'output-available') return 'completed'
+  if (state === 'approval-requested') return 'waiting'
+  return 'failed'
 }
 
 function HumanInput({ isBusy, onRespond, part, request }: {
@@ -134,18 +146,17 @@ function ToolPart({ isBusy, onRespond, part }: AgentPartProps & { part: EveToolP
 
   return (
     <div className="flex w-full flex-col gap-2">
-      <Tool defaultOpen={part.state === 'output-error'} className="mb-0">
-        <ToolHeader
-          type="dynamic-tool"
-          toolName={part.toolName}
-          title={getToolTitle(part)}
-          state={part.state}
-        />
-        <ToolContent>
-          {showInput && <ToolInput input={part.input} />}
-          <ToolOutput output={part.state === 'output-available' ? part.output : undefined} errorText={part.errorText} />
-        </ToolContent>
-      </Tool>
+      <SpecialistActivityItem
+        defaultOpen={part.state === 'output-error'}
+        kind={part.toolMetadata?.eve?.kind}
+        status={getActivityStatus(part.state)}
+        state={part.state}
+        title={getToolTitle(part)}
+        toolName={part.toolName}
+      >
+        {showInput && <ToolInput input={part.input} />}
+        <ToolOutput output={part.state === 'output-available' ? part.output : undefined} errorText={part.errorText} />
+      </SpecialistActivityItem>
       {request && <HumanInput isBusy={isBusy} onRespond={onRespond} part={part} request={request} />}
     </div>
   )

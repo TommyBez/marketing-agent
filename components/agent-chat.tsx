@@ -25,8 +25,9 @@ import {
 import { Shimmer } from '@/components/ai-elements/shimmer'
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion'
 import { AgentPart } from '@/components/agent-activity'
+import { ChatComposerSurface } from '@/components/chat-composer-surface'
+import { ChatSurface } from '@/components/chat-surface'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { EveMessage } from 'eve/client'
 import {
   Client,
@@ -345,12 +346,34 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
     && lastMessage.parts.at(-1)?.type === 'text'
 
   return (
-    <section className="chat-shell flex min-h-0 flex-1 flex-col">
-      <CardHeader className="border-b py-3">
-        <CardTitle className="chat-heading truncate">{displayTitle}</CardTitle>
-        <CardDescription className="chat-subheading">Brand director for {companyName}, with 6 specialists available</CardDescription>
-      </CardHeader>
-
+    <ChatSurface
+      title={displayTitle}
+      subtitle={`Brand director for ${companyName}, with 6 specialists available`}
+      composer={(
+        <ChatComposerSurface>
+          <PromptInput onSubmit={handleSubmit}>
+            <PromptInputBody>
+              <PromptInputTextarea
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                placeholder="Ask your brand director…"
+                aria-label="Message"
+              />
+            </PromptInputBody>
+            <PromptInputFooter>
+              <PromptInputTools>
+                <span className="px-1 text-muted-foreground text-xs">Enter to send / Shift+Enter for a new line</span>
+              </PromptInputTools>
+              <PromptInputSubmit
+                status={isRestoring ? 'submitted' : agent.status}
+                onStop={() => agent.stop()}
+                disabled={isComposerBlocked || (!isAgentProcessing && !message.trim())}
+              />
+            </PromptInputFooter>
+          </PromptInput>
+        </ChatComposerSurface>
+      )}
+    >
       <Conversation className="min-h-0 flex-1">
         <ConversationContent className="mx-auto min-h-full w-full max-w-3xl gap-6 p-4 md:p-6">
           {messages.length === 0 ? (
@@ -417,31 +440,6 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
-
-      <div className="composer-shell w-full p-3 md:px-6 md:pb-5">
-        <div className="mx-auto w-full max-w-3xl">
-        <PromptInput onSubmit={handleSubmit}>
-          <PromptInputBody>
-            <PromptInputTextarea
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              placeholder="Ask your brand director…"
-              aria-label="Message"
-            />
-          </PromptInputBody>
-          <PromptInputFooter>
-            <PromptInputTools>
-              <span className="px-1 text-muted-foreground text-xs">Enter to send / Shift+Enter for a new line</span>
-            </PromptInputTools>
-            <PromptInputSubmit
-              status={isRestoring ? 'submitted' : agent.status}
-              onStop={() => agent.stop()}
-              disabled={isComposerBlocked || (!isAgentProcessing && !message.trim())}
-            />
-          </PromptInputFooter>
-        </PromptInput>
-        </div>
-      </div>
-    </section>
+    </ChatSurface>
   )
 }
