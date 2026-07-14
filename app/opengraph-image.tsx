@@ -2,11 +2,11 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { ImageResponse } from 'next/og'
 
-export const alt = 'branderize — One brand context. Six specialists in sync.'
+export const alt = 'branderize. Brief once. Move as one.'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-const specialists = ['Strategy', 'Content', 'SEO', 'Social', 'Email', 'Insights']
+const specialists = ['Strategy', 'SEO + Content', 'Copywriting', 'Conversion', 'Growth', 'Paid + Social']
 
 export default async function OpenGraphImage() {
   const [logo, geistRegular, geistBold] = await Promise.all([
@@ -77,7 +77,7 @@ export default async function OpenGraphImage() {
                 textTransform: 'uppercase',
               }}
             >
-              Your AI marketing team
+              AI marketing workspace
             </div>
             <div
               style={{
@@ -89,11 +89,11 @@ export default async function OpenGraphImage() {
                 lineHeight: 0.91,
               }}
             >
-              <div style={{ display: 'flex' }}>One brand context.</div>
-              <div style={{ color: '#595e64', display: 'flex' }}>Six specialists in sync.</div>
+              <div style={{ display: 'flex' }}>Brief once.</div>
+              <div style={{ color: '#595e64', display: 'flex' }}>Move as one.</div>
             </div>
             <div style={{ color: '#595e64', display: 'flex', fontSize: 25, lineHeight: 1.35, maxWidth: 620 }}>
-              Plan, create, distribute, and learn from one shared source of truth.
+              One company brief. The right specialists. One coordinated answer.
             </div>
           </div>
         </div>
@@ -123,7 +123,7 @@ export default async function OpenGraphImage() {
             }}
           >
             <span>Shared system</span>
-            <span>01—06</span>
+            <span>Six disciplines</span>
           </div>
 
           <div
@@ -155,7 +155,7 @@ export default async function OpenGraphImage() {
                   borderRadius: 14,
                   display: 'flex',
                   flex: '1 0 42%',
-                  fontSize: 16,
+                  fontSize: 14,
                   fontWeight: 700,
                   gap: 9,
                   padding: '13px 12px',
@@ -168,7 +168,7 @@ export default async function OpenGraphImage() {
           </div>
 
           <div style={{ color: '#595e64', display: 'flex', fontSize: 14, lineHeight: 1.35 }}>
-            Coordinated work, consistent brand.
+            One coordinated answer.
           </div>
         </div>
       </div>
