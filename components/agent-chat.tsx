@@ -25,6 +25,7 @@ import {
 import { Shimmer } from '@/components/ai-elements/shimmer'
 import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion'
 import { AgentPart } from '@/components/agent-activity'
+import { SaveArtifactAction } from '@/components/save-artifact-action'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { EveMessage } from 'eve/client'
@@ -398,6 +399,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
                 {item.role === 'assistant' && messageText && !(isBusy && isLatestMessage) && (
                   <MessageActions className="-ml-2">
                     <CopyMessageAction text={messageText} />
+                    <SaveArtifactAction workspaceId={workspaceId} conversationId={conversationId} text={messageText} />
                   </MessageActions>
                 )}
               </Message>

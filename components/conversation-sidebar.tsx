@@ -1,6 +1,8 @@
 'use client'
 
+import { type ArtifactSummary } from '@/app/actions/artifact'
 import { createConversation, deleteConversation, renameConversation, type ConversationSummary } from '@/app/actions/thread'
+import { ArtifactList } from '@/components/artifact-list'
 import { BrandMark } from '@/components/brand-mark'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
@@ -17,11 +19,12 @@ import { useState, useTransition } from 'react'
 
 interface ConversationSidebarProps {
   activeConversationId: string
+  artifacts: ArtifactSummary[]
   conversations: ConversationSummary[]
   workspaceId: string
 }
 
-export function ConversationSidebar({ activeConversationId, conversations, workspaceId }: ConversationSidebarProps) {
+export function ConversationSidebar({ activeConversationId, artifacts, conversations, workspaceId }: ConversationSidebarProps) {
   const router = useRouter()
   const { setOpenMobile } = useSidebar()
   const [selectedConversation, setSelectedConversation] = useState<ConversationSummary | null>(null)
@@ -119,6 +122,7 @@ export function ConversationSidebar({ activeConversationId, conversations, works
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+          <ArtifactList workspaceId={workspaceId} artifacts={artifacts} />
         </SidebarContent>
         <SidebarRail />
       </Sidebar>

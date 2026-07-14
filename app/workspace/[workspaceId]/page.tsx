@@ -1,3 +1,4 @@
+import { listWorkspaceArtifacts } from '@/app/actions/artifact'
 import { getWorkspace, listWorkspaces } from '@/app/actions/company'
 import { getConversation, listWorkspaceConversations } from '@/app/actions/thread'
 import { AgentChat } from '@/components/agent-chat'
@@ -28,9 +29,10 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
   const workspace = await getWorkspace(workspaceId)
   if (!workspace) notFound()
 
-  const [workspaces, initialConversations] = await Promise.all([
+  const [workspaces, initialConversations, initialArtifacts] = await Promise.all([
     listWorkspaces(),
     listWorkspaceConversations(workspaceId),
+    listWorkspaceArtifacts(workspaceId),
   ])
   const activeConversationId = requestedConversationId && initialConversations.some(({ id }) => id === requestedConversationId)
     ? requestedConversationId
@@ -44,7 +46,7 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
     <main className="workspace-shell flex h-dvh min-h-[640px] p-2 md:p-3">
       <Card className="workspace-frame min-w-0 flex-1 overflow-hidden p-0">
         <SidebarProvider className="workspace-sidebar min-h-0 flex-1">
-          <ConversationSidebar workspaceId={workspaceId} conversations={initialConversations} activeConversationId={activeConversationId ?? ''} />
+          <ConversationSidebar workspaceId={workspaceId} conversations={initialConversations} artifacts={initialArtifacts} activeConversationId={activeConversationId ?? ''} />
           <SidebarInset className="workspace-inset min-h-0 overflow-hidden">
             <header className="workspace-header flex h-15 shrink-0 items-center justify-between gap-2 border-b px-3 md:px-4">
               <div className="flex min-w-0 items-center gap-2">
