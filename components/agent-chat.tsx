@@ -27,6 +27,7 @@ import { Suggestion, Suggestions } from '@/components/ai-elements/suggestion'
 import { AgentPart } from '@/components/agent-activity'
 import { ChatComposerSurface } from '@/components/chat-composer-surface'
 import { ChatSurface } from '@/components/chat-surface'
+import { SaveArtifactAction } from '@/components/save-artifact-action'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import type { EveMessage } from 'eve/client'
 import {
@@ -421,6 +422,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
                 {item.role === 'assistant' && messageText && !(isBusy && isLatestMessage) && (
                   <MessageActions className="-ml-2">
                     <CopyMessageAction text={messageText} />
+                    <SaveArtifactAction workspaceId={workspaceId} conversationId={conversationId} text={messageText} />
                   </MessageActions>
                 )}
               </Message>

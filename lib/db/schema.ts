@@ -52,6 +52,14 @@ export const agentThreads = pgTable('agent_threads', {
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 }, (table) => [index('agent_threads_user_company_updated_idx').on(table.userId, table.companyProfileId, table.updatedAt)])
 
+export const artifacts = pgTable('artifacts', {
+  id: uuid('id').primaryKey().defaultRandom(), userId: text('userId').notNull(), companyProfileId: uuid('companyProfileId').notNull(),
+  threadId: uuid('threadId'),
+  title: text('title').notNull(), content: text('content').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+  updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+}, (table) => [index('artifacts_user_company_updated_idx').on(table.userId, table.companyProfileId, table.updatedAt)])
+
 export interface CompanyContext {
   name?: string
   description?: string
