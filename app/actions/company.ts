@@ -110,11 +110,22 @@ export async function deleteWorkspace(workspaceId: string) {
     ne(companyProfiles.id, parsedWorkspaceId),
   )).orderBy(desc(companyProfiles.updatedAt)).limit(1))[0] ?? null
 
-  const wasDeleted = await db.transaction(async (transaction) => {
-    await transaction.delete(artifacts).where(and(
+  // Outside the transaction: a missing artifacts table (42P01, before `pnpm db:push` runs) must not block workspace deletion.
+  try {
+    await db.delete(artifacts).where(and(
       eq(artifacts.companyProfileId, parsedWorkspaceId),
       eq(artifacts.userId, userId),
     ))
+  } catch (cause) {
+    const isMissingTable = (function check(candidate: unknown): boolean {
+      if (!candidate || typeof candidate !== 'object') return false
+      if ('code' in candidate && (candidate as { code?: unknown }).code === '42P01') return true
+      return 'cause' in candidate && check((candidate as { cause?: unknown }).cause)
+    })(cause)
+    if (!isMissingTable) throw cause
+  }
+
+  const wasDeleted = await db.transaction(async (transaction) => {
     await transaction.delete(agentThreads).where(and(
       eq(agentThreads.companyProfileId, parsedWorkspaceId),
       eq(agentThreads.userId, userId),
