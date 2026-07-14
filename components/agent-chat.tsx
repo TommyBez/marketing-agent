@@ -348,7 +348,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
   return (
     <ChatSurface
       title={displayTitle}
-      subtitle={`Brand director for ${companyName}, with 6 specialists available`}
+      subtitle={`Brand director for ${companyName}, coordinating the right specialists`}
       composer={(
         <ChatComposerSurface>
           <PromptInput onSubmit={handleSubmit}>

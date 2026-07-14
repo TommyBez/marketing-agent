@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   description: 'Add your website once. Branderize turns it into a shared company brief, assigns the right specialists, and returns one coordinated answer.',
   openGraph: {
     title: 'branderize | Brief once. Move as one.',
-    description: 'One company brief. Six marketing specialists. One coordinated answer.',
+    description: 'One company brief. The right marketing specialists. One coordinated answer.',
     locale: 'en_US',
     siteName: 'branderize',
     type: 'website',
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'branderize | Brief once. Move as one.',
-    description: 'One company brief. Six marketing specialists. One coordinated answer.',
+    description: 'One company brief. The right marketing specialists. One coordinated answer.',
   },
 }
 

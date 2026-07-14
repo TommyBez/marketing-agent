@@ -175,7 +175,7 @@ function StoryWorkspace({
         <ChatSurface
           className="living-chat-surface"
           title="Build a coordinated launch plan"
-          subtitle={`Brand director for ${workspaceName}, with 6 specialists available`}
+          subtitle={`Brand director for ${workspaceName}, coordinating the right specialists`}
           composer={<DemoComposer>{composer}</DemoComposer>}
         >
           <div className="living-transcript">
@@ -233,7 +233,7 @@ function StoryStaticLayout({
   workspaceName,
 }: LandingStoryMotionProps) {
   return (
-    <section id="how-it-works" className="story-section">
+    <section className="story-section">
       <div className="landing-shell story-heading">{heading}</div>
       <div className="landing-shell story-static-sequence">
         <div className="story-beat-shell">{contextBeat}</div>
@@ -294,7 +294,7 @@ function StoryAnimatedLayout(props: LandingStoryMotionProps) {
   )
 
   return (
-    <section id="how-it-works" ref={targetRef} className="story-section">
+    <section ref={targetRef} className="story-section">
       <div className="landing-shell story-heading">{props.heading}</div>
       <div className="landing-shell story-grid">
         <motion.div className="story-beat-shell story-beat-context" style={{ opacity: contextBeatOpacity, transform: contextBeatTransform }}>

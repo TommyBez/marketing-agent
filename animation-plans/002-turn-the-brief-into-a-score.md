@@ -4,13 +4,13 @@
 - **Commit**: 76bb020
 - **Severity**: HIGH
 - **Category**: Purpose, physicality, cohesion, accessibility, missed opportunities
-- **Estimated scope**: 6 implementation files, one server-rendered landing restructure plus one conditional client motion leaf
+- **Estimated scope**: several implementation files, one server-rendered landing restructure plus one conditional client motion leaf
 
 ## Problem
 
 The landing uses a sound reveal system, but almost every section receives the same
 fade and vertical translation. The product's defining behavior - one company brief
-coordinating six specialist disciplines into one answer - is explained as small
+coordinating the relevant specialist disciplines into one answer - is explained as small
 labels and a generic three-card grid instead of being demonstrated through motion.
 
 ```tsx
@@ -20,7 +20,7 @@ labels and a generic three-card grid instead of being demonstrated through motio
   aria-label="Marketing specialists"
   {...landingRailViewMotion}
 >
-  <motion.p variants={landingRevealVariants}>One brief, six disciplines</motion.p>
+  <motion.p variants={landingRevealVariants}>One brief, relevant expertise</motion.p>
   <div>
     {specialists.map(({ name }, index) => (
       <motion.span
@@ -45,7 +45,7 @@ labels and a generic three-card grid instead of being demonstrated through motio
   <motion.article variants={createLandingRevealVariants(LANDING_STAGGER)} {...landingViewMotion}>
     <span>Orchestrate</span>
     <h3>The right minds enter the room.</h3>
-    <p>Strategy, search, copy, conversion, growth, and distribution collaborate without six separate briefs.</p>
+    <p>The relevant specialists collaborate without making the user repeat the brief.</p>
   </motion.article>
   <motion.article
     className="workflow-accent"
@@ -73,7 +73,7 @@ visualize the product mechanism, never decorate arbitrary containers.
    `translate3d(0, 0, 0)`, 50ms stagger, 700ms duration, and
    `[0.23, 1, 0.32, 1]`. The product screenshot follows at 780ms with opacity and
    `scale(0.98)` to `scale(1)`.
-2. The six disciplines become a large 2-by-3 typographic score. Names reveal once
+2. Example disciplines become a responsive typographic score. Names reveal once
    with a 55ms stagger while one vermilion baton line scales horizontally from
    `scaleX(0)` to `scaleX(1)`. The line uses a left transform origin and runs once;
    it never loops or scrolls automatically.

@@ -6,7 +6,7 @@ export const alt = 'branderize. Brief once. Move as one.'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
-const specialists = ['Strategy', 'SEO + Content', 'Copywriting', 'Conversion', 'Growth', 'Paid + Social']
+const orchestrationSteps = ['Match the request', 'Coordinate the work', 'Synthesize the answer']
 
 export default async function OpenGraphImage() {
   const [logo, geistRegular, geistBold] = await Promise.all([
@@ -122,8 +122,8 @@ export default async function OpenGraphImage() {
               textTransform: 'uppercase',
             }}
           >
-            <span>Shared system</span>
-            <span>Six disciplines</span>
+            <span>Workflow</span>
+            <span>Shared brief</span>
           </div>
 
           <div
@@ -146,15 +146,15 @@ export default async function OpenGraphImage() {
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-            {specialists.map((specialist, index) => (
+            {orchestrationSteps.map((step, index) => (
               <div
-                key={specialist}
+                key={step}
                 style={{
                   alignItems: 'center',
                   border: '1.5px solid #d7dbe0',
                   borderRadius: 14,
                   display: 'flex',
-                  flex: '1 0 42%',
+                  flex: '1 0 100%',
                   fontSize: 14,
                   fontWeight: 700,
                   gap: 9,
@@ -162,7 +162,7 @@ export default async function OpenGraphImage() {
                 }}
               >
                 <span style={{ color: '#a2a6ab', fontSize: 12 }}>{String(index + 1).padStart(2, '0')}</span>
-                <span>{specialist}</span>
+                <span>{step}</span>
               </div>
             ))}
           </div>

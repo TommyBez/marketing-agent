@@ -7,14 +7,14 @@ import { Button } from '@/components/ui/button'
 import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 
-const specialists = [
-  { name: 'Strategy', detail: 'Positioning, pricing, and market evidence' },
-  { name: 'SEO + Content', detail: 'Search visibility and content systems' },
-  { name: 'Copywriting', detail: 'Voice, messaging, and campaign copy' },
-  { name: 'Conversion', detail: 'Funnel friction and measurable experiments' },
-  { name: 'Growth', detail: 'Lifecycle, retention, and referrals' },
-  { name: 'Paid + Social', detail: 'Campaign strategy, creative, and distribution' },
+const expertiseExamples = [
+  { name: 'Positioning', detail: 'Clarify the market, offer, and decision context' },
+  { name: 'Demand', detail: 'Find the channels and moments worth pursuing' },
+  { name: 'Messaging', detail: 'Turn the brief into a clear story and campaign' },
+  { name: 'Conversion', detail: 'Remove friction and prioritize measurable moves' },
 ]
+
+const assignedSpecialists = ['Strategy', 'Copywriting', 'Growth']
 
 const northlineBrief = {
   name: 'Northline',
@@ -54,7 +54,6 @@ function LandingHeader({ isSignedIn }: LandingPageProps) {
         <BrandMark />
       </Link>
       <nav aria-label="Main navigation" className="landing-nav">
-        <Link className="landing-nav-link" href="#how-it-works">How it works</Link>
         {!isSignedIn && <Link className="landing-nav-link" href="/sign-in">Sign in</Link>}
         <Button className="landing-cta" nativeButton={false} render={<Link href={primaryHref} />}>
           {isSignedIn ? primaryLabel : (
@@ -75,14 +74,14 @@ function DisciplineScore() {
       <div className="discipline-score-copy landing-view-reveal">
         <p>One shared company brief</p>
         <div>
-          <h2 id="discipline-score-title">Six disciplines. One coordinated answer.</h2>
-          <p>Every specialist works from the same company context. The manager reconciles their recommendations, so you get one direction instead of six disconnected opinions.</p>
+          <h2 id="discipline-score-title">The right expertise. One coordinated answer.</h2>
+          <p>Each assigned specialist works from the same company context. The manager resolves overlaps and trade-offs, so you get one direction instead of disconnected opinions.</p>
         </div>
       </div>
       <div className="discipline-roles-wrap">
         <div aria-hidden="true" className="discipline-baton" />
         <ul className="discipline-roles">
-          {specialists.map(({ name, detail }) => (
+          {expertiseExamples.map(({ name, detail }) => (
             <li className="discipline-role" key={name}>
               <div>
                 <strong>{name}</strong>
@@ -128,7 +127,7 @@ function OrchestrationStory() {
         </article>
       )}
       contextPanel={<CompanyBrief brief={northlineBrief} density="compact" />}
-      activities={specialists.map(({ name }) => (
+      activities={assignedSpecialists.map((name) => (
         <SpecialistActivityItem
           className="living-activity"
           key={name}
@@ -174,9 +173,6 @@ export function LandingPage({ isSignedIn }: LandingPageProps) {
               <Button className="landing-cta" size="lg" nativeButton={false} render={<Link href={primaryHref} />}>
                 {primaryLabel}<ArrowRight data-icon="inline-end" />
               </Button>
-              <Button className="landing-cta" size="lg" variant="outline" nativeButton={false} render={<Link href="#how-it-works" />}>
-                See the workflow
-              </Button>
             </div>
           </div>
           <div className="hero-visual" role="img" aria-label="Branderize turning a website into a shared company brief">
@@ -202,7 +198,7 @@ export function LandingPage({ isSignedIn }: LandingPageProps) {
           </div>
           <div className="landing-shell footer-bottom">
             <BrandMark />
-            <p>One manager. Six specialists. Your company context.</p>
+            <p>One manager. The right specialists. Your company context.</p>
             <p>Your workspace and conversations stay private to your account.</p>
           </div>
         </footer>

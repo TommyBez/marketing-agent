@@ -151,7 +151,7 @@ export function CompanyBrief({ brief, density = 'default', className, ...props }
           isCompact ? 'px-4 py-3' : 'px-5 py-3.5 sm:px-6',
         )}>
           <Check aria-hidden="true" className="size-3 text-success" />
-          Shared by all six specialists
+          Shared with assigned specialists
         </footer>
       </article>
     </Card>
