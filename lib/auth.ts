@@ -2,7 +2,7 @@ import { betterAuth } from 'better-auth'
 import { createAuthMiddleware } from 'better-auth/api'
 import { emailOTP } from 'better-auth/plugins/email-otp'
 import { pool } from '@/lib/db'
-import { assertEmailDeliveryConfigured, sendSignInCodeEmail } from '@/lib/email'
+import { sendSignInCodeEmail } from '@/lib/email'
 
 const OTP_EXPIRES_IN_SECONDS = 60 * 5
 
@@ -95,11 +95,9 @@ const envConfig = getEnvironmentAuthConfig()
 // This bypass is intentionally narrower than the general development config:
 // Vercel development deployments must still exercise the real email flow.
 export const isLocalAuthBypassEnabled =
-  process.env.NODE_ENV === 'development' && process.env.VERCEL !== '1'
-
-if (!isLocalAuthBypassEnabled) {
-  assertEmailDeliveryConfigured()
-}
+  process.env.NODE_ENV === 'development' &&
+  process.env.VERCEL !== '1' &&
+  process.env.LOCAL_AUTH_BYPASS === '1'
 
 export const auth = betterAuth({
   database: pool,

@@ -16,11 +16,6 @@ function requireEmailEnv(name: 'RESEND_API_KEY' | 'RESEND_FROM_EMAIL'): string {
   return value
 }
 
-export function assertEmailDeliveryConfigured(): void {
-  requireEmailEnv('RESEND_API_KEY')
-  requireEmailEnv('RESEND_FROM_EMAIL')
-}
-
 function otpIdempotencyKey({ otp, to }: Pick<SendSignInCodeEmailOptions, 'otp' | 'to'>): string {
   const digest = createHash('sha256')
     .update(`sign-in:${to.toLowerCase()}:${otp}`)
