@@ -18,13 +18,6 @@ export interface ArtifactSummary {
   updatedAt: Date
 }
 
-// Postgres 42P01 (undefined_table): the artifacts table hasn't been pushed yet (pnpm db:push).
-function isMissingArtifactsTable(cause: unknown): boolean {
-  if (!cause || typeof cause !== 'object') return false
-  if ('code' in cause && (cause as { code?: unknown }).code === '42P01') return true
-  return 'cause' in cause && isMissingArtifactsTable((cause as { cause?: unknown }).cause)
-}
-
 async function getUserId() {
   const currentSession = await auth.api.getSession({ headers: await headers() })
   if (!currentSession?.user) throw new Error('Unauthorized')
@@ -61,34 +54,24 @@ export async function saveArtifact(workspaceId: string, input: { title: string; 
   const parsedTitle = titleSchema.parse(input.title)
   const parsedContent = contentSchema.parse(input.content)
   const parsedConversationId = idSchema.safeParse(input.conversationId)
-  try {
-    const [artifact] = await db.insert(artifacts).values({
-      userId,
-      companyProfileId: validWorkspaceId,
-      threadId: parsedConversationId.success ? parsedConversationId.data : null,
-      title: parsedTitle,
-      content: parsedContent,
-    }).returning({ id: artifacts.id, title: artifacts.title, updatedAt: artifacts.updatedAt })
-    revalidatePath(`/workspace/${validWorkspaceId}`)
-    return artifact
-  } catch (cause) {
-    if (isMissingArtifactsTable(cause)) throw new Error('Artifacts storage is not set up yet. Run `pnpm db:push` to create it.')
-    throw cause
-  }
+  const [artifact] = await db.insert(artifacts).values({
+    userId,
+    companyProfileId: validWorkspaceId,
+    threadId: parsedConversationId.success ? parsedConversationId.data : null,
+    title: parsedTitle,
+    content: parsedContent,
+  }).returning({ id: artifacts.id, title: artifacts.title, updatedAt: artifacts.updatedAt })
+  revalidatePath(`/workspace/${validWorkspaceId}`)
+  return artifact
 }
 
 export async function listWorkspaceArtifacts(workspaceId: string): Promise<ArtifactSummary[]> {
   const userId = await getUserId()
   const validWorkspaceId = await requireWorkspace(userId, workspaceId)
-  try {
-    return await db.select({ id: artifacts.id, title: artifacts.title, updatedAt: artifacts.updatedAt })
-      .from(artifacts)
-      .where(and(eq(artifacts.userId, userId), eq(artifacts.companyProfileId, validWorkspaceId)))
-      .orderBy(desc(artifacts.updatedAt))
-  } catch (cause) {
-    if (isMissingArtifactsTable(cause)) return []
-    throw cause
-  }
+  return db.select({ id: artifacts.id, title: artifacts.title, updatedAt: artifacts.updatedAt })
+    .from(artifacts)
+    .where(and(eq(artifacts.userId, userId), eq(artifacts.companyProfileId, validWorkspaceId)))
+    .orderBy(desc(artifacts.updatedAt))
 }
 
 export async function getArtifact(workspaceId: string, artifactId: string) {
