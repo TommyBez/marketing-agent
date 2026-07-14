@@ -1,6 +1,6 @@
 import { AuthForm } from '@/components/auth-form'
 import { BrandMark } from '@/components/brand-mark'
-import { auth, isLocalAuthBypassEnabled } from '@/lib/auth'
+import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
@@ -16,19 +16,11 @@ export default async function SignInPage() {
         <div>
           <p className="auth-brandline mb-3">Branderize workspace</p>
           <h1 className="text-balance">Your workspace starts here</h1>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            {isLocalAuthBypassEnabled
-              ? 'Enter your email, then use any code. No email is sent in local development.'
-              : 'Enter your email and we will send a one-time code. No password to remember.'}
-          </p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your email and we will send a one-time code. No password to remember.</p>
         </div>
-        <AuthForm localAuthBypassEnabled={isLocalAuthBypassEnabled} />
+        <AuthForm />
       </section>
-      <p className="max-w-md text-center text-sm text-muted-foreground">
-        {isLocalAuthBypassEnabled
-          ? 'New email? Local development will create your private workspace when you continue.'
-          : 'New email? We will create your private workspace after you verify the code.'}
-      </p>
+      <p className="max-w-md text-center text-sm text-muted-foreground">New email? We will create your private workspace after you verify the code.</p>
     </main>
   )
 }
