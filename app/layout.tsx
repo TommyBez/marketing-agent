@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   description: 'Relay learns your business and coordinates six marketing specialists to turn strategy into ready-to-review marketing work.',
 }
 
-export const viewport: Viewport = { colorScheme: 'light dark', themeColor: [{ media: '(prefers-color-scheme: light)', color: '#f2f0ea' }, { media: '(prefers-color-scheme: dark)', color: '#10110f' }], userScalable: true }
+export const viewport: Viewport = { colorScheme: 'light dark', themeColor: [{ media: '(prefers-color-scheme: light)', color: '#f3f1e8' }, { media: '(prefers-color-scheme: dark)', color: '#0c130e' }], userScalable: true }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="en" className="bg-background"><body className={`${geist.variable} ${geistMono.variable} ${newsreader.variable} font-sans antialiased`}><TooltipProvider>{children}</TooltipProvider>{process.env.NODE_ENV === 'production' && <Analytics />}</body></html>

@@ -41,9 +41,9 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
   const activeWorkspace = { id: workspace.id, name: workspace.name, websiteUrl: workspace.websiteUrl }
 
   return (
-    <main className="flex h-dvh min-h-[640px] bg-background p-2 md:p-3">
+    <main className="flex h-dvh min-h-[640px] p-2 md:p-3">
       <Card className="min-w-0 flex-1 overflow-hidden p-0 shadow-2xl">
-        <SidebarProvider className="min-h-0">
+        <SidebarProvider className="min-h-0 flex-1">
           <ConversationSidebar workspaceId={workspaceId} conversations={conversations} activeConversationId={activeConversationId} />
           <SidebarInset className="min-h-0 overflow-hidden md:m-0 md:rounded-none md:shadow-none">
             <header className="flex h-15 shrink-0 items-center justify-between gap-2 border-b px-3 md:px-4">

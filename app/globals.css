@@ -14,31 +14,65 @@
   --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground); --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground); --color-accent: var(--accent); --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive); --color-border: var(--border); --color-input: var(--input); --color-ring: var(--ring);
-  --color-sidebar: var(--sidebar); --color-sidebar-foreground: var(--sidebar-foreground); --color-sidebar-border: var(--border);
+  --color-success: var(--success); --color-success-foreground: var(--success-foreground);
+  --color-sidebar: var(--sidebar); --color-sidebar-foreground: var(--sidebar-foreground); --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent); --color-sidebar-accent-foreground: var(--sidebar-accent-foreground); --color-sidebar-ring: var(--ring);
   --radius-sm: calc(var(--radius) * .65); --radius-md: calc(var(--radius) * .85); --radius-lg: var(--radius); --radius-xl: calc(var(--radius) * 1.35); --radius-2xl: calc(var(--radius) * 1.8);
+  --shadow-2xs: var(--elevation-1); --shadow-xs: var(--elevation-1); --shadow-sm: var(--elevation-2); --shadow-md: var(--elevation-3); --shadow-lg: var(--elevation-4); --shadow-xl: var(--elevation-5); --shadow-2xl: var(--elevation-6);
 }
 
+/* Relay identity — one palette family across landing and product.
+ * Light "Gallery": warm paper surfaces, green-cast ink, forest-green primary.
+ * Dark "Midnight" (default): green-tinted deep surfaces, signal-green primary — same hue family as tokens.css. */
 :root {
   color-scheme: light;
-  --background: oklch(.95 .012 90); --foreground: oklch(.17 .012 70); --card: oklch(.99 .005 90); --card-foreground: oklch(.17 .012 70); --popover: oklch(.99 .005 90); --popover-foreground: oklch(.17 .012 70);
-  --primary: oklch(.20 .012 70); --primary-foreground: oklch(.98 .006 90); --secondary: oklch(.92 .012 90); --secondary-foreground: oklch(.22 .012 70);
-  --muted: oklch(.92 .012 90); --muted-foreground: oklch(.49 .015 70); --accent: oklch(.88 .10 145); --accent-foreground: oklch(.34 .11 145);
-  --destructive: oklch(.56 .20 28); --border: oklch(.84 .012 85); --input: oklch(.84 .012 85); --ring: oklch(.61 .12 145); --sidebar: oklch(.965 .008 90); --sidebar-foreground: oklch(.17 .012 70); --radius: .7rem;
+  --background: oklch(.955 .011 95); --foreground: oklch(.21 .018 150); --card: oklch(.985 .005 95); --card-foreground: oklch(.21 .018 150); --popover: oklch(.985 .005 95); --popover-foreground: oklch(.21 .018 150);
+  --primary: oklch(.38 .09 150); --primary-foreground: oklch(.975 .01 95); --secondary: oklch(.915 .014 105); --secondary-foreground: oklch(.25 .02 150);
+  --muted: oklch(.92 .012 100); --muted-foreground: oklch(.46 .02 140); --accent: oklch(.89 .07 148); --accent-foreground: oklch(.31 .08 150);
+  --destructive: oklch(.55 .19 27); --border: oklch(.865 .015 100); --input: oklch(.845 .015 100); --ring: oklch(.56 .12 150);
+  --success: oklch(.5 .13 150); --success-foreground: oklch(.975 .01 95);
+  --sidebar: oklch(.935 .012 98); --sidebar-foreground: oklch(.21 .018 150); --sidebar-border: oklch(.885 .014 100); --sidebar-accent: oklch(.885 .022 110); --sidebar-accent-foreground: oklch(.21 .018 150);
+  --radius: .75rem;
+  --shadow-ink: oklch(.24 .025 150);
+  --elevation-1: 0 1px 2px color-mix(in oklch, var(--shadow-ink) 6%, transparent);
+  --elevation-2: 0 1px 2px color-mix(in oklch, var(--shadow-ink) 5%, transparent), 0 2px 8px -2px color-mix(in oklch, var(--shadow-ink) 8%, transparent);
+  --elevation-3: 0 2px 4px -2px color-mix(in oklch, var(--shadow-ink) 6%, transparent), 0 8px 16px -4px color-mix(in oklch, var(--shadow-ink) 9%, transparent);
+  --elevation-4: 0 3px 6px -3px color-mix(in oklch, var(--shadow-ink) 6%, transparent), 0 14px 28px -8px color-mix(in oklch, var(--shadow-ink) 11%, transparent);
+  --elevation-5: 0 6px 12px -6px color-mix(in oklch, var(--shadow-ink) 7%, transparent), 0 24px 48px -12px color-mix(in oklch, var(--shadow-ink) 14%, transparent);
+  --elevation-6: 0 10px 20px -8px color-mix(in oklch, var(--shadow-ink) 8%, transparent), 0 40px 80px -16px color-mix(in oklch, var(--shadow-ink) 17%, transparent);
+  --backdrop: radial-gradient(110rem 55rem at 50% -14rem, color-mix(in oklch, var(--primary) 6%, var(--background)), var(--background) 62%);
 }
 
 .dark, :root:not(.light) {
   color-scheme: dark;
-  --background: oklch(.15 .012 80); --foreground: oklch(.94 .01 90); --card: oklch(.19 .012 80); --card-foreground: oklch(.94 .01 90); --popover: oklch(.19 .012 80); --popover-foreground: oklch(.94 .01 90);
-  --primary: oklch(.91 .01 90); --primary-foreground: oklch(.18 .012 80); --secondary: oklch(.24 .012 80); --secondary-foreground: oklch(.92 .01 90);
-  --muted: oklch(.24 .012 80); --muted-foreground: oklch(.68 .015 85); --accent: oklch(.35 .09 145); --accent-foreground: oklch(.78 .13 145);
-  --destructive: oklch(.68 .19 25); --border: oklch(.31 .012 80); --input: oklch(.31 .012 80); --ring: oklch(.64 .12 145); --sidebar: oklch(.17 .012 80); --sidebar-foreground: oklch(.94 .01 90);
+  --background: oklch(.145 .012 145); --foreground: oklch(.94 .01 80); --card: oklch(.185 .014 145); --card-foreground: oklch(.94 .01 80); --popover: oklch(.205 .015 145); --popover-foreground: oklch(.94 .01 80);
+  --primary: oklch(.76 .17 145); --primary-foreground: oklch(.16 .045 145); --secondary: oklch(.245 .016 145); --secondary-foreground: oklch(.92 .01 85);
+  --muted: oklch(.245 .016 145); --muted-foreground: oklch(.7 .014 95); --accent: oklch(.3 .05 148); --accent-foreground: oklch(.82 .13 145);
+  --destructive: oklch(.66 .19 25); --border: oklch(.275 .015 145); --input: oklch(.3 .015 145); --ring: oklch(.7 .14 145);
+  --success: oklch(.72 .15 150); --success-foreground: oklch(.16 .045 145);
+  --sidebar: oklch(.165 .013 145); --sidebar-foreground: oklch(.94 .01 80); --sidebar-border: oklch(.245 .015 145); --sidebar-accent: oklch(.25 .02 145); --sidebar-accent-foreground: oklch(.95 .01 85);
+  --shadow-ink: oklch(0 0 0);
+  --elevation-1: 0 1px 2px color-mix(in oklch, var(--shadow-ink) 35%, transparent);
+  --elevation-2: 0 1px 2px color-mix(in oklch, var(--shadow-ink) 30%, transparent), 0 2px 8px -2px color-mix(in oklch, var(--shadow-ink) 38%, transparent);
+  --elevation-3: 0 2px 4px -2px color-mix(in oklch, var(--shadow-ink) 32%, transparent), 0 8px 16px -4px color-mix(in oklch, var(--shadow-ink) 42%, transparent);
+  --elevation-4: 0 3px 6px -3px color-mix(in oklch, var(--shadow-ink) 34%, transparent), 0 14px 28px -8px color-mix(in oklch, var(--shadow-ink) 46%, transparent);
+  --elevation-5: 0 6px 12px -6px color-mix(in oklch, var(--shadow-ink) 36%, transparent), 0 24px 48px -12px color-mix(in oklch, var(--shadow-ink) 52%, transparent);
+  --elevation-6: 0 12px 24px -8px color-mix(in oklch, var(--shadow-ink) 40%, transparent), 0 48px 96px -16px color-mix(in oklch, var(--shadow-ink) 60%, transparent);
+  --backdrop: radial-gradient(110rem 60rem at 50% -16rem, color-mix(in oklch, var(--primary) 8%, var(--background)), var(--background) 64%);
 }
 
-@layer base { * { @apply border-border outline-ring/50; } html, body { overflow-x: clip; } body { @apply bg-background text-foreground; } button, a { @apply transition-colors; } }
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  html, body { overflow-x: clip; }
+  body { @apply text-foreground; background-color: var(--background); background-image: var(--backdrop); }
+  button, a { @apply transition-colors; }
+  ::selection { background: var(--accent); color: var(--accent-foreground); }
+}
 
 .landing-page {
   min-height: 100dvh;
-  background: var(--color-landing-paper);
+  background-color: var(--color-landing-paper);
+  background-image: radial-gradient(90rem 50rem at 78% -12rem, color-mix(in oklch, var(--color-landing-accent) 7%, var(--color-landing-paper)), var(--color-landing-paper) 60%);
   color: var(--color-landing-ink);
   font-family: var(--font-landing-body);
 }

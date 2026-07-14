@@ -1,3 +1,4 @@
+import { BrandMark } from '@/components/brand-mark'
 import { Badge } from '@/components/ui/badge'
 import { Bubble, BubbleContent } from '@/components/ui/bubble'
 import { Button } from '@/components/ui/button'
@@ -18,10 +19,6 @@ const specialists = [
 
 interface LandingPageProps {
   isSignedIn: boolean
-}
-
-function BrandMark() {
-  return <span className="flex items-center gap-2.5 font-semibold"><Badge className="size-8 justify-center rounded-lg p-0 font-mono" aria-hidden="true">R</Badge>Relay</span>
 }
 
 function LandingHeader({ isSignedIn }: LandingPageProps) {
