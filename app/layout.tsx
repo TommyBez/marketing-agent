@@ -12,19 +12,19 @@ const siteUrl = process.env.NEXT_PUBLIC_APP_URL
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   applicationName: 'branderize',
-  title: 'branderize | Your AI marketing team',
-  description: 'Branderize learns your business and directs six marketing specialists from one shared source of truth.',
+  title: 'branderize | Brief once. Move as one.',
+  description: 'Add your website once. Branderize turns it into a shared company brief, assigns the right specialists, and returns one coordinated answer.',
   openGraph: {
-    title: 'branderize | Your AI marketing team',
-    description: 'One shared brand context. Six coordinated marketing specialists.',
+    title: 'branderize | Brief once. Move as one.',
+    description: 'One company brief. The right marketing specialists. One coordinated answer.',
     locale: 'en_US',
     siteName: 'branderize',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'branderize | Your AI marketing team',
-    description: 'One shared brand context. Six coordinated marketing specialists.',
+    title: 'branderize | Brief once. Move as one.',
+    description: 'One company brief. The right marketing specialists. One coordinated answer.',
   },
 }
 

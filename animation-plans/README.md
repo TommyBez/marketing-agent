@@ -3,14 +3,18 @@
 | Plan | Title | Severity | Status |
 | --- | --- | --- | --- |
 | 001 | Build a restrained landing motion system | MEDIUM | DONE |
+| 002 | Turn the brief into an orchestration score | HIGH | DONE |
 
 ## Execution order
 
-1. Execute plan 001 as one cohesive change. Its hero, section reveals, media
-   treatment, CTA feedback, and reduced-motion behavior share the same tokens and
-   client-leaf abstraction, so splitting them would create competing motion systems.
+1. Plan 001 is complete and provides the shared reveal tokens and client-leaf
+   architecture.
+2. Plan 002 is complete: hero masks, discipline score, and sticky story now share
+   one semantic sequence.
 
 ## Dependencies
 
 - Motion 12.42.2 is already present in `package.json`.
-- Preserve the current uncommitted rebrand, landing image, and workspace shell work.
+- Plan 002 depends on the motion primitives introduced by plan 001.
+- Preserve the current Branderize tokens, real product screenshots, and workspace
+  shell work.
