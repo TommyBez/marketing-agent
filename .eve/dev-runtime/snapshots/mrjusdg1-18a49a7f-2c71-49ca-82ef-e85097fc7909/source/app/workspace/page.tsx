@@ -1,0 +1,22 @@
+import { listWorkspaces } from '@/app/actions/company'
+import { CompanyOnboarding } from '@/components/company-onboarding'
+import { Card } from '@/components/ui/card'
+import { auth } from '@/lib/auth'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
+
+export default async function WorkspacePage() {
+  const currentSession = await auth.api.getSession({ headers: await headers() })
+  if (!currentSession?.user) redirect('/sign-in')
+
+  const [workspace] = await listWorkspaces()
+  if (workspace) redirect(`/workspace/${workspace.id}`)
+
+  return (
+    <main className="flex min-h-dvh bg-background p-2 md:p-3">
+      <Card className="min-w-0 flex-1 overflow-hidden p-0 shadow-2xl">
+        <CompanyOnboarding />
+      </Card>
+    </main>
+  )
+}

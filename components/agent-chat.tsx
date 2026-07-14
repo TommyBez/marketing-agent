@@ -12,11 +12,11 @@ import { Marker, MarkerContent, MarkerIcon } from '@/components/ui/marker'
 import { Message, MessageContent, MessageHeader } from '@/components/ui/message'
 import { MessageScroller, MessageScrollerButton, MessageScrollerContent, MessageScrollerItem, MessageScrollerProvider, MessageScrollerViewport } from '@/components/ui/message-scroller'
 import { Spinner } from '@/components/ui/spinner'
-import type { HandleMessageStreamEvent, SessionState } from 'eve/client'
+import { Client, type HandleMessageStreamEvent, type SessionState } from 'eve/client'
 import { useEveAgent } from 'eve/react'
 import { ArrowUp, Square } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Streamdown } from 'streamdown'
 
 interface AgentChatProps {
@@ -42,7 +42,18 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
   const sessionRef = useRef<SessionState>(initialSession ?? { streamIndex: 0 })
   const persistenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const persistenceChainRef = useRef<Promise<void>>(Promise.resolve())
+  const clientRef = useRef<Client | null>(null)
   const [displayTitle, setDisplayTitle] = useState(conversationTitle)
+  const [isRestoring, setIsRestoring] = useState(Boolean(initialSession?.sessionId))
+
+  if (!clientRef.current) {
+    clientRef.current = new Client({
+      host: '',
+      headers: { 'x-relay-workspace-id': workspaceId },
+      preserveCompletedSessions: true,
+    })
+  }
+  const durableSessionRef = useRef(clientRef.current.session(sessionRef.current))
 
   function persistConversation(isImmediate = false) {
     if (persistenceTimerRef.current) clearTimeout(persistenceTimerRef.current)
@@ -58,9 +69,10 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
   }
 
   const agent = useEveAgent({
-    headers: { 'x-relay-workspace-id': workspaceId },
     initialEvents,
     initialSession,
+    optimistic: false,
+    session: durableSessionRef.current,
     onEvent: (event) => {
       eventsRef.current.push(event)
       persistConversation()
@@ -78,7 +90,42 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
     },
   })
   const [message, setMessage] = useState('')
-  const isBusy = agent.status === 'submitted' || agent.status === 'streaming'
+  const isBusy = isRestoring || agent.status === 'submitted' || agent.status === 'streaming'
+
+  useEffect(() => {
+    const abortController = new AbortController()
+    const savedSession = sessionRef.current
+
+    async function restoreStream() {
+      if (!savedSession.sessionId) {
+        setIsRestoring(false)
+        return
+      }
+      try {
+        for await (const event of durableSessionRef.current.stream({
+          startIndex: savedSession.streamIndex,
+          signal: abortController.signal,
+        })) {
+          eventsRef.current.push(event)
+        }
+      } catch (error) {
+        if (!abortController.signal.aborted) console.error('[v0] Failed to restore eve stream:', error)
+      } finally {
+        if (!abortController.signal.aborted) {
+          sessionRef.current = durableSessionRef.current.state
+          persistConversation(true)
+          setIsRestoring(false)
+          router.refresh()
+        }
+      }
+    }
+
+    void restoreStream()
+    return () => {
+      abortController.abort()
+      if (persistenceTimerRef.current) clearTimeout(persistenceTimerRef.current)
+    }
+  }, [])
 
   async function sendMessage() {
     const nextMessage = message.trim()
