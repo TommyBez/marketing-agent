@@ -24,6 +24,17 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Passwordless authentication
+
+Branderize signs users in with a six-digit code sent through Resend. Configure these server-side environment variables before using the authentication flow:
+
+```bash
+RESEND_API_KEY=re_xxxxxxxxx
+RESEND_FROM_EMAIL="Branderize <auth@your-verified-domain.com>"
+```
+
+The sender address must belong to a domain verified in Resend. To preview the React Email template locally, run `pnpm email:preview` and open [http://localhost:3001](http://localhost:3001).
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 ## Learn More

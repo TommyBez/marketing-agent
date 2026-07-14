@@ -2,59 +2,144 @@
 
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
-import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { authClient } from '@/lib/auth-client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-interface AuthFormProps {
-  mode: 'sign-in' | 'sign-up'
+type AuthStep = 'email' | 'otp'
+
+function authErrorMessage(error: { code?: string; message?: string }): string {
+  switch (error.code) {
+    case 'INVALID_OTP':
+      return 'That code is not valid. Check the email and try again.'
+    case 'OTP_EXPIRED':
+      return 'That code has expired. Request a new one to continue.'
+    case 'TOO_MANY_ATTEMPTS':
+      return 'Too many incorrect attempts. Request a new code to continue.'
+    case 'TOO_MANY_REQUESTS':
+      return 'Too many requests. Wait a minute before asking for another code.'
+    default:
+      return error.message ?? 'We could not complete sign-in. Please try again.'
+  }
 }
 
-export function AuthForm({ mode }: AuthFormProps) {
+function displayNameFromEmail(email: string): string {
+  const localPart = email.split('@')[0] ?? ''
+  return localPart.replaceAll(/[._+-]+/g, ' ').trim() || 'Branderize user'
+}
+
+export function AuthForm() {
   const router = useRouter()
+  const [step, setStep] = useState<AuthStep>('email')
+  const [email, setEmail] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
-  async function handleSubmit(formData: FormData) {
+  async function sendCode(targetEmail: string) {
     setIsLoading(true)
     setError('')
 
-    const email = String(formData.get('email'))
-    const password = String(formData.get('password'))
-    const result = mode === 'sign-up'
-      ? await authClient.signUp.email({ email, password, name: String(formData.get('name')) })
-      : await authClient.signIn.email({ email, password })
+    try {
+      const result = await authClient.emailOtp.sendVerificationOtp({
+        email: targetEmail,
+        type: 'sign-in',
+      })
 
-    if (result.error) {
-      setError(result.error.message ?? 'Authentication failed')
+      if (result.error) {
+        setError(authErrorMessage(result.error))
+        return
+      }
+
+      setEmail(targetEmail)
+      setStep('otp')
+    } catch {
+      setError('We could not send the code. Check your connection and try again.')
+    } finally {
       setIsLoading(false)
+    }
+  }
+
+  async function handleSubmit(formData: FormData) {
+    if (step === 'email') {
+      await sendCode(String(formData.get('email')).trim().toLowerCase())
       return
     }
 
-    router.push('/workspace')
-    router.refresh()
+    setIsLoading(true)
+    setError('')
+
+    try {
+      const otp = String(formData.get('otp')).replaceAll(/\D/g, '')
+      const result = await authClient.signIn.emailOtp({
+        email,
+        name: displayNameFromEmail(email),
+        otp,
+      })
+
+      if (result.error) {
+        setError(authErrorMessage(result.error))
+        return
+      }
+
+      router.push('/workspace')
+      router.refresh()
+    } catch {
+      setError('We could not verify the code. Check your connection and try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  function useDifferentEmail() {
+    setError('')
+    setStep('email')
   }
 
   return (
     <form action={handleSubmit}>
       <FieldGroup>
-        {mode === 'sign-up' && (
+        {step === 'email' ? (
           <Field data-disabled={isLoading}>
-            <FieldLabel htmlFor="name">Name</FieldLabel>
-            <Input id="name" name="name" autoComplete="name" required disabled={isLoading} size={undefined} />
+            <FieldLabel htmlFor="email">Work email</FieldLabel>
+            <Input id="email" name="email" type="email" autoComplete="email" defaultValue={email} required disabled={isLoading} autoFocus />
+            <FieldDescription>We will email you a secure, one-time sign-in code.</FieldDescription>
           </Field>
+        ) : (
+          <>
+            <Field data-disabled={isLoading}>
+              <FieldLabel htmlFor="otp">Six-digit code</FieldLabel>
+              <Input
+                id="otp"
+                name="otp"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                maxLength={6}
+                required
+                disabled={isLoading}
+                autoFocus
+                aria-describedby="otp-description"
+                className="h-12 text-center font-mono text-xl tracking-[0.45em]"
+              />
+              <FieldDescription id="otp-description">
+                Sent to <span className="font-medium text-foreground">{email}</span>. The code expires in five minutes.
+              </FieldDescription>
+            </Field>
+            <div className="flex flex-wrap items-center gap-1">
+              <Button type="button" variant="link" size="sm" disabled={isLoading} onClick={() => sendCode(email)}>
+                Send a new code
+              </Button>
+              <span aria-hidden="true" className="text-muted-foreground">·</span>
+              <Button type="button" variant="link" size="sm" disabled={isLoading} onClick={useDifferentEmail}>
+                Use another email
+              </Button>
+            </div>
+          </>
         )}
-        <Field data-disabled={isLoading}>
-          <FieldLabel htmlFor="email">Work email</FieldLabel>
-          <Input id="email" name="email" type="email" autoComplete="email" required disabled={isLoading} />
-        </Field>
-        <Field data-disabled={isLoading}>
-          <FieldLabel htmlFor="password">Password</FieldLabel>
-          <Input id="password" name="password" type="password" minLength={8} autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'} required disabled={isLoading} />
-        </Field>
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>
@@ -63,7 +148,9 @@ export function AuthForm({ mode }: AuthFormProps) {
         <Field>
           <Button type="submit" size="lg" disabled={isLoading} aria-busy={isLoading} className="w-full">
             {isLoading && <Spinner data-icon="inline-start" />}
-            {isLoading ? (mode === 'sign-up' ? 'Creating account…' : 'Signing in…') : mode === 'sign-up' ? 'Create account' : 'Sign in'}
+            {isLoading
+              ? step === 'email' ? 'Sending code…' : 'Checking code…'
+              : step === 'email' ? 'Email me a code' : 'Open workspace'}
           </Button>
           <FieldError className="sr-only">{error}</FieldError>
         </Field>

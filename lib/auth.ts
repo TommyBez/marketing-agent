@@ -1,5 +1,9 @@
 import { betterAuth } from 'better-auth'
+import { emailOTP } from 'better-auth/plugins/email-otp'
 import { pool } from '@/lib/db'
+import { sendSignInCodeEmail } from '@/lib/email'
+
+const OTP_EXPIRES_IN_SECONDS = 60 * 5
 
 type DeploymentEnvironment =
   | 'production'
@@ -91,9 +95,27 @@ export const auth = betterAuth({
   database: pool,
   baseURL: envConfig.baseURL,
   secret: process.env.BETTER_AUTH_SECRET,
-  emailAndPassword: { enabled: true, autoSignIn: true },
   trustedOrigins: envConfig.trustedOrigins,
   session: { expiresIn: 60 * 60 * 24 * 7, updateAge: 60 * 60 * 24 },
+  plugins: [
+    emailOTP({
+      allowedAttempts: 3,
+      expiresIn: OTP_EXPIRES_IN_SECONDS,
+      otpLength: 6,
+      storeOTP: 'encrypted',
+      async sendVerificationOTP({ email, otp, type }) {
+        if (type !== 'sign-in') {
+          throw new Error(`Unsupported OTP email type: ${type}`)
+        }
+
+        await sendSignInCodeEmail({
+          expiresInMinutes: OTP_EXPIRES_IN_SECONDS / 60,
+          otp,
+          to: email,
+        })
+      },
+    }),
+  ],
   ...(envConfig.softenChecks
     ? {
         advanced: {
