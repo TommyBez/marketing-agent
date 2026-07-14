@@ -11,6 +11,10 @@ import { useState } from 'react'
 
 type AuthStep = 'email' | 'otp'
 
+interface AuthFormProps {
+  localAuthBypassEnabled: boolean
+}
+
 function authErrorMessage(error: { code?: string; message?: string }): string {
   switch (error.code) {
     case 'INVALID_OTP':
@@ -31,7 +35,7 @@ function displayNameFromEmail(email: string): string {
   return localPart.replaceAll(/[._+-]+/g, ' ').trim() || 'Branderize user'
 }
 
-export function AuthForm() {
+export function AuthForm({ localAuthBypassEnabled }: AuthFormProps) {
   const router = useRouter()
   const [step, setStep] = useState<AuthStep>('email')
   const [email, setEmail] = useState('')
@@ -56,7 +60,11 @@ export function AuthForm() {
       setEmail(targetEmail)
       setStep('otp')
     } catch {
-      setError('We could not send the code. Check your connection and try again.')
+      setError(
+        localAuthBypassEnabled
+          ? 'We could not start local sign-in. Check your connection and try again.'
+          : 'We could not send the code. Check your connection and try again.',
+      )
     } finally {
       setIsLoading(false)
     }
@@ -72,7 +80,10 @@ export function AuthForm() {
     setError('')
 
     try {
-      const otp = String(formData.get('otp')).replaceAll(/\D/g, '')
+      const submittedOtp = String(formData.get('otp'))
+      const otp = localAuthBypassEnabled
+        ? submittedOtp
+        : submittedOtp.replaceAll(/\D/g, '')
       const result = await authClient.signIn.emailOtp({
         email,
         name: displayNameFromEmail(email),
@@ -105,20 +116,26 @@ export function AuthForm() {
           <Field data-disabled={isLoading}>
             <FieldLabel htmlFor="email">Work email</FieldLabel>
             <Input id="email" name="email" type="email" autoComplete="email" defaultValue={email} required disabled={isLoading} autoFocus />
-            <FieldDescription>We will email you a secure, one-time sign-in code.</FieldDescription>
+            <FieldDescription>
+              {localAuthBypassEnabled
+                ? 'Use your email to start a local development session. No email will be sent.'
+                : 'We will email you a secure, one-time sign-in code.'}
+            </FieldDescription>
           </Field>
         ) : (
           <>
             <Field data-disabled={isLoading}>
-              <FieldLabel htmlFor="otp">Six-digit code</FieldLabel>
+              <FieldLabel htmlFor="otp">
+                {localAuthBypassEnabled ? 'Development code' : 'Six-digit code'}
+              </FieldLabel>
               <Input
                 id="otp"
                 name="otp"
                 type="text"
-                inputMode="numeric"
+                inputMode={localAuthBypassEnabled ? 'text' : 'numeric'}
                 autoComplete="one-time-code"
-                pattern="[0-9]{6}"
-                maxLength={6}
+                pattern={localAuthBypassEnabled ? undefined : '[0-9]{6}'}
+                maxLength={localAuthBypassEnabled ? undefined : 6}
                 required
                 disabled={isLoading}
                 autoFocus
@@ -126,14 +143,24 @@ export function AuthForm() {
                 className="h-12 text-center font-mono text-xl tracking-[0.45em]"
               />
               <FieldDescription id="otp-description">
-                Sent to <span className="font-medium text-foreground">{email}</span>. The code expires in five minutes.
+                {localAuthBypassEnabled ? (
+                  <>Local development: no email was sent. Enter any code to continue.</>
+                ) : (
+                  <>
+                    Sent to <span className="font-medium text-foreground">{email}</span>. The code expires in five minutes.
+                  </>
+                )}
               </FieldDescription>
             </Field>
             <div className="flex flex-wrap items-center gap-1">
-              <Button type="button" variant="link" size="sm" disabled={isLoading} onClick={() => sendCode(email)}>
-                Send a new code
-              </Button>
-              <span aria-hidden="true" className="text-muted-foreground">·</span>
+              {!localAuthBypassEnabled && (
+                <>
+                  <Button type="button" variant="link" size="sm" disabled={isLoading} onClick={() => sendCode(email)}>
+                    Send a new code
+                  </Button>
+                  <span aria-hidden="true" className="text-muted-foreground">·</span>
+                </>
+              )}
               <Button type="button" variant="link" size="sm" disabled={isLoading} onClick={useDifferentEmail}>
                 Use another email
               </Button>
@@ -149,8 +176,12 @@ export function AuthForm() {
           <Button type="submit" size="lg" disabled={isLoading} aria-busy={isLoading} className="w-full">
             {isLoading && <Spinner data-icon="inline-start" />}
             {isLoading
-              ? step === 'email' ? 'Sending code…' : 'Checking code…'
-              : step === 'email' ? 'Email me a code' : 'Open workspace'}
+              ? step === 'email'
+                ? localAuthBypassEnabled ? 'Preparing local sign-in…' : 'Sending code…'
+                : localAuthBypassEnabled ? 'Opening workspace…' : 'Checking code…'
+              : step === 'email'
+                ? localAuthBypassEnabled ? 'Continue locally' : 'Email me a code'
+                : 'Open workspace'}
           </Button>
           <FieldError className="sr-only">{error}</FieldError>
         </Field>

@@ -1,7 +1,8 @@
 import { betterAuth } from 'better-auth'
+import { createAuthMiddleware } from 'better-auth/api'
 import { emailOTP } from 'better-auth/plugins/email-otp'
 import { pool } from '@/lib/db'
-import { sendSignInCodeEmail } from '@/lib/email'
+import { assertEmailDeliveryConfigured, sendSignInCodeEmail } from '@/lib/email'
 
 const OTP_EXPIRES_IN_SECONDS = 60 * 5
 
@@ -91,6 +92,15 @@ function getEnvironmentAuthConfig(): EnvironmentAuthConfig {
 
 const envConfig = getEnvironmentAuthConfig()
 
+// This bypass is intentionally narrower than the general development config:
+// Vercel development deployments must still exercise the real email flow.
+export const isLocalAuthBypassEnabled =
+  process.env.NODE_ENV === 'development' && process.env.VERCEL !== '1'
+
+if (!isLocalAuthBypassEnabled) {
+  assertEmailDeliveryConfigured()
+}
+
 export const auth = betterAuth({
   database: pool,
   baseURL: envConfig.baseURL,
@@ -102,11 +112,13 @@ export const auth = betterAuth({
       allowedAttempts: 3,
       expiresIn: OTP_EXPIRES_IN_SECONDS,
       otpLength: 6,
-      storeOTP: 'encrypted',
+      storeOTP: isLocalAuthBypassEnabled ? 'plain' : 'encrypted',
       async sendVerificationOTP({ email, otp, type }) {
         if (type !== 'sign-in') {
           throw new Error(`Unsupported OTP email type: ${type}`)
         }
+
+        if (isLocalAuthBypassEnabled) return
 
         await sendSignInCodeEmail({
           expiresInMinutes: OTP_EXPIRES_IN_SECONDS / 60,
@@ -116,6 +128,22 @@ export const auth = betterAuth({
       },
     }),
   ],
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (!isLocalAuthBypassEnabled || ctx.path !== '/sign-in/email-otp') return
+
+      const body = ctx.body as { email?: unknown; otp?: unknown } | undefined
+      if (typeof body?.email !== 'string' || typeof body.otp !== 'string') return
+
+      const identifier = `sign-in-otp-${body.email.toLowerCase()}`
+      await ctx.context.internalAdapter.deleteVerificationByIdentifier(identifier)
+      await ctx.context.internalAdapter.createVerificationValue({
+        identifier,
+        value: `${body.otp}:0`,
+        expiresAt: new Date(Date.now() + OTP_EXPIRES_IN_SECONDS * 1000),
+      })
+    }),
+  },
   ...(envConfig.softenChecks
     ? {
         advanced: {
