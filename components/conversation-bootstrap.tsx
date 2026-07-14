@@ -1,6 +1,6 @@
 'use client'
 
-import { createConversation } from '@/app/actions/thread'
+import { ensureWorkspaceConversation } from '@/app/actions/thread'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
@@ -17,7 +17,7 @@ export function ConversationBootstrap({ workspaceId }: { workspaceId: string }) 
     if (startedRef.current) return
     startedRef.current = true
 
-    void createConversation(workspaceId)
+    void ensureWorkspaceConversation(workspaceId)
       .then((conversation) => {
         router.replace(`/workspace/${workspaceId}?conversation=${conversation.id}`)
         router.refresh()

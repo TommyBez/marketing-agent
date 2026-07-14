@@ -10,9 +10,9 @@ import { revalidatePath } from 'next/cache'
 import { headers } from 'next/headers'
 import { z } from 'zod'
 
-const idSchema = z.string().uuid()
+const idSchema = z.uuid()
 const titleSchema = z.string().trim().min(1).max(80)
-const transcriptEventsSchema = z.array(z.unknown()).max(5_000)
+const transcriptEventsSchema = z.array(z.unknown())
 const transcriptPointerSchema = z.object({ blobPath: z.string().min(1) })
 
 async function readTranscript(value: unknown) {
@@ -85,6 +85,36 @@ export async function createConversation(workspaceId: string) {
   return conversation
 }
 
+export async function ensureWorkspaceConversation(workspaceId: string) {
+  const userId = await getUserId()
+  const validWorkspaceId = await requireWorkspace(userId, workspaceId)
+  const conversation = await db.transaction(async (transaction) => {
+    const [lockedWorkspace] = await transaction.select({ id: companyProfiles.id }).from(companyProfiles).where(and(
+      eq(companyProfiles.id, validWorkspaceId),
+      eq(companyProfiles.userId, userId),
+    )).for('update')
+    if (!lockedWorkspace) throw new Error('Workspace not found')
+
+    const existing = (await transaction.select({
+      id: agentThreads.id,
+      title: agentThreads.title,
+      updatedAt: agentThreads.updatedAt,
+    }).from(agentThreads).where(and(
+      eq(agentThreads.userId, userId),
+      eq(agentThreads.companyProfileId, validWorkspaceId),
+    )).orderBy(desc(agentThreads.updatedAt)).limit(1))[0]
+    if (existing) return existing
+
+    return (await transaction.insert(agentThreads).values({
+      userId,
+      companyProfileId: validWorkspaceId,
+      title: 'New conversation',
+    }).returning({ id: agentThreads.id, title: agentThreads.title, updatedAt: agentThreads.updatedAt }))[0]
+  })
+  revalidatePath(`/workspace/${validWorkspaceId}`)
+  return conversation
+}
+
 export async function getConversation(workspaceId: string, conversationId: string) {
   const userId = await getUserId()
   const conversation = await requireConversation(userId, workspaceId, conversationId)
@@ -117,6 +147,6 @@ export async function deleteConversation(workspaceId: string, conversationId: st
   const conversation = await requireConversation(userId, workspaceId, conversationId)
   await db.delete(agentThreads).where(and(eq(agentThreads.id, conversation.id), eq(agentThreads.userId, userId)))
   const pointer = transcriptPointerSchema.safeParse(conversation.events)
-  if (pointer.success) await del(pointer.data.blobPath)
+  if (pointer.success) await del(pointer.data.blobPath).catch(() => undefined)
   revalidatePath(`/workspace/${workspaceId}`)
 }

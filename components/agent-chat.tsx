@@ -79,8 +79,8 @@ function needsStreamRestore(session: SessionState | undefined, events: readonly 
   return !lastEvent || !isCurrentTurnBoundaryEvent(lastEvent)
 }
 
-function isTerminalSessionEvent(event: HandleMessageStreamEvent | undefined) {
-  return event?.type === 'session.completed' || event?.type === 'session.failed'
+function isFailedSessionEvent(event: HandleMessageStreamEvent | undefined) {
+  return event?.type === 'session.failed'
 }
 
 function getInitialSessionError(
@@ -91,13 +91,10 @@ function getInitialSessionError(
   return 'This conversation lost its Eve session cursor and cannot be resumed safely. Start a new conversation.'
 }
 
-function normalizeInitialSession(
-  session: SessionState | undefined,
-  events: readonly HandleMessageStreamEvent[] | undefined,
-): SessionState {
+function normalizeInitialSession(session: SessionState | undefined): SessionState {
   return {
     ...session,
-    streamIndex: Math.max(session?.streamIndex ?? 0, events?.length ?? 0),
+    streamIndex: session?.streamIndex ?? 0,
   }
 }
 
@@ -123,7 +120,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
   const router = useRouter()
   const firstMessageRef = useRef('')
   const eventsRef = useRef<HandleMessageStreamEvent[]>([...(initialEvents ?? [])])
-  const sessionRef = useRef<SessionState>(normalizeInitialSession(initialSession, initialEvents))
+  const sessionRef = useRef<SessionState>(normalizeInitialSession(initialSession))
   const persistenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const persistenceChainRef = useRef<Promise<void>>(Promise.resolve())
   const clientRef = useRef<Client | null>(null)
@@ -148,6 +145,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(15_000),
       },
     )
     if (response.ok) return
@@ -240,9 +238,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
     },
     onFinish: async (snapshot) => {
       eventsRef.current = [...snapshot.events]
-      sessionRef.current = snapshot.session.sessionId
-        ? snapshot.session
-        : { ...sessionRef.current, streamIndex: snapshot.events.length }
+      if (snapshot.session.sessionId) sessionRef.current = snapshot.session
       try {
         await persistConversation(true)
         router.refresh()
@@ -318,7 +314,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
   async function sendMessage(text: string) {
     const nextMessage = text.trim()
     if (!nextMessage || isBusy) return
-    if (isTerminalSessionEvent(eventsRef.current.at(-1))) {
+    if (isFailedSessionEvent(eventsRef.current.at(-1))) {
       setRestoreError('This Eve session has ended. Start a new conversation to continue.')
       return
     }

@@ -3,8 +3,8 @@ import { withEve } from 'eve/next'
 
 const nextConfig: NextConfig = {
   experimental: {
-    // Eve streams can remain silent while subagents work, so keep the rewrite
-    // proxy alive longer than Next.js' 30-second default idle timeout.
+    // Next.js has no per-rewrite timeout. withEve provides this app's only
+    // rewrite, whose streams can remain silent while subagents work.
     proxyTimeout: 30 * 60_000,
   },
   images: { formats: ['image/avif', 'image/webp'] },

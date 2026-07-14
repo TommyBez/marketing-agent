@@ -7,16 +7,29 @@ import { del, get, put } from '@vercel/blob'
 import { and, eq, isNull, lte, or } from 'drizzle-orm'
 import type { HandleMessageStreamEvent } from 'eve/client'
 import { headers } from 'next/headers'
+import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 
-const idSchema = z.string().uuid()
+const idSchema = z.uuid()
 const sessionStateSchema = z.object({
   continuationToken: z.string().optional(),
   sessionId: z.string().optional(),
   streamIndex: z.number().int().min(0),
 })
-const transcriptEventsSchema = z.array(z.unknown()).max(5_000)
-const transcriptPointerSchema = z.object({ blobPath: z.string().min(1) })
+const transcriptEventsSchema = z.array(z.unknown())
+const transcriptPointerSchema = z.object({
+  blobPath: z.string().min(1),
+  eventCount: z.number().int().min(0).optional(),
+})
+
+type ConversationPersistenceStatus = 400 | 401 | 404 | 409
+
+export class ConversationPersistenceError extends Error {
+  constructor(message: string, readonly status: ConversationPersistenceStatus) {
+    super(message)
+    this.name = 'ConversationPersistenceError'
+  }
+}
 
 function getTranscriptPath(
   userId: string,
@@ -25,7 +38,7 @@ function getTranscriptPath(
   streamIndex: number,
   eventCount: number,
 ) {
-  return `agent-transcripts/${userId}/${conversationId}/${encodeURIComponent(sessionId)}/${streamIndex}-${eventCount}.json`
+  return `agent-transcripts/${userId}/${conversationId}/${encodeURIComponent(sessionId)}/${streamIndex}-${eventCount}-${randomUUID()}.json`
 }
 
 async function readTranscript(value: unknown) {
@@ -43,14 +56,13 @@ async function readTranscript(value: unknown) {
 
 async function getUserId() {
   const currentSession = await auth.api.getSession({ headers: await headers() })
-  if (!currentSession?.user) throw new Error('Unauthorized')
+  if (!currentSession?.user) throw new ConversationPersistenceError('Unauthorized', 401)
   return currentSession.user.id
 }
 
 async function requireConversation(userId: string, workspaceId: string, conversationId: string) {
-  const parsedWorkspaceId = idSchema.safeParse(workspaceId)
-  const parsedConversationId = idSchema.safeParse(conversationId)
-  if (!parsedWorkspaceId.success || !parsedConversationId.success) throw new Error('Invalid conversation')
+  const parsedWorkspaceId = idSchema.parse(workspaceId)
+  const parsedConversationId = idSchema.parse(conversationId)
 
   const conversation = (await db.select().from(agentThreads).innerJoin(
     companyProfiles,
@@ -59,13 +71,29 @@ async function requireConversation(userId: string, workspaceId: string, conversa
       eq(companyProfiles.userId, userId),
     ),
   ).where(and(
-    eq(agentThreads.id, parsedConversationId.data),
-    eq(agentThreads.companyProfileId, parsedWorkspaceId.data),
+    eq(agentThreads.id, parsedConversationId),
+    eq(agentThreads.companyProfileId, parsedWorkspaceId),
     eq(agentThreads.userId, userId),
   )).limit(1))[0]?.agent_threads
 
-  if (!conversation) throw new Error('Conversation not found')
+  if (!conversation) throw new ConversationPersistenceError('Conversation not found', 404)
   return conversation
+}
+
+function assertCompatibleSession(currentSessionId: string | null, incomingSessionId: string) {
+  if (currentSessionId && currentSessionId !== incomingSessionId) {
+    throw new ConversationPersistenceError('Conversation is already attached to a different Eve session', 409)
+  }
+}
+
+async function getTranscriptEventCount(value: unknown) {
+  const inlineTranscript = transcriptEventsSchema.safeParse(value)
+  if (inlineTranscript.success) return inlineTranscript.data.length
+
+  const pointer = transcriptPointerSchema.safeParse(value)
+  if (!pointer.success) return 0
+  if (pointer.data.eventCount !== undefined) return pointer.data.eventCount
+  return (await readTranscript(value)).length
 }
 
 function createTitle(message: string) {
@@ -85,59 +113,68 @@ export async function persistConversationTranscript(
   const conversation = await requireConversation(userId, workspaceId, conversationId)
   const parsedSession = sessionStateSchema.parse(sessionState)
   const parsedEvents = transcriptEventsSchema.parse(events)
-  const shouldTitle = conversation.title === 'New conversation' && Boolean(firstMessage?.trim())
 
-  if (conversation.eveSessionId && parsedSession.sessionId !== conversation.eveSessionId) {
-    throw new Error('Conversation is already attached to a different Eve session')
-  }
   if (!parsedSession.sessionId) {
     if (parsedEvents.length === 0) return
-    throw new Error('Cannot persist Eve events without a session cursor')
+    throw new ConversationPersistenceError('Cannot persist Eve events without a session cursor', 400)
   }
-  if (parsedSession.streamIndex < conversation.streamIndex) return
-  if (parsedSession.streamIndex === conversation.streamIndex) {
-    const savedEvents = await readTranscript(conversation.events)
-    if (parsedEvents.length < savedEvents.length) return
-  }
+  const sessionId = parsedSession.sessionId
+  assertCompatibleSession(conversation.eveSessionId, sessionId)
 
-  const blobPath = getTranscriptPath(
-    userId,
-    conversation.id,
-    parsedSession.sessionId,
-    parsedSession.streamIndex,
-    parsedEvents.length,
-  )
-  await put(blobPath, JSON.stringify(parsedEvents), {
-    access: 'private',
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    contentType: 'application/json',
-  })
-  const [updated] = await db.update(agentThreads).set({
-    eveSessionId: parsedSession.sessionId,
-    continuationToken: parsedSession.continuationToken,
-    streamIndex: parsedSession.streamIndex,
-    events: { blobPath },
-    ...(shouldTitle ? { title: createTitle(firstMessage ?? '') } : {}),
-    updatedAt: new Date(),
-  }).where(and(
-    eq(agentThreads.id, conversation.id),
-    eq(agentThreads.userId, userId),
-    or(isNull(agentThreads.eveSessionId), eq(agentThreads.eveSessionId, parsedSession.sessionId)),
-    lte(agentThreads.streamIndex, parsedSession.streamIndex),
-  )).returning({ id: agentThreads.id })
+  let pendingBlobPath: string | undefined
+  try {
+    const outcome = await db.transaction(async (transaction) => {
+      const current = (await transaction.select().from(agentThreads).where(and(
+        eq(agentThreads.id, conversation.id),
+        eq(agentThreads.companyProfileId, conversation.companyProfileId),
+        eq(agentThreads.userId, userId),
+      )).for('update').limit(1))[0]
 
-  if (!updated) {
-    await del(blobPath).catch(() => undefined)
-    if (conversation.eveSessionId !== parsedSession.sessionId) {
-      throw new Error('Conversation is already attached to a different Eve session')
+      if (!current) throw new ConversationPersistenceError('Conversation not found', 404)
+      assertCompatibleSession(current.eveSessionId, sessionId)
+      if (parsedSession.streamIndex < current.streamIndex) return { saved: false as const }
+      if (parsedSession.streamIndex === current.streamIndex) {
+        const savedEventCount = await getTranscriptEventCount(current.events)
+        if (parsedEvents.length <= savedEventCount) return { saved: false as const }
+      }
+
+      pendingBlobPath = getTranscriptPath(
+        userId,
+        current.id,
+        sessionId,
+        parsedSession.streamIndex,
+        parsedEvents.length,
+      )
+      await put(pendingBlobPath, JSON.stringify(parsedEvents), {
+        access: 'private',
+        addRandomSuffix: false,
+        contentType: 'application/json',
+      })
+
+      await transaction.update(agentThreads).set({
+        eveSessionId: parsedSession.sessionId,
+        continuationToken: parsedSession.continuationToken,
+        streamIndex: parsedSession.streamIndex,
+        events: { blobPath: pendingBlobPath, eventCount: parsedEvents.length },
+        ...(current.title === 'New conversation' && firstMessage?.trim()
+          ? { title: createTitle(firstMessage) }
+          : {}),
+        updatedAt: new Date(),
+      }).where(and(eq(agentThreads.id, current.id), eq(agentThreads.userId, userId)))
+
+      const previousPointer = transcriptPointerSchema.safeParse(current.events)
+      return {
+        previousBlobPath: previousPointer.success ? previousPointer.data.blobPath : undefined,
+        saved: true as const,
+      }
+    })
+
+    if (outcome.saved && outcome.previousBlobPath && outcome.previousBlobPath !== pendingBlobPath) {
+      await del(outcome.previousBlobPath).catch(() => undefined)
     }
-    return
-  }
-
-  const previousPointer = transcriptPointerSchema.safeParse(conversation.events)
-  if (previousPointer.success && previousPointer.data.blobPath !== blobPath) {
-    await del(previousPointer.data.blobPath).catch(() => undefined)
+  } catch (error) {
+    if (pendingBlobPath) await del(pendingBlobPath).catch(() => undefined)
+    throw error
   }
 }
 
@@ -150,8 +187,10 @@ export async function persistConversationSession(
   const userId = await getUserId()
   const conversation = await requireConversation(userId, workspaceId, conversationId)
   const parsedSession = sessionStateSchema.parse(sessionState)
-  if (!parsedSession.sessionId) throw new Error('Missing Eve session ID')
+  if (!parsedSession.sessionId) throw new ConversationPersistenceError('Missing Eve session ID', 400)
   const shouldTitle = conversation.title === 'New conversation' && Boolean(firstMessage?.trim())
+
+  assertCompatibleSession(conversation.eveSessionId, parsedSession.sessionId)
 
   const [updated] = await db.update(agentThreads).set({
     eveSessionId: parsedSession.sessionId,
@@ -167,6 +206,6 @@ export async function persistConversationSession(
   )).returning({ id: agentThreads.id })
 
   if (!updated && conversation.eveSessionId !== parsedSession.sessionId) {
-    throw new Error('Conversation is already attached to a different Eve session')
+    throw new ConversationPersistenceError('Conversation is already attached to a different Eve session', 409)
   }
 }

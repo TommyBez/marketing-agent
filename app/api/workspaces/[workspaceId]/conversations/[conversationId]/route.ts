@@ -1,4 +1,8 @@
-import { persistConversationSession, persistConversationTranscript } from '@/lib/conversation-persistence'
+import {
+  ConversationPersistenceError,
+  persistConversationSession,
+  persistConversationTranscript,
+} from '@/lib/conversation-persistence'
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 
@@ -40,9 +44,14 @@ export async function POST(request: Request, context: PersistenceRouteContext) {
     return new Response(null, { status: 204 })
   } catch (error) {
     console.error('[v0] Failed to persist Eve conversation:', error)
+    const status = error instanceof ConversationPersistenceError
+      ? error.status
+      : error instanceof z.ZodError || error instanceof SyntaxError
+        ? 400
+        : 500
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unable to persist the Eve conversation' },
-      { status: 400 },
+      { status },
     )
   }
 }
