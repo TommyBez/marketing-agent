@@ -1,6 +1,7 @@
 import { getWorkspace, listWorkspaces } from '@/app/actions/company'
-import { createConversation, getConversation, listWorkspaceConversations } from '@/app/actions/thread'
+import { getConversation, listWorkspaceConversations } from '@/app/actions/thread'
 import { AgentChat } from '@/components/agent-chat'
+import { ConversationBootstrap } from '@/components/conversation-bootstrap'
 import { ConversationSidebar } from '@/components/conversation-sidebar'
 import { SignOutButton } from '@/components/sign-out-button'
 import { Badge } from '@/components/ui/badge'
@@ -33,9 +34,8 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
   ])
   const activeConversationId = requestedConversationId && initialConversations.some(({ id }) => id === requestedConversationId)
     ? requestedConversationId
-    : initialConversations[0]?.id ?? (await createConversation(workspaceId)).id
-  const conversations = initialConversations.length > 0 ? initialConversations : await listWorkspaceConversations(workspaceId)
-  const activeConversation = await getConversation(workspaceId, activeConversationId)
+    : initialConversations[0]?.id
+  const activeConversation = activeConversationId ? await getConversation(workspaceId, activeConversationId) : null
 
   const workspaceSummaries = workspaces.map(({ id, name, websiteUrl }) => ({ id, name, websiteUrl }))
   const activeWorkspace = { id: workspace.id, name: workspace.name, websiteUrl: workspace.websiteUrl }
@@ -44,7 +44,7 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
     <main className="flex h-dvh min-h-[640px] p-2 md:p-3">
       <Card className="min-w-0 flex-1 overflow-hidden p-0 shadow-2xl">
         <SidebarProvider className="min-h-0 flex-1">
-          <ConversationSidebar workspaceId={workspaceId} conversations={conversations} activeConversationId={activeConversationId} />
+          <ConversationSidebar workspaceId={workspaceId} conversations={initialConversations} activeConversationId={activeConversationId ?? ''} />
           <SidebarInset className="min-h-0 overflow-hidden md:m-0 md:rounded-none md:shadow-none">
             <header className="flex h-15 shrink-0 items-center justify-between gap-2 border-b px-3 md:px-4">
               <div className="flex min-w-0 items-center gap-2">
@@ -55,15 +55,19 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
               <div className="flex shrink-0 items-center gap-2"><span className="hidden text-xs text-muted-foreground lg:inline">{currentSession.user.email}</span><SignOutButton /></div>
             </header>
             <Suspense fallback={<WorkspaceSkeleton />}>
-              <AgentChat
-                key={activeConversation.id}
-                workspaceId={workspace.id}
-                conversationId={activeConversation.id}
-                conversationTitle={activeConversation.title}
-                companyName={workspace.name}
-                initialEvents={activeConversation.events}
-                initialSession={activeConversation.session}
-              />
+              {activeConversation ? (
+                <AgentChat
+                  key={`${activeConversation.id}:${activeConversation.session.sessionId ?? 'new'}:${activeConversation.session.streamIndex}:${activeConversation.events.length}`}
+                  workspaceId={workspace.id}
+                  conversationId={activeConversation.id}
+                  conversationTitle={activeConversation.title}
+                  companyName={workspace.name}
+                  initialEvents={activeConversation.events}
+                  initialSession={activeConversation.session}
+                />
+              ) : (
+                <ConversationBootstrap workspaceId={workspace.id} />
+              )}
             </Suspense>
           </SidebarInset>
         </SidebarProvider>

@@ -1,6 +1,5 @@
 'use client'
 
-import { saveConversation, titleConversation } from '@/app/actions/thread'
 import {
   Conversation,
   ConversationContent,
@@ -29,7 +28,15 @@ import { AgentPart } from '@/components/agent-activity'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { EveMessage } from 'eve/client'
-import { Client, type HandleMessageStreamEvent, type SessionState } from 'eve/client'
+import {
+  Client,
+  isCurrentTurnBoundaryEvent,
+  type ClientSession,
+  type HandleMessageStreamEvent,
+  type MessageResponse as EveMessageResponse,
+  type SendTurnInput,
+  type SessionState,
+} from 'eve/client'
 import { useEveAgent } from 'eve/react'
 import { Check, Copy } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -52,6 +59,8 @@ const suggestedPrompts = [
   'Rewrite our landing page',
 ]
 
+const streamReconnectAttempts = 40
+
 function createConversationTitle(message: string) {
   const normalized = message.replace(/\s+/g, ' ').trim()
   return normalized.length > 64 ? `${normalized.slice(0, 61).trimEnd()}…` : normalized
@@ -62,6 +71,31 @@ function getMessageText(message: EveMessage) {
     .filter((part) => part.type === 'text')
     .map((part) => part.text)
     .join('\n\n')
+}
+
+function needsStreamRestore(session: SessionState | undefined, events: readonly HandleMessageStreamEvent[] | undefined) {
+  if (!session?.sessionId) return false
+  const lastEvent = events?.at(-1)
+  return !lastEvent || !isCurrentTurnBoundaryEvent(lastEvent)
+}
+
+function isFailedSessionEvent(event: HandleMessageStreamEvent | undefined) {
+  return event?.type === 'session.failed'
+}
+
+function getInitialSessionError(
+  session: SessionState | undefined,
+  events: readonly HandleMessageStreamEvent[] | undefined,
+) {
+  if (session?.sessionId || !events?.length || isCurrentTurnBoundaryEvent(events.at(-1)!)) return ''
+  return 'This conversation lost its Eve session cursor and cannot be resumed safely. Start a new conversation.'
+}
+
+function normalizeInitialSession(session: SessionState | undefined): SessionState {
+  return {
+    ...session,
+    streamIndex: session?.streamIndex ?? 0,
+  }
 }
 
 function CopyMessageAction({ text }: { text: string }) {
@@ -86,33 +120,102 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
   const router = useRouter()
   const firstMessageRef = useRef('')
   const eventsRef = useRef<HandleMessageStreamEvent[]>([...(initialEvents ?? [])])
-  const sessionRef = useRef<SessionState>(initialSession ?? { streamIndex: 0 })
+  const sessionRef = useRef<SessionState>(normalizeInitialSession(initialSession))
   const persistenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const persistenceChainRef = useRef<Promise<void>>(Promise.resolve())
   const clientRef = useRef<Client | null>(null)
+  const durableSessionRef = useRef<ClientSession | null>(null)
   const [displayTitle, setDisplayTitle] = useState(conversationTitle)
-  const [isRestoring, setIsRestoring] = useState(Boolean(initialSession?.sessionId))
+  const [isRestoring, setIsRestoring] = useState(() => needsStreamRestore(initialSession, initialEvents))
+  const [restoreError, setRestoreError] = useState(() => getInitialSessionError(initialSession, initialEvents))
 
   if (!clientRef.current) {
     clientRef.current = new Client({
       host: '',
       headers: { 'x-relay-workspace-id': workspaceId },
+      maxReconnectAttempts: streamReconnectAttempts,
       preserveCompletedSessions: true,
     })
   }
-  const durableSessionRef = useRef(clientRef.current.session(sessionRef.current))
 
-  function persistConversation(isImmediate = false) {
+  async function persistToApi(payload: Record<string, unknown>) {
+    const response = await fetch(
+      `/api/workspaces/${encodeURIComponent(workspaceId)}/conversations/${encodeURIComponent(conversationId)}`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(15_000),
+      },
+    )
+    if (response.ok) return
+    const result = await response.json().catch(() => null) as { error?: string } | null
+    throw new Error(result?.error ?? 'Unable to persist the Eve conversation')
+  }
+
+  function enqueueConversationPersistence() {
+    const session = sessionRef.current
+    const events = [...eventsRef.current]
+    const nextPersistence = persistenceChainRef.current
+      .catch(() => undefined)
+      .then(() => persistToApi({
+        operation: 'transcript',
+        sessionState: session,
+        events,
+        firstMessage: firstMessageRef.current,
+      }))
+    persistenceChainRef.current = nextPersistence
+    return nextPersistence
+  }
+
+  function persistConversation(isImmediate = false): Promise<void> {
     if (persistenceTimerRef.current) clearTimeout(persistenceTimerRef.current)
-    const persist = () => {
-      const session = sessionRef.current
-      const events = [...eventsRef.current]
-      persistenceChainRef.current = persistenceChainRef.current
-        .catch(() => undefined)
-        .then(() => saveConversation(workspaceId, conversationId, session, events, firstMessageRef.current))
+    if (isImmediate) return enqueueConversationPersistence()
+    persistenceTimerRef.current = setTimeout(() => {
+      void enqueueConversationPersistence().catch((error) => {
+        console.error('[v0] Failed to persist Eve conversation:', error)
+        setRestoreError('The Eve session could not be saved safely. Reload before continuing.')
+      })
+    }, 750)
+    return Promise.resolve()
+  }
+
+  function persistSessionCursor(session: SessionState) {
+    const nextPersistence = persistenceChainRef.current
+      .catch(() => undefined)
+      .then(() => persistToApi({
+        operation: 'session',
+        sessionState: session,
+        firstMessage: firstMessageRef.current,
+      }))
+    persistenceChainRef.current = nextPersistence
+    return nextPersistence
+  }
+
+  async function handleSessionAccepted<TOutput>(response: EveMessageResponse<TOutput>) {
+    const currentSession = sessionRef.current
+    if (currentSession.sessionId && currentSession.sessionId !== response.sessionId) {
+      throw new Error('Eve returned a different session for this conversation')
     }
-    if (isImmediate) persist()
-    else persistenceTimerRef.current = setTimeout(persist, 750)
+
+    const nextSession = {
+      continuationToken: response.continuationToken ?? currentSession.continuationToken,
+      sessionId: response.sessionId,
+      streamIndex: currentSession.streamIndex,
+    }
+    sessionRef.current = nextSession
+    await persistSessionCursor(nextSession)
+  }
+
+  if (!durableSessionRef.current) {
+    const session = clientRef.current.session(sessionRef.current)
+    const send = session.send.bind(session)
+    session.send = async function trackedSend<TOutput = unknown>(input: SendTurnInput<TOutput>) {
+      const response = await send<TOutput>(input)
+      await handleSessionAccepted(response)
+      return response
+    }
+    durableSessionRef.current = session
   }
 
   const agent = useEveAgent({
@@ -122,53 +225,87 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
     session: durableSessionRef.current,
     onEvent: (event) => {
       eventsRef.current.push(event)
+      if (sessionRef.current.sessionId) {
+        sessionRef.current = {
+          ...sessionRef.current,
+          streamIndex: sessionRef.current.streamIndex + 1,
+        }
+      }
       persistConversation()
     },
     onSessionChange: (session) => {
-      sessionRef.current = session
-      persistConversation()
+      if (session.sessionId) sessionRef.current = session
     },
     onFinish: async (snapshot) => {
       eventsRef.current = [...snapshot.events]
-      sessionRef.current = snapshot.session
-      persistConversation(true)
-      await persistenceChainRef.current
-      router.refresh()
+      if (snapshot.session.sessionId) sessionRef.current = snapshot.session
+      try {
+        await persistConversation(true)
+        router.refresh()
+      } catch (error) {
+        console.error('[v0] Failed to persist completed Eve turn:', error)
+        setRestoreError('The completed Eve turn could not be saved safely. Reload before continuing.')
+      }
     },
   })
   const [message, setMessage] = useState('')
-  const isBusy = isRestoring || agent.status === 'submitted' || agent.status === 'streaming'
+  const isAgentProcessing = agent.status === 'submitted' || agent.status === 'streaming'
+  const isComposerBlocked = isRestoring || Boolean(restoreError)
+  const isBusy = isComposerBlocked || isAgentProcessing
 
   useEffect(() => {
     const abortController = new AbortController()
     const savedSession = sessionRef.current
 
     async function restoreStream() {
-      if (!savedSession.sessionId) {
-        setIsRestoring(false)
-        return
-      }
       try {
-        for await (const event of durableSessionRef.current.stream({
+        if (savedSession.sessionId && savedSession.streamIndex > (initialSession?.streamIndex ?? 0)) {
+          await persistSessionCursor(savedSession)
+        }
+        if (!needsStreamRestore(savedSession, initialEvents)) {
+          setIsRestoring(false)
+          return
+        }
+        let reachedBoundary = false
+        for await (const event of durableSessionRef.current!.stream({
           startIndex: savedSession.streamIndex,
           signal: abortController.signal,
         })) {
           eventsRef.current.push(event)
+          sessionRef.current = {
+            ...sessionRef.current,
+            streamIndex: sessionRef.current.streamIndex + 1,
+          }
+          persistConversation()
+          if (isCurrentTurnBoundaryEvent(event)) {
+            reachedBoundary = true
+            break
+          }
         }
-      } catch (error) {
-        if (!abortController.signal.aborted) console.error('[v0] Failed to restore eve stream:', error)
-      } finally {
+        if (!reachedBoundary) {
+          if (abortController.signal.aborted) return
+          throw new Error('The Eve stream disconnected before the turn reached a safe boundary. Reload to retry.')
+        }
+        sessionRef.current = durableSessionRef.current!.state.sessionId
+          ? durableSessionRef.current!.state
+          : sessionRef.current
+        await persistConversation(true)
         if (!abortController.signal.aborted) {
-          sessionRef.current = durableSessionRef.current.state
-          persistConversation(true)
           setIsRestoring(false)
           router.refresh()
+        }
+      } catch (error) {
+        if (!abortController.signal.aborted) {
+          console.error('[v0] Failed to restore eve stream:', error)
+          setRestoreError(error instanceof Error ? error.message : 'Unable to reconnect to the Eve session')
+          setIsRestoring(false)
         }
       }
     }
 
-    void restoreStream()
+    const restoreTimer = setTimeout(() => void restoreStream(), 0)
     return () => {
+      clearTimeout(restoreTimer)
       abortController.abort()
       if (persistenceTimerRef.current) clearTimeout(persistenceTimerRef.current)
     }
@@ -177,10 +314,17 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
   async function sendMessage(text: string) {
     const nextMessage = text.trim()
     if (!nextMessage || isBusy) return
+    if (isFailedSessionEvent(eventsRef.current.at(-1))) {
+      setRestoreError('This Eve session has ended. Start a new conversation to continue.')
+      return
+    }
+    if (!sessionRef.current.sessionId && eventsRef.current.some((event) => event.type === 'session.started')) {
+      setRestoreError('This conversation lost its Eve session cursor and cannot be continued safely. Start a new conversation.')
+      return
+    }
     if (displayTitle === 'New conversation' && !firstMessageRef.current) {
       firstMessageRef.current = nextMessage
       setDisplayTitle(createConversationTitle(nextMessage))
-      void titleConversation(workspaceId, conversationId, nextMessage).then(() => router.refresh())
     }
     setMessage('')
     await agent.send({ message: nextMessage })
@@ -261,11 +405,14 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
           })}
           {isBusy && !isStreamingText && (
             <Shimmer className="text-sm" duration={1.5}>
-              {isRestoring ? 'Reconnecting to the team…' : 'The manager is coordinating the team…'}
+              {isRestoring ? 'The team is still working…' : 'The manager is coordinating the team…'}
             </Shimmer>
           )}
           {agent.error && (
             <Alert variant="destructive"><AlertDescription>{agent.error.message}</AlertDescription></Alert>
+          )}
+          {restoreError && (
+            <Alert variant="destructive"><AlertDescription>{restoreError}</AlertDescription></Alert>
           )}
         </ConversationContent>
         <ConversationScrollButton />
@@ -288,7 +435,7 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
             <PromptInputSubmit
               status={isRestoring ? 'submitted' : agent.status}
               onStop={() => agent.stop()}
-              disabled={isBusy ? isRestoring : !message.trim()}
+              disabled={isComposerBlocked || (!isAgentProcessing && !message.trim())}
             />
           </PromptInputFooter>
         </PromptInput>
