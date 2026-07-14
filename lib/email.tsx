@@ -1,10 +1,20 @@
 import { SignInCodeEmail } from '@/emails/sign-in-code'
+import { WorkspaceInvitationEmail } from '@/emails/workspace-invitation'
 import { createHash } from 'node:crypto'
 import { Resend } from 'resend'
 
 interface SendSignInCodeEmailOptions {
   expiresInMinutes: number
   otp: string
+  to: string
+}
+
+interface SendWorkspaceInvitationEmailOptions {
+  invitationId: string
+  invitationUrl: string
+  inviterName: string
+  organizationName: string
+  role: string
   to: string
 }
 
@@ -44,5 +54,38 @@ export async function sendSignInCodeEmail({
 
   if (error) {
     throw new Error('Resend could not send the authentication email', { cause: error })
+  }
+}
+
+export async function sendWorkspaceInvitationEmail({
+  invitationId,
+  invitationUrl,
+  inviterName,
+  organizationName,
+  role,
+  to,
+}: SendWorkspaceInvitationEmailOptions): Promise<void> {
+  const resend = new Resend(requireEmailEnv('RESEND_API_KEY'))
+  const resendFromEmail = requireEmailEnv('RESEND_FROM_EMAIL')
+  const { error } = await resend.emails.send(
+    {
+      from: resendFromEmail,
+      react: (
+        <WorkspaceInvitationEmail
+          invitationUrl={invitationUrl}
+          inviterName={inviterName}
+          organizationName={organizationName}
+          role={role}
+        />
+      ),
+      subject: `Join ${organizationName} on Branderize`,
+      tags: [{ name: 'email_type', value: 'workspace_invitation' }],
+      to: [to],
+    },
+    { idempotencyKey: `workspace-invitation/${invitationId}` },
+  )
+
+  if (error) {
+    throw new Error('Resend could not send the workspace invitation', { cause: error })
   }
 }

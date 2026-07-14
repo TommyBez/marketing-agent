@@ -1,13 +1,12 @@
 'use server'
 
-import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { agentThreads, companyProfiles } from '@/lib/db/schema'
+import { requireWorkspaceMembership } from '@/lib/workspace-access'
 import { del, get } from '@vercel/blob'
 import { and, desc, eq } from 'drizzle-orm'
 import type { HandleMessageStreamEvent } from 'eve/client'
 import { revalidatePath } from 'next/cache'
-import { headers } from 'next/headers'
 import { z } from 'zod'
 
 const idSchema = z.uuid()
@@ -34,65 +33,42 @@ export interface ConversationSummary {
   updatedAt: Date
 }
 
-async function getUserId() {
-  const currentSession = await auth.api.getSession({ headers: await headers() })
-  if (!currentSession?.user) throw new Error('Unauthorized')
-  return currentSession.user.id
-}
-
-async function requireWorkspace(userId: string, workspaceId: string) {
-  const parsedWorkspaceId = idSchema.safeParse(workspaceId)
-  if (!parsedWorkspaceId.success) throw new Error('Invalid workspace')
-  const workspace = (await db.select({ id: companyProfiles.id }).from(companyProfiles).where(and(
-    eq(companyProfiles.id, parsedWorkspaceId.data),
-    eq(companyProfiles.userId, userId),
-  )).limit(1))[0]
-  if (!workspace) throw new Error('Workspace not found')
-  return workspace.id
-}
-
-async function requireConversation(userId: string, workspaceId: string, conversationId: string) {
+async function requireConversation(workspaceId: string, conversationId: string) {
   const parsedConversationId = idSchema.safeParse(conversationId)
   if (!parsedConversationId.success) throw new Error('Invalid conversation')
-  const validWorkspaceId = await requireWorkspace(userId, workspaceId)
+  const { workspace } = await requireWorkspaceMembership(workspaceId)
   const conversation = (await db.select().from(agentThreads).where(and(
     eq(agentThreads.id, parsedConversationId.data),
-    eq(agentThreads.companyProfileId, validWorkspaceId),
-    eq(agentThreads.userId, userId),
+    eq(agentThreads.companyProfileId, workspace.id),
   )).limit(1))[0]
   if (!conversation) throw new Error('Conversation not found')
   return conversation
 }
 
 export async function listWorkspaceConversations(workspaceId: string): Promise<ConversationSummary[]> {
-  const userId = await getUserId()
-  const validWorkspaceId = await requireWorkspace(userId, workspaceId)
+  const { workspace } = await requireWorkspaceMembership(workspaceId)
   return db.select({ id: agentThreads.id, title: agentThreads.title, updatedAt: agentThreads.updatedAt })
     .from(agentThreads)
-    .where(and(eq(agentThreads.userId, userId), eq(agentThreads.companyProfileId, validWorkspaceId)))
+    .where(eq(agentThreads.companyProfileId, workspace.id))
     .orderBy(desc(agentThreads.updatedAt))
 }
 
 export async function createConversation(workspaceId: string) {
-  const userId = await getUserId()
-  const validWorkspaceId = await requireWorkspace(userId, workspaceId)
+  const { userId, workspace } = await requireWorkspaceMembership(workspaceId)
   const [conversation] = await db.insert(agentThreads).values({
     userId,
-    companyProfileId: validWorkspaceId,
+    companyProfileId: workspace.id,
     title: 'New conversation',
   }).returning({ id: agentThreads.id, title: agentThreads.title, updatedAt: agentThreads.updatedAt })
-  revalidatePath(`/workspace/${validWorkspaceId}`)
+  revalidatePath(`/workspace/${workspace.id}`)
   return conversation
 }
 
 export async function ensureWorkspaceConversation(workspaceId: string) {
-  const userId = await getUserId()
-  const validWorkspaceId = await requireWorkspace(userId, workspaceId)
+  const { userId, workspace } = await requireWorkspaceMembership(workspaceId)
   const conversation = await db.transaction(async (transaction) => {
-    const [lockedWorkspace] = await transaction.select({ id: companyProfiles.id }).from(companyProfiles).where(and(
-      eq(companyProfiles.id, validWorkspaceId),
-      eq(companyProfiles.userId, userId),
-    )).for('update')
+    const [lockedWorkspace] = await transaction.select({ id: companyProfiles.id }).from(companyProfiles)
+      .where(eq(companyProfiles.id, workspace.id)).for('update')
     if (!lockedWorkspace) throw new Error('Workspace not found')
 
     const existing = (await transaction.select({
@@ -100,24 +76,22 @@ export async function ensureWorkspaceConversation(workspaceId: string) {
       title: agentThreads.title,
       updatedAt: agentThreads.updatedAt,
     }).from(agentThreads).where(and(
-      eq(agentThreads.userId, userId),
-      eq(agentThreads.companyProfileId, validWorkspaceId),
+      eq(agentThreads.companyProfileId, workspace.id),
     )).orderBy(desc(agentThreads.updatedAt)).limit(1))[0]
     if (existing) return existing
 
     return (await transaction.insert(agentThreads).values({
       userId,
-      companyProfileId: validWorkspaceId,
+      companyProfileId: workspace.id,
       title: 'New conversation',
     }).returning({ id: agentThreads.id, title: agentThreads.title, updatedAt: agentThreads.updatedAt }))[0]
   })
-  revalidatePath(`/workspace/${validWorkspaceId}`)
+  revalidatePath(`/workspace/${workspace.id}`)
   return conversation
 }
 
 export async function getConversation(workspaceId: string, conversationId: string) {
-  const userId = await getUserId()
-  const conversation = await requireConversation(userId, workspaceId, conversationId)
+  const conversation = await requireConversation(workspaceId, conversationId)
   return {
     id: conversation.id,
     title: conversation.title,
@@ -131,21 +105,22 @@ export async function getConversation(workspaceId: string, conversationId: strin
 }
 
 export async function renameConversation(workspaceId: string, conversationId: string, title: string) {
-  const userId = await getUserId()
-  const conversation = await requireConversation(userId, workspaceId, conversationId)
+  const conversation = await requireConversation(workspaceId, conversationId)
   const parsedTitle = titleSchema.safeParse(title)
   if (!parsedTitle.success) throw new Error('Enter a conversation title')
   await db.update(agentThreads).set({ title: parsedTitle.data, updatedAt: new Date() }).where(and(
     eq(agentThreads.id, conversation.id),
-    eq(agentThreads.userId, userId),
+    eq(agentThreads.companyProfileId, conversation.companyProfileId),
   ))
   revalidatePath(`/workspace/${workspaceId}`)
 }
 
 export async function deleteConversation(workspaceId: string, conversationId: string) {
-  const userId = await getUserId()
-  const conversation = await requireConversation(userId, workspaceId, conversationId)
-  await db.delete(agentThreads).where(and(eq(agentThreads.id, conversation.id), eq(agentThreads.userId, userId)))
+  const conversation = await requireConversation(workspaceId, conversationId)
+  await db.delete(agentThreads).where(and(
+    eq(agentThreads.id, conversation.id),
+    eq(agentThreads.companyProfileId, conversation.companyProfileId),
+  ))
   const pointer = transcriptPointerSchema.safeParse(conversation.events)
   if (pointer.success) await del(pointer.data.blobPath).catch(() => undefined)
   revalidatePath(`/workspace/${workspaceId}`)

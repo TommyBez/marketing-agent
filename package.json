@@ -10,6 +10,7 @@
     "build": "eve build && next build",
     "start": "next start",
     "db:push": "drizzle-kit push",
+    "db:migrate:organizations": "node scripts/migrate-organizations.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

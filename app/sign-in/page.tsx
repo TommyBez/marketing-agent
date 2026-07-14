@@ -5,9 +5,19 @@ import { headers } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
-export default async function SignInPage() {
+interface SignInPageProps {
+  searchParams: Promise<{ callbackURL?: string }>
+}
+
+function safeCallbackURL(value: string | undefined) {
+  return value?.startsWith('/') && !value.startsWith('//') ? value : '/workspace'
+}
+
+export default async function SignInPage({ searchParams }: SignInPageProps) {
+  const { callbackURL: requestedCallbackURL } = await searchParams
+  const callbackURL = safeCallbackURL(requestedCallbackURL)
   const session = await auth.api.getSession({ headers: await headers() })
-  if (session?.user) redirect('/workspace')
+  if (session?.user) redirect(callbackURL)
 
   return (
     <main className="auth-shell flex min-h-dvh flex-col items-center justify-center gap-6 p-5">
@@ -18,7 +28,7 @@ export default async function SignInPage() {
           <h1 className="text-balance">Your workspace starts here</h1>
           <p className="mt-2 text-sm leading-6 text-muted-foreground">Enter your email and we will send a one-time code. No password to remember.</p>
         </div>
-        <AuthForm />
+        <AuthForm callbackURL={callbackURL} />
       </section>
       <p className="max-w-md text-center text-sm text-muted-foreground">New email? We will create your private workspace after you verify the code.</p>
     </main>

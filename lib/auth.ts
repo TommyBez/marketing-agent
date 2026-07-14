@@ -1,8 +1,11 @@
 import { betterAuth } from 'better-auth'
 import { createAuthMiddleware } from 'better-auth/api'
 import { emailOTP } from 'better-auth/plugins/email-otp'
-import { pool } from '@/lib/db'
-import { sendSignInCodeEmail } from '@/lib/email'
+import { organization } from 'better-auth/plugins/organization'
+import { db, pool } from '@/lib/db'
+import { companyProfiles } from '@/lib/db/schema'
+import { sendSignInCodeEmail, sendWorkspaceInvitationEmail } from '@/lib/email'
+import { eq } from 'drizzle-orm'
 
 const OTP_EXPIRES_IN_SECONDS = 60 * 5
 
@@ -123,6 +126,41 @@ export const auth = betterAuth({
           otp,
           to: email,
         })
+      },
+    }),
+    organization({
+      allowUserToCreateOrganization: true,
+      organizationLimit: 20,
+      membershipLimit: 100,
+      invitationExpiresIn: 60 * 60 * 24 * 7,
+      invitationLimit: 100,
+      cancelPendingInvitationsOnReInvite: true,
+      requireEmailVerificationOnInvitation: true,
+      async sendInvitationEmail({ id, email, organization: invitedOrganization, inviter, role }, request) {
+        const origin = request
+          ? new URL(request.url).origin
+          : envConfig.baseURL
+            ?? (process.env.VERCEL === '1' && process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+        const invitationUrl = new URL('/accept-invitation', origin)
+        invitationUrl.searchParams.set('id', id)
+
+        await sendWorkspaceInvitationEmail({
+          invitationId: id,
+          invitationUrl: invitationUrl.toString(),
+          inviterName: inviter.user.name || inviter.user.email,
+          organizationName: invitedOrganization.name,
+          role,
+          to: email,
+        })
+      },
+      organizationHooks: {
+        async afterUpdateOrganization({ organization: updatedOrganization }) {
+          if (!updatedOrganization) return
+          await db.update(companyProfiles).set({
+            name: updatedOrganization.name,
+            updatedAt: new Date(),
+          }).where(eq(companyProfiles.organizationId, updatedOrganization.id))
+        },
       },
     }),
   ],

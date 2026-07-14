@@ -33,7 +33,11 @@ function displayNameFromEmail(email: string): string {
   return localPart.replaceAll(/[._+-]+/g, ' ').trim() || 'Branderize user'
 }
 
-export function AuthForm() {
+interface AuthFormProps {
+  callbackURL?: string
+}
+
+export function AuthForm({ callbackURL = '/workspace' }: AuthFormProps) {
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
   const [step, setStep] = useState<AuthStep>('email')
@@ -87,7 +91,7 @@ export function AuthForm() {
         return
       }
 
-      router.push('/workspace')
+      router.push(callbackURL)
       router.refresh()
     } catch {
       setError('We could not verify the code. Check your connection and try again.')
