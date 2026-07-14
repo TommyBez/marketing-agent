@@ -7,15 +7,21 @@ type DeploymentEnvironment =
   | 'development'
   | 'external-production'
 
-// VERCEL_ENV is a Vercel system environment variable set to "production",
-// "preview", or "development". Outside Vercel it is undefined; those runs are
-// classified by NODE_ENV so that a production process without Vercel system
-// variables (self-hosted `next start`, system env vars disabled) is never
-// given the softened development config.
+// The VERCEL system environment variable is "1" on every Vercel deployment,
+// so it deterministically tells us whether we are running on Vercel. On
+// Vercel, VERCEL_ENV ("production" | "preview" | "development") identifies
+// the environment. Off Vercel, runs are classified by NODE_ENV so that a
+// self-hosted production process (`next start`) is never given the softened
+// development config.
 function getDeploymentEnvironment(): DeploymentEnvironment {
-  const env = process.env.VERCEL_ENV
-  if (env === 'production' || env === 'preview' || env === 'development') {
-    return env
+  if (process.env.VERCEL === '1') {
+    const env = process.env.VERCEL_ENV
+    if (env === 'production' || env === 'preview' || env === 'development') {
+      return env
+    }
+    throw new Error(
+      `Running on Vercel but VERCEL_ENV has unexpected value: ${JSON.stringify(env)}`,
+    )
   }
   return process.env.NODE_ENV === 'production' ? 'external-production' : 'development'
 }
