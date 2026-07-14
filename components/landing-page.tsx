@@ -1,94 +1,43 @@
 import { BrandMark } from '@/components/brand-mark'
-import { LandingContextParallax, LandingMotionConfig } from '@/components/landing-motion'
+import { CompanyBrief } from '@/components/company-brief'
+import { LandingAnalyzerDemo } from '@/components/landing-analyzer-demo'
+import { LandingStoryMotion } from '@/components/landing-motion'
+import { SpecialistActivityItem } from '@/components/specialist-activity-item'
 import { Button } from '@/components/ui/button'
-import {
-  LANDING_EASE_OUT,
-  LANDING_MEDIA_DURATION,
-  LANDING_REVEAL_DURATION,
-  LANDING_STAGGER,
-  LANDING_TRAVEL,
-} from '@/lib/landing-motion-tokens'
 import { ArrowRight } from 'lucide-react'
-import type { Variants } from 'motion/react'
-import * as motion from 'motion/react-client'
-import Image from 'next/image'
 import Link from 'next/link'
 
-function createLandingRevealVariants(delay = 0): Variants {
-  return {
-    hidden: {
-      opacity: 0,
-      transform: `translate3d(0, ${LANDING_TRAVEL}, 0)`,
-    },
-    visible: {
-      opacity: 1,
-      transform: 'translate3d(0, 0rem, 0)',
-      transition: {
-        delay,
-        duration: LANDING_REVEAL_DURATION,
-        ease: LANDING_EASE_OUT,
-      },
-    },
-  }
+const expertiseExamples = [
+  { name: 'Positioning', detail: 'Clarify the market, offer, and decision context' },
+  { name: 'Demand', detail: 'Find the channels and moments worth pursuing' },
+  { name: 'Messaging', detail: 'Turn the brief into a clear story and campaign' },
+  { name: 'Conversion', detail: 'Remove friction and prioritize measurable moves' },
+]
+
+const assignedSpecialists = ['Strategy', 'Copywriting', 'Growth']
+
+const northlineBrief = {
+  name: 'Northline',
+  websiteUrl: 'https://northline.studio',
+  summary: 'A strategy-led design partner helping independent hospitality brands launch with a clearer point of view.',
+  audience: 'Founder-led hospitality teams preparing a new opening, repositioning, or expansion.',
+  offering: 'Brand strategy, launch systems, digital direction, and campaign creative.',
+  voice: 'Direct, considered, and quietly confident.',
 }
 
-const landingRevealVariants = createLandingRevealVariants()
-
-const landingHeroMediaVariants = {
-  hidden: {
-    opacity: 0.75,
-    transform: 'translate3d(0, 0rem, 0) scale(0.97)',
+const coordinatedAnswer = [
+  {
+    title: 'Launch direction',
+    body: 'Own the moment between a strong concept and an opening people can already picture themselves inside.',
   },
-  visible: {
-    opacity: 1,
-    transform: 'translate3d(0, 0rem, 0) scale(1)',
-    transition: {
-      delay: LANDING_STAGGER * 2,
-      duration: LANDING_MEDIA_DURATION,
-      ease: LANDING_EASE_OUT,
-    },
+  {
+    title: 'Shared campaign idea',
+    body: 'Build every channel around one invitation: see the place take shape before the doors open.',
   },
-} satisfies Variants
-
-const landingContextMediaVariants = {
-  hidden: landingRevealVariants.hidden,
-  visible: {
-    ...landingRevealVariants.visible,
-    transition: {
-      duration: LANDING_MEDIA_DURATION,
-      ease: LANDING_EASE_OUT,
-    },
+  {
+    title: 'First move',
+    body: 'Publish the opening story, then let search, lifecycle, conversion, and paid creative compound around it.',
   },
-} satisfies Variants
-
-const landingLoadMotion = {
-  initial: 'hidden',
-  animate: 'visible',
-} as const
-
-const landingViewMotion = {
-  initial: 'hidden',
-  whileInView: 'visible',
-  viewport: { once: true, amount: 0.25 },
-} as const
-
-const landingRailViewMotion = {
-  initial: 'hidden',
-  whileInView: 'visible',
-  viewport: {
-    once: true,
-    amount: 0.6,
-    margin: '0px 0px -12% 0px',
-  },
-} as const
-
-const specialists = [
-  { name: 'Strategy', detail: 'Positioning and market signals' },
-  { name: 'SEO + Content', detail: 'Demand, discovery, and authority' },
-  { name: 'Copywriting', detail: 'Clear ideas that move people' },
-  { name: 'Conversion', detail: 'Sharper journeys with less friction' },
-  { name: 'Growth', detail: 'Retention and compounding loops' },
-  { name: 'Paid + Social', detail: 'Campaigns built for distribution' },
 ]
 
 interface LandingPageProps {
@@ -97,6 +46,7 @@ interface LandingPageProps {
 
 function LandingHeader({ isSignedIn }: LandingPageProps) {
   const primaryHref = isSignedIn ? '/workspace' : '/sign-up'
+  const primaryLabel = isSignedIn ? 'Open workspace' : 'Create your workspace'
 
   return (
     <header className="landing-shell landing-header">
@@ -104,168 +54,154 @@ function LandingHeader({ isSignedIn }: LandingPageProps) {
         <BrandMark />
       </Link>
       <nav aria-label="Main navigation" className="landing-nav">
-        <Link className="landing-nav-link" href="#how-it-works">How it works</Link>
         {!isSignedIn && <Link className="landing-nav-link" href="/sign-in">Sign in</Link>}
         <Button className="landing-cta" nativeButton={false} render={<Link href={primaryHref} />}>
-          {isSignedIn ? 'Open workspace' : 'Start free'}
+          {isSignedIn ? primaryLabel : (
+            <>
+              <span className="landing-header-cta-full">Create your workspace</span>
+              <span className="landing-header-cta-compact">Create workspace</span>
+            </>
+          )}
         </Button>
       </nav>
     </header>
   )
 }
 
-function DisciplineRail() {
+function DisciplineScore() {
   return (
-    <motion.section
-      className="landing-shell discipline-rail"
-      aria-label="Marketing specialists"
-      {...landingRailViewMotion}
-    >
-      <motion.p variants={landingRevealVariants}>One brief, six disciplines</motion.p>
-      <div>
-        {specialists.map(({ name }, index) => (
-          <motion.span
-            key={name}
-            variants={createLandingRevealVariants((index + 1) * LANDING_STAGGER)}
-          >
-            {name}
-          </motion.span>
-        ))}
+    <section className="landing-shell discipline-score" aria-labelledby="discipline-score-title">
+      <div className="discipline-score-copy landing-view-reveal">
+        <p>One shared company brief</p>
+        <div>
+          <h2 id="discipline-score-title">The right expertise. One coordinated answer.</h2>
+          <p>Each assigned specialist works from the same company context. The manager resolves overlaps and trade-offs, so you get one direction instead of disconnected opinions.</p>
+        </div>
       </div>
-    </motion.section>
-  )
-}
-
-function ContextSection() {
-  return (
-    <section className="landing-shell context-section">
-      <motion.div
-        className="context-copy"
-        variants={landingRevealVariants}
-        {...landingViewMotion}
-      >
-        <h2>Your brand is the brief.</h2>
-        <p>Branderize studies your positioning, audience, offers, and voice before the first specialist starts working.</p>
-        <ul>
-          <li>One source of truth for every request</li>
-          <li>Company context that persists between conversations</li>
-          <li>Work that sounds recognizably yours</li>
+      <div className="discipline-roles-wrap">
+        <div aria-hidden="true" className="discipline-baton" />
+        <ul className="discipline-roles">
+          {expertiseExamples.map(({ name, detail }) => (
+            <li className="discipline-role" key={name}>
+              <div>
+                <strong>{name}</strong>
+                <span>{detail}</span>
+              </div>
+            </li>
+          ))}
         </ul>
-      </motion.div>
-      <motion.figure
-        className="context-image"
-        variants={landingContextMediaVariants}
-        {...landingViewMotion}
-      >
-        <LandingContextParallax>
-          <Image
-            src="/branderize-workspace-context.webp"
-            alt="Branderize workspace showing Northline positioning, audience, offer, and voice as a shared brand brief"
-            width={1000}
-            height={1250}
-            sizes="(max-width: 767px) 100vw, 52vw"
-          />
-        </LandingContextParallax>
-      </motion.figure>
+      </div>
     </section>
   )
 }
 
-function WorkflowSection() {
+function OrchestrationStory() {
   return (
-    <section id="how-it-works" className="landing-shell workflow-section">
-      <motion.div
-        className="workflow-heading"
-        variants={landingRevealVariants}
-        {...landingViewMotion}
-      >
-        <h2>Brief once. Move as one.</h2>
-        <p>Give Branderize an outcome. The manager assembles the right specialists and returns one coordinated answer.</p>
-      </motion.div>
-      <div className="workflow-grid">
-        <motion.article className="workflow-lead" variants={landingRevealVariants} {...landingViewMotion}>
-          <span>Understand</span>
-          <h3>Start with the business, not a blank prompt.</h3>
-          <p>Add your website once. Branderize turns it into durable context for every project that follows.</p>
-        </motion.article>
-        <motion.article variants={createLandingRevealVariants(LANDING_STAGGER)} {...landingViewMotion}>
-          <span>Orchestrate</span>
-          <h3>The right minds enter the room.</h3>
-          <p>Strategy, search, copy, conversion, growth, and distribution collaborate without six separate briefs.</p>
-        </motion.article>
-        <motion.article
-          className="workflow-accent"
-          variants={createLandingRevealVariants(LANDING_STAGGER * 2)}
-          {...landingViewMotion}
-        >
-          <span>Deliver</span>
-          <h3>One answer, ready to shape.</h3>
-          <p>Ideas arrive connected, traceable, and grounded in the same brand truth.</p>
-        </motion.article>
-      </div>
-    </section>
+    <LandingStoryMotion
+      heading={(
+        <header className="story-heading-copy landing-view-reveal">
+          <p>How it works</p>
+          <h2>Your brand is not a blank prompt.</h2>
+          <span>Branderize turns your website into a private company brief, so every request starts with the right context.</span>
+        </header>
+      )}
+      contextBeat={(
+        <article className="story-beat">
+          <p>Context</p>
+          <h3>Start with what your business already knows.</h3>
+          <span>Branderize captures your positioning, audience, offer, and voice in one shared brief.</span>
+        </article>
+      )}
+      orchestrationBeat={(
+        <article className="story-beat">
+          <p>Orchestration</p>
+          <h3>Bring in the right minds.</h3>
+          <span>The manager assigns the specialists your request needs, without making you repeat the brief.</span>
+        </article>
+      )}
+      synthesisBeat={(
+        <article className="story-beat">
+          <p>Synthesis</p>
+          <h3>Get one accountable answer.</h3>
+          <span>The manager resolves trade-offs, separates evidence from assumptions, and gives you concrete next actions.</span>
+        </article>
+      )}
+      contextPanel={<CompanyBrief brief={northlineBrief} density="compact" />}
+      activities={assignedSpecialists.map((name) => (
+        <SpecialistActivityItem
+          className="living-activity"
+          key={name}
+          kind="subagent-call"
+          status="completed"
+          title={`${name} specialist`}
+          toolName={name.toLowerCase().replaceAll(/[^a-z]+/g, '-')}
+        />
+      ))}
+      prompt="Build a coordinated launch plan for Northline."
+      responseBlocks={coordinatedAnswer.map(({ body, title }) => (
+        <section className="living-response-block" key={title}>
+          <h4>{title}</h4>
+          <p>{body}</p>
+        </section>
+      ))}
+      composer="Ask your brand director…"
+      workspaceName="Northline"
+    />
   )
 }
 
 export function LandingPage({ isSignedIn }: LandingPageProps) {
   const primaryHref = isSignedIn ? '/workspace' : '/sign-up'
-  const primaryLabel = isSignedIn ? 'Open workspace' : 'Start free'
+  const primaryLabel = isSignedIn ? 'Open workspace' : 'Create your workspace'
 
   return (
-    <LandingMotionConfig>
-      <main className="landing-page">
+    <main className="landing-page">
         <LandingHeader isSignedIn={isSignedIn} />
         <section className="landing-shell hero-section">
           <div className="hero-copy">
-            <motion.p className="hero-kicker" variants={landingRevealVariants} {...landingLoadMotion}>AI marketing workspace</motion.p>
-            <motion.h1 variants={createLandingRevealVariants(LANDING_STAGGER)} {...landingLoadMotion}>Make every channel <span>sound like you.</span></motion.h1>
-            <motion.p variants={createLandingRevealVariants(LANDING_STAGGER * 2)} {...landingLoadMotion}>Branderize learns your business and directs six specialists from one shared source of truth.</motion.p>
-            <motion.div
-              className="hero-actions"
-              variants={createLandingRevealVariants(LANDING_STAGGER * 3)}
-              {...landingLoadMotion}
-            >
+            <p className="hero-kicker landing-load-reveal landing-load-1">AI marketing workspace</p>
+            <h1 aria-label="Brief once. Move as one.">
+              <span aria-hidden="true" className="hero-line">
+                <span className="landing-headline-reveal landing-load-2">Brief once.</span>
+              </span>
+              <span aria-hidden="true" className="hero-line hero-line-muted">
+                <span className="landing-headline-reveal landing-load-3">Move as one.</span>
+              </span>
+            </h1>
+            <p className="landing-load-reveal landing-load-4">Add your website once. Branderize builds a shared brief, assigns the right specialists, and returns one coordinated answer.</p>
+            <div className="hero-actions landing-load-reveal landing-load-5">
               <Button className="landing-cta" size="lg" nativeButton={false} render={<Link href={primaryHref} />}>
                 {primaryLabel}<ArrowRight data-icon="inline-end" />
               </Button>
-              <Button className="landing-cta" size="lg" variant="outline" nativeButton={false} render={<Link href="#how-it-works" />}>
-                See how it works
-              </Button>
-            </motion.div>
+            </div>
           </div>
-          <motion.figure className="hero-visual" variants={landingHeroMediaVariants} {...landingLoadMotion}>
-            <Image
-              src="/branderize-workspace-launch.webp"
-              alt="Branderize workspace coordinating six marketing disciplines for a Northline launch"
-              width={1200}
-              height={900}
-              priority
-              sizes="(max-width: 767px) 100vw, 52vw"
-            />
-          </motion.figure>
+          <div className="hero-visual" role="img" aria-label="Branderize turning a website into a shared company brief">
+            <LandingAnalyzerDemo />
+          </div>
         </section>
-        <DisciplineRail />
-        <ContextSection />
-        <WorkflowSection />
-        <motion.footer
-          className="landing-shell landing-footer"
-          variants={landingRevealVariants}
-          {...landingViewMotion}
-        >
-          <div>
-            <p>Ready when you are</p>
-            <h2>Put your whole marketing team on the same page.</h2>
-            <Button className="landing-cta" size="lg" nativeButton={false} render={<Link href={primaryHref} />}>
+        <DisciplineScore />
+        <OrchestrationStory />
+        <footer className="landing-closing">
+          <div className="landing-shell landing-closing-main landing-view-reveal">
+            <p>Your move</p>
+            <h2>Your next brief already has a team.</h2>
+            <span>Create your account, add your website, and make your first request. No credit card required.</span>
+            <Button
+              className="landing-cta landing-closing-cta"
+              size="lg"
+              variant="secondary"
+              nativeButton={false}
+              render={<Link href={primaryHref} />}
+            >
               {primaryLabel}<ArrowRight data-icon="inline-end" />
             </Button>
           </div>
-          <div className="footer-bottom">
+          <div className="landing-shell footer-bottom">
             <BrandMark />
-            <p>One manager. Six specialists. Your company context.</p>
-            <p>Built for focused marketing teams.</p>
+            <p>One manager. The right specialists. Your company context.</p>
+            <p>Your workspace and conversations stay private to your account.</p>
           </div>
-        </motion.footer>
-      </main>
-    </LandingMotionConfig>
+        </footer>
+    </main>
   )
 }

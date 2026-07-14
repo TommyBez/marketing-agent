@@ -2,6 +2,8 @@ import { listWorkspaceArtifacts } from '@/app/actions/artifact'
 import { getWorkspace, listWorkspaces } from '@/app/actions/company'
 import { getConversation, listWorkspaceConversations } from '@/app/actions/thread'
 import { AgentChat } from '@/components/agent-chat'
+import { CompanyBrief } from '@/components/company-brief'
+import { CompanyBriefDialog } from '@/components/company-brief-dialog'
 import { ConversationBootstrap } from '@/components/conversation-bootstrap'
 import { ConversationSidebar } from '@/components/conversation-sidebar'
 import { SignOutButton } from '@/components/sign-out-button'
@@ -41,6 +43,14 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
 
   const workspaceSummaries = workspaces.map(({ id, name, websiteUrl }) => ({ id, name, websiteUrl }))
   const activeWorkspace = { id: workspace.id, name: workspace.name, websiteUrl: workspace.websiteUrl }
+  const companyBrief = {
+    name: workspace.name,
+    websiteUrl: workspace.websiteUrl,
+    summary: workspace.summary,
+    audience: workspace.audience,
+    offering: workspace.offering,
+    voice: workspace.voice,
+  }
 
   return (
     <main className="workspace-shell flex h-dvh min-h-[640px] p-2 md:p-3">
@@ -52,6 +62,9 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
               <div className="flex min-w-0 items-center gap-2">
                 <SidebarTrigger />
                 <WorkspaceSwitcher activeWorkspace={activeWorkspace} workspaces={workspaceSummaries} isCompact />
+                <CompanyBriefDialog companyName={companyBrief.name}>
+                  <CompanyBrief brief={companyBrief} className="rounded-none bg-transparent ring-0" />
+                </CompanyBriefDialog>
                 <Badge variant="secondary" className="hidden font-mono text-[10px] uppercase tracking-widest lg:flex">Brand command</Badge>
               </div>
               <div className="flex shrink-0 items-center gap-2"><span className="hidden text-xs text-muted-foreground lg:inline">{currentSession.user.email}</span><SignOutButton /></div>

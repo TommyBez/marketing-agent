@@ -46,23 +46,32 @@
   --brand-surface: oklch(0.992 0.003 255);
   --brand-muted: oklch(0.48 0.012 255);
   --brand-accent: oklch(0.66 0.2 35);
+  --brand-accent-text: oklch(0.46 0.16 35);
   --brand-accent-ink: oklch(0.15 0.018 35);
+  --brand-on-accent-muted: color-mix(in oklch, var(--brand-accent-ink) 96%, transparent);
+  --brand-on-contrast: oklch(0.97 0.004 90);
   --brand-rule: color-mix(in oklch, var(--brand-ink) 16%, transparent);
+  --brand-stage-matte: oklch(0.925 0.008 255);
+  --brand-stage-border: color-mix(in oklch, var(--brand-ink) 14%, transparent);
   --app-backdrop: linear-gradient(145deg, color-mix(in oklch, var(--primary) 3%, var(--background)), var(--background) 34%, color-mix(in oklch, var(--foreground) 2%, var(--background)));
 
   --font-landing-display: var(--font-geist);
   --font-landing-body: var(--font-geist);
   --font-landing-mono: var(--font-geist-mono);
-  --text-landing-display: clamp(3.4rem, 4.25vw, 4.9rem);
-  --text-landing-section: clamp(2.5rem, 5.2vw, 5.6rem);
+  --text-landing-display: clamp(3.35rem, 6.2vw, 6rem);
+  --text-landing-section: clamp(2.8rem, 6.2vw, 6.2rem);
   /* Mirrored as numeric Motion values in lib/landing-motion-tokens.ts. */
   --ease-landing-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-landing-in-out: cubic-bezier(0.77, 0, 0.175, 1);
   --dur-landing-fast: 120ms;
   --dur-landing-press: 160ms;
   --dur-landing-short: 220ms;
   --dur-landing-reveal: 600ms;
   --dur-landing-media: 760ms;
   --dur-landing-stagger: 70ms;
+  --dur-landing-headline: 700ms;
+  --dur-landing-stage: 780ms;
+  --dur-landing-discipline-stagger: 55ms;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -99,8 +108,10 @@
     --brand-surface: oklch(0.18 0.011 255);
     --brand-muted: oklch(0.68 0.009 90);
     --brand-accent: oklch(0.7 0.19 35);
+    --brand-accent-text: oklch(0.78 0.15 35);
     --brand-accent-ink: oklch(0.14 0.018 35);
     --brand-rule: color-mix(in oklch, var(--brand-ink) 18%, transparent);
+    --brand-stage-matte: oklch(0.205 0.012 255);
   }
 }
 
