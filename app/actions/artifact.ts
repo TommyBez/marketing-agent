@@ -53,11 +53,11 @@ export async function saveArtifact(workspaceId: string, input: { title: string; 
   const validWorkspaceId = await requireWorkspace(userId, workspaceId)
   const parsedTitle = titleSchema.parse(input.title)
   const parsedContent = contentSchema.parse(input.content)
-  const parsedConversationId = idSchema.safeParse(input.conversationId)
+  const parsedConversationId = idSchema.optional().parse(input.conversationId)
   const [artifact] = await db.insert(artifacts).values({
     userId,
     companyProfileId: validWorkspaceId,
-    threadId: parsedConversationId.success ? parsedConversationId.data : null,
+    threadId: parsedConversationId ?? null,
     title: parsedTitle,
     content: parsedContent,
   }).returning({ id: artifacts.id, title: artifacts.title, updatedAt: artifacts.updatedAt })

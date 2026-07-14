@@ -110,7 +110,7 @@ export async function deleteWorkspace(workspaceId: string) {
     ne(companyProfiles.id, parsedWorkspaceId),
   )).orderBy(desc(companyProfiles.updatedAt)).limit(1))[0] ?? null
 
-  const wasDeleted = await db.transaction(async (transaction) => {
+  await db.transaction(async (transaction) => {
     await transaction.delete(artifacts).where(and(
       eq(artifacts.companyProfileId, parsedWorkspaceId),
       eq(artifacts.userId, userId),
@@ -123,10 +123,9 @@ export async function deleteWorkspace(workspaceId: string) {
       eq(companyProfiles.id, parsedWorkspaceId),
       eq(companyProfiles.userId, userId),
     )).returning({ id: companyProfiles.id })
-    return Boolean(deletedWorkspace)
+    // Throw inside the callback so a missing workspace rolls back the artifact/thread deletions above.
+    if (!deletedWorkspace) throw new Error('Workspace not found')
   })
-
-  if (!wasDeleted) throw new Error('Workspace not found')
   revalidatePath('/workspace', 'layout')
   return { nextWorkspaceId: nextWorkspace?.id ?? null }
 }
