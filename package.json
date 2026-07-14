@@ -11,6 +11,7 @@
     "start": "next start",
     "db:push": "drizzle-kit push",
     "db:migrate:organizations": "node scripts/migrate-organizations.mjs",
+    "db:migrate:public-shares": "node scripts/migrate-public-shares.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },

@@ -1,4 +1,5 @@
-import { boolean, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import { boolean, check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -101,6 +102,28 @@ export const artifacts = pgTable('artifacts', {
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 }, (table) => [index('artifacts_user_company_updated_idx').on(table.userId, table.companyProfileId, table.updatedAt)])
+
+export const publicShares = pgTable('public_shares', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  publicId: text('publicId').notNull(),
+  companyProfileId: uuid('companyProfileId').notNull().references(() => companyProfiles.id, { onDelete: 'cascade' }),
+  createdByUserId: text('createdByUserId').references(() => user.id, { onDelete: 'set null' }),
+  resourceType: text('resourceType').notNull(),
+  artifactId: uuid('artifactId').references(() => artifacts.id, { onDelete: 'cascade' }),
+  threadId: uuid('threadId').references(() => agentThreads.id, { onDelete: 'cascade' }),
+  snapshot: jsonb('snapshot').notNull(),
+  createdAt: timestamp('createdAt').notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex('public_shares_public_id_uidx').on(table.publicId),
+  uniqueIndex('public_shares_artifact_uidx').on(table.artifactId),
+  uniqueIndex('public_shares_thread_uidx').on(table.threadId),
+  index('public_shares_company_created_idx').on(table.companyProfileId, table.createdAt),
+  check('public_shares_resource_check', sql`(
+    (${table.resourceType} = 'artifact' AND ${table.artifactId} IS NOT NULL AND ${table.threadId} IS NULL)
+    OR
+    (${table.resourceType} = 'conversation' AND ${table.threadId} IS NOT NULL AND ${table.artifactId} IS NULL)
+  )`),
+])
 
 export interface CompanyContext {
   name?: string

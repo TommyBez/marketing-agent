@@ -2,31 +2,15 @@
 
 import { db } from '@/lib/db'
 import { agentThreads, companyProfiles } from '@/lib/db/schema'
+import { getConversationTranscriptBlobPath, readConversationTranscript } from '@/lib/conversation-transcript'
 import { requireWorkspaceMembership } from '@/lib/workspace-access'
-import { del, get } from '@vercel/blob'
+import { del } from '@vercel/blob'
 import { and, desc, eq } from 'drizzle-orm'
-import type { HandleMessageStreamEvent } from 'eve/client'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
 const idSchema = z.uuid()
 const titleSchema = z.string().trim().min(1).max(80)
-const transcriptEventsSchema = z.array(z.unknown())
-const transcriptPointerSchema = z.object({ blobPath: z.string().min(1) })
-
-async function readTranscript(value: unknown) {
-  const inlineTranscript = transcriptEventsSchema.safeParse(value)
-  if (inlineTranscript.success) return inlineTranscript.data as HandleMessageStreamEvent[]
-
-  const pointer = transcriptPointerSchema.safeParse(value)
-  if (!pointer.success) return []
-
-  const result = await get(pointer.data.blobPath, { access: 'private', useCache: false })
-  if (!result || result.statusCode !== 200) return []
-  const payload = await new Response(result.stream).json()
-  return transcriptEventsSchema.parse(payload) as HandleMessageStreamEvent[]
-}
-
 export interface ConversationSummary {
   id: string
   title: string
@@ -95,7 +79,7 @@ export async function getConversation(workspaceId: string, conversationId: strin
   return {
     id: conversation.id,
     title: conversation.title,
-    events: await readTranscript(conversation.events),
+    events: await readConversationTranscript(conversation.events),
     session: {
       continuationToken: conversation.continuationToken ?? undefined,
       sessionId: conversation.eveSessionId ?? undefined,
@@ -121,7 +105,7 @@ export async function deleteConversation(workspaceId: string, conversationId: st
     eq(agentThreads.id, conversation.id),
     eq(agentThreads.companyProfileId, conversation.companyProfileId),
   ))
-  const pointer = transcriptPointerSchema.safeParse(conversation.events)
-  if (pointer.success) await del(pointer.data.blobPath).catch(() => undefined)
+  const blobPath = getConversationTranscriptBlobPath(conversation.events)
+  if (blobPath) await del(blobPath).catch(() => undefined)
   revalidatePath(`/workspace/${workspaceId}`)
 }

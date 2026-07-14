@@ -15,6 +15,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { WorkspaceSwitcher } from '@/components/workspace-switcher'
 import { WorkspacePeopleDialog } from '@/components/workspace-people-dialog'
 import { auth } from '@/lib/auth'
+import { canManageOrganization } from '@/lib/workspace-access'
 import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { Suspense } from 'react'
@@ -57,12 +58,20 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
     offering: workspace.offering,
     voice: workspace.voice,
   }
+  const canInvite = canManageOrganization(workspacePeople.currentRole)
 
   return (
     <main className="workspace-shell flex h-dvh min-h-[640px] p-2 md:p-3">
       <Card className="workspace-frame min-w-0 flex-1 overflow-hidden p-0">
         <SidebarProvider className="workspace-sidebar min-h-0 flex-1">
-          <ConversationSidebar workspaceId={workspaceId} conversations={initialConversations} artifacts={initialArtifacts} activeConversationId={activeConversationId ?? ''} />
+          <ConversationSidebar
+            workspaceId={workspaceId}
+            workspaceName={workspace.name}
+            canInvite={canInvite}
+            conversations={initialConversations}
+            artifacts={initialArtifacts}
+            activeConversationId={activeConversationId ?? ''}
+          />
           <SidebarInset className="workspace-inset min-h-0 overflow-hidden">
             <header className="workspace-header flex h-15 shrink-0 items-center justify-between gap-2 border-b px-3 md:px-4">
               <div className="flex min-w-0 items-center gap-2">
@@ -89,6 +98,7 @@ export default async function WorkspacePage({ params, searchParams }: WorkspaceP
             <Suspense fallback={<WorkspaceSkeleton />}>
               {activeConversation ? (
                 <AgentChat
+                  canInvite={canInvite}
                   key={`${activeConversation.id}:${activeConversation.session.sessionId ?? 'new'}:${activeConversation.session.streamIndex}:${activeConversation.events.length}`}
                   workspaceId={workspace.id}
                   conversationId={activeConversation.id}
