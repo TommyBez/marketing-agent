@@ -3,7 +3,7 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { agentThreads, companyProfiles } from '@/lib/db/schema'
-import { del, get, put } from '@vercel/blob'
+import { del, get } from '@vercel/blob'
 import { and, desc, eq } from 'drizzle-orm'
 import type { HandleMessageStreamEvent } from 'eve/client'
 import { revalidatePath } from 'next/cache'
@@ -12,17 +12,8 @@ import { z } from 'zod'
 
 const idSchema = z.string().uuid()
 const titleSchema = z.string().trim().min(1).max(80)
-const sessionStateSchema = z.object({
-  continuationToken: z.string().optional(),
-  sessionId: z.string().optional(),
-  streamIndex: z.number().int().min(0),
-})
 const transcriptEventsSchema = z.array(z.unknown()).max(5_000)
 const transcriptPointerSchema = z.object({ blobPath: z.string().min(1) })
-
-function getTranscriptPath(userId: string, conversationId: string) {
-  return `agent-transcripts/${userId}/${conversationId}.json`
-}
 
 async function readTranscript(value: unknown) {
   const inlineTranscript = transcriptEventsSchema.safeParse(value)
@@ -73,12 +64,6 @@ async function requireConversation(userId: string, workspaceId: string, conversa
   return conversation
 }
 
-function createTitle(message: string) {
-  const normalized = message.replace(/\s+/g, ' ').trim()
-  if (!normalized) return 'New conversation'
-  return normalized.length > 64 ? `${normalized.slice(0, 61).trimEnd()}…` : normalized
-}
-
 export async function listWorkspaceConversations(workspaceId: string): Promise<ConversationSummary[]> {
   const userId = await getUserId()
   const validWorkspaceId = await requireWorkspace(userId, workspaceId)
@@ -113,51 +98,6 @@ export async function getConversation(workspaceId: string, conversationId: strin
       streamIndex: conversation.streamIndex,
     },
   }
-}
-
-export async function saveConversation(workspaceId: string, conversationId: string, sessionState: unknown, events: unknown, firstMessage?: string) {
-  const userId = await getUserId()
-  const conversation = await requireConversation(userId, workspaceId, conversationId)
-  const parsedSession = sessionStateSchema.parse(sessionState)
-  const parsedEvents = transcriptEventsSchema.parse(events)
-  const shouldTitle = conversation.title === 'New conversation' && Boolean(firstMessage?.trim())
-  const blobPath = getTranscriptPath(userId, conversation.id)
-  if (parsedSession.streamIndex < conversation.streamIndex) return
-  if (parsedSession.streamIndex === conversation.streamIndex) {
-    const savedEvents = await readTranscript(conversation.events)
-    if (parsedEvents.length < savedEvents.length) return
-  }
-
-  await put(blobPath, JSON.stringify(parsedEvents), {
-    access: 'private',
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    contentType: 'application/json',
-  })
-  await db.update(agentThreads).set({
-    eveSessionId: parsedSession.sessionId,
-    continuationToken: parsedSession.continuationToken,
-    streamIndex: parsedSession.streamIndex,
-    events: { blobPath },
-    ...(shouldTitle ? { title: createTitle(firstMessage ?? '') } : {}),
-    updatedAt: new Date(),
-  }).where(and(eq(agentThreads.id, conversation.id), eq(agentThreads.userId, userId)))
-  revalidatePath(`/workspace/${workspaceId}`)
-}
-
-export async function titleConversation(workspaceId: string, conversationId: string, firstMessage: string) {
-  const userId = await getUserId()
-  const conversation = await requireConversation(userId, workspaceId, conversationId)
-  if (conversation.title !== 'New conversation') return conversation.title
-
-  const title = createTitle(firstMessage)
-  await db.update(agentThreads).set({ title, updatedAt: new Date() }).where(and(
-    eq(agentThreads.id, conversation.id),
-    eq(agentThreads.userId, userId),
-    eq(agentThreads.title, 'New conversation'),
-  ))
-  revalidatePath(`/workspace/${workspaceId}`)
-  return title
 }
 
 export async function renameConversation(workspaceId: string, conversationId: string, title: string) {
