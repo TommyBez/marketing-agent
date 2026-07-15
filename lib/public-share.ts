@@ -11,7 +11,7 @@ import {
   defaultMessageReducer,
   type HandleMessageStreamEvent,
 } from 'eve/client'
-import { cache } from 'react'
+import { cacheLife, cacheTag } from 'next/cache'
 import { z } from 'zod'
 
 export const publicShareIdSchema = z.string().regex(/^[A-Za-z0-9_-]{32}$/)
@@ -93,17 +93,43 @@ export function parsePublicShareSnapshot(value: unknown): PublicShareSnapshot {
   return publicShareSnapshotSchema.parse(value)
 }
 
-export const getPublicShareByPublicId = cache(async (publicId: string) => {
-  const parsedPublicId = publicShareIdSchema.safeParse(publicId)
-  if (!parsedPublicId.success) return null
+export function getPublicShareCacheTag(publicId: string) {
+  return `public-share:${publicId}`
+}
+
+export function getPublicShareResourceCacheTag(resourceType: 'artifact' | 'conversation', resourceId: string) {
+  return `public-share-resource:${resourceType}:${resourceId}`
+}
+
+export function getPublicShareWorkspaceCacheTag(workspaceId: string) {
+  return `public-share-workspace:${workspaceId}`
+}
+
+async function getCachedPublicShareByPublicId(publicId: string) {
+  'use cache'
+
+  cacheLife('max')
+  cacheTag(getPublicShareCacheTag(publicId))
 
   const share = (await db.select({
+    artifactId: publicShares.artifactId,
+    companyProfileId: publicShares.companyProfileId,
     createdAt: publicShares.createdAt,
     publicId: publicShares.publicId,
+    resourceType: publicShares.resourceType,
     snapshot: publicShares.snapshot,
-  }).from(publicShares).where(eq(publicShares.publicId, parsedPublicId.data)).limit(1))[0]
+    threadId: publicShares.threadId,
+  }).from(publicShares).where(eq(publicShares.publicId, publicId)).limit(1))[0]
 
   if (!share) return null
+
+  cacheTag(getPublicShareWorkspaceCacheTag(share.companyProfileId))
+  if (share.resourceType === 'artifact' && share.artifactId) {
+    cacheTag(getPublicShareResourceCacheTag('artifact', share.artifactId))
+  }
+  if (share.resourceType === 'conversation' && share.threadId) {
+    cacheTag(getPublicShareResourceCacheTag('conversation', share.threadId))
+  }
 
   const snapshot = publicShareSnapshotSchema.safeParse(share.snapshot)
   if (!snapshot.success) return null
@@ -113,4 +139,11 @@ export const getPublicShareByPublicId = cache(async (publicId: string) => {
     publicId: share.publicId,
     snapshot: snapshot.data,
   }
-})
+}
+
+export async function getPublicShareByPublicId(publicId: string) {
+  const parsedPublicId = publicShareIdSchema.safeParse(publicId)
+  if (!parsedPublicId.success) return null
+
+  return getCachedPublicShareByPublicId(parsedPublicId.data)
+}

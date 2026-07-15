@@ -2,9 +2,10 @@
 
 import { db } from '@/lib/db'
 import { agentThreads, artifacts } from '@/lib/db/schema'
+import { getPublicShareResourceCacheTag } from '@/lib/public-share'
 import { requireWorkspaceMembership } from '@/lib/workspace-access'
 import { and, desc, eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { z } from 'zod'
 
 const idSchema = z.uuid()
@@ -89,5 +90,6 @@ export async function deleteArtifact(workspaceId: string, artifactId: string) {
     eq(artifacts.id, artifact.id),
     eq(artifacts.companyProfileId, artifact.companyProfileId),
   ))
+  updateTag(getPublicShareResourceCacheTag('artifact', artifact.id))
   revalidatePath(`/workspace/${workspaceId}`)
 }
