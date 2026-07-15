@@ -33,13 +33,13 @@ type Artifacts = Awaited<ReturnType<typeof listWorkspaceArtifacts>>
 
 export default function WorkspacePage({ params, searchParams }: WorkspacePageProps) {
   return (
-    <main className="workspace-shell flex h-dvh min-h-[640px] p-2 md:p-3">
+    <div className="workspace-shell flex h-dvh min-h-[640px] p-2 md:p-3">
       <Card className="workspace-frame min-w-0 flex-1 overflow-hidden p-0">
         <Suspense fallback={<WorkspaceFrameSkeleton />}>
           <WorkspacePageContent params={params} searchParams={searchParams} />
         </Suspense>
       </Card>
-    </main>
+    </div>
   )
 }
 

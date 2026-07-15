@@ -10,55 +10,19 @@ export const contentType = 'image/png'
 const titleLimit = 96
 const workspaceNameLimit = 56
 const graphemeSegmenter = new Intl.Segmenter('en', { granularity: 'grapheme' })
-const bundledGeistCodePointRanges = [
-  [0x20, 0x7e],
-  [0xa0, 0xac],
-  [0xae, 0xff],
-  [0x102, 0x102],
-  [0x131, 0x131],
-  [0x152, 0x153],
-  [0x2bc, 0x2bc],
-  [0x2c6, 0x2c6],
-  [0x2da, 0x2da],
-  [0x2dc, 0x2dc],
-  [0x300, 0x301],
-  [0x303, 0x304],
-  [0x308, 0x309],
-  [0x323, 0x323],
-  [0x2013, 0x2014],
-  [0x2018, 0x201a],
-  [0x201c, 0x201e],
-  [0x2022, 0x2022],
-  [0x2026, 0x2026],
-  [0x2032, 0x2033],
-  [0x2039, 0x203a],
-  [0x2044, 0x2044],
-  [0x20ac, 0x20ac],
-  [0x2122, 0x2122],
-  [0x2191, 0x2191],
-  [0x2193, 0x2193],
-  [0x2212, 0x2212],
-] as const
 
 function getGraphemes(value: string) {
   return Array.from(graphemeSegmenter.segment(value), ({ segment }) => segment)
 }
 
-function isBundledGeistGrapheme(grapheme: string) {
-  return Array.from(grapheme).every((character) => {
-    const codePoint = character.codePointAt(0) ?? 0
-    return bundledGeistCodePointRanges.some(([start, end]) => codePoint >= start && codePoint <= end)
-  })
-}
-
 function normalizeShareText(value: string, limit: number, fallback: string) {
-  const normalized = value.normalize('NFC').replace(/\s+/g, ' ').trim()
-  const sanitized = getGraphemes(normalized)
-    .map((grapheme) => isBundledGeistGrapheme(grapheme) ? grapheme : '?')
-    .join('')
-    .replace(/\?{2,}/g, '?')
+  const sanitized = value
+    .normalize('NFC')
+    .replace(/\p{Cc}/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 
-  if (!sanitized.replaceAll('?', '').trim()) return fallback
+  if (!sanitized) return fallback
 
   const graphemes = getGraphemes(sanitized)
   if (graphemes.length <= limit) return sanitized
