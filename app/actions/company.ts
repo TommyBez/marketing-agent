@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { companyProfiles, member, type CompanyContext } from '@/lib/db/schema'
 import { requireUser, requireWorkspaceMembership } from '@/lib/workspace-access'
+import { normalizeWorkspaceDomain } from '@/lib/workspace-domain.mjs'
 import { and, desc, eq, getTableColumns, ne } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { randomUUID } from 'node:crypto'
@@ -14,7 +15,7 @@ const workspaceNameSchema = z.string().trim().min(1, 'Workspace name is required
 const urlSchema = z.string().url().refine((value) => ['http:', 'https:'].includes(new URL(value).protocol), 'Use an HTTP or HTTPS URL')
 
 function getDomain(value: string) {
-  return new URL(value).hostname.replace(/^www\./, '')
+  return normalizeWorkspaceDomain(value)
 }
 
 function createOrganizationSlug(domain: string) {

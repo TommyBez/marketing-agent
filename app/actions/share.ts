@@ -1,6 +1,7 @@
 'use server'
 
 import { readConversationTranscript } from '@/lib/conversation-transcript'
+import { actionFailure, actionSuccess, type ActionResult } from '@/lib/action-result'
 import { db } from '@/lib/db'
 import { agentThreads, artifacts, publicShares } from '@/lib/db/schema'
 import {
@@ -79,7 +80,10 @@ export async function getWorkspacePublicShare(
 async function createSnapshot(
   workspaceId: string,
   resource: PublicShareResource,
-): Promise<{ access: Awaited<ReturnType<typeof requireWorkspaceMembership>>; snapshot: PublicShareSnapshot }> {
+): Promise<ActionResult<{
+  access: Awaited<ReturnType<typeof requireWorkspaceMembership>>
+  snapshot: PublicShareSnapshot
+}>> {
   const parsedResource = resourceSchema.parse(resource)
   const access = await requireWorkspaceMembership(workspaceId)
 
@@ -91,9 +95,9 @@ async function createSnapshot(
       eq(artifacts.id, parsedResource.id),
       eq(artifacts.companyProfileId, access.workspace.id),
     )).limit(1))[0]
-    if (!artifact) throw new Error('Artifact not found')
+    if (!artifact) return actionFailure('Artifact not found')
 
-    return {
+    return actionSuccess({
       access,
       snapshot: parsePublicShareSnapshot({
         content: artifact.content,
@@ -102,7 +106,7 @@ async function createSnapshot(
         version: 1,
         workspaceName: access.workspace.name,
       }),
-    }
+    })
   }
 
   const conversation = (await db.select({
@@ -112,12 +116,12 @@ async function createSnapshot(
     eq(agentThreads.id, parsedResource.id),
     eq(agentThreads.companyProfileId, access.workspace.id),
   )).limit(1))[0]
-  if (!conversation) throw new Error('Conversation not found')
+  if (!conversation) return actionFailure('Conversation not found')
 
   const events = await readConversationTranscript(conversation.events)
-  if (!events.length) throw new Error('This conversation has no messages to share yet')
+  if (!events.length) return actionFailure('This conversation has no messages to share yet')
   if (!isCurrentTurnBoundaryEvent(events.at(-1)!)) {
-    throw new Error('Wait for the current response to finish before sharing')
+    return actionFailure('Wait for the current response to finish before sharing')
   }
 
   let messages: ReturnType<typeof createPublicConversationMessages>
@@ -126,12 +130,14 @@ async function createSnapshot(
     restriction = getConversationShareRestriction(events)
     messages = createPublicConversationMessages(events)
   } catch {
-    throw new Error('This conversation could not be prepared for sharing')
+    return actionFailure('This conversation could not be prepared for sharing')
   }
-  if (restriction) throw new Error(restriction)
-  if (!messages.length) throw new Error('This conversation has no completed messages to share yet')
+  if (restriction) return actionFailure(restriction)
+  if (!messages.length) {
+    return actionFailure('This conversation has no completed messages to share yet')
+  }
 
-  return {
+  return actionSuccess({
     access,
     snapshot: parsePublicShareSnapshot({
       messages,
@@ -140,17 +146,21 @@ async function createSnapshot(
       version: 1,
       workspaceName: access.workspace.name,
     }),
-  }
+  })
 }
 
 export async function createWorkspacePublicShare(
   workspaceId: string,
   resource: PublicShareResource,
-): Promise<WorkspacePublicShare> {
+): Promise<ActionResult<WorkspacePublicShare>> {
   const existing = await findShare(workspaceId, resource)
-  if (existing.share) return toWorkspacePublicShare(existing.share, existing.access)
+  if (existing.share) {
+    return actionSuccess(toWorkspacePublicShare(existing.share, existing.access))
+  }
 
-  const { access, snapshot } = await createSnapshot(workspaceId, existing.parsedResource)
+  const snapshotResult = await createSnapshot(workspaceId, existing.parsedResource)
+  if (!snapshotResult.ok) return snapshotResult
+  const { access, snapshot } = snapshotResult.data
   await db.insert(publicShares).values({
     artifactId: existing.parsedResource.type === 'artifact' ? existing.parsedResource.id : null,
     companyProfileId: access.workspace.id,
@@ -165,10 +175,13 @@ export async function createWorkspacePublicShare(
   if (!created.share) throw new Error('Unable to create the public link')
 
   revalidatePath(`/workspace/${workspaceId}`)
-  return toWorkspacePublicShare(created.share, created.access)
+  return actionSuccess(toWorkspacePublicShare(created.share, created.access))
 }
 
-export async function revokeWorkspacePublicShare(workspaceId: string, shareId: string) {
+export async function revokeWorkspacePublicShare(
+  workspaceId: string,
+  shareId: string,
+): Promise<ActionResult> {
   const parsedShareId = shareIdSchema.parse(shareId)
   const access = await requireWorkspaceMembership(workspaceId)
   const share = (await db.select({
@@ -178,9 +191,9 @@ export async function revokeWorkspacePublicShare(workspaceId: string, shareId: s
     eq(publicShares.id, parsedShareId),
     eq(publicShares.companyProfileId, access.workspace.id),
   )).limit(1))[0]
-  if (!share) return
+  if (!share) return actionSuccess(null)
   if (share.createdByUserId !== access.userId && !canManageOrganization(access.role)) {
-    throw new Error('Only the link creator or a workspace admin can revoke it')
+    return actionFailure('Only the link creator or a workspace admin can revoke it')
   }
 
   await db.delete(publicShares).where(and(
@@ -189,4 +202,5 @@ export async function revokeWorkspacePublicShare(workspaceId: string, shareId: s
   ))
   revalidatePath(`/s/${share.publicId}`)
   revalidatePath(`/workspace/${workspaceId}`)
+  return actionSuccess(null)
 }

@@ -89,9 +89,9 @@ export function ShareResourceDialog({
       .then((existingShare) => {
         if (dialogGenerationRef.current === dialogGeneration) setShare(existingShare)
       })
-      .catch((cause) => {
+      .catch(() => {
         if (dialogGenerationRef.current === dialogGeneration) {
-          setError(cause instanceof Error ? cause.message : 'Unable to load the public link')
+          setError('Unable to load the public link')
         }
       })
       .finally(() => {
@@ -189,16 +189,21 @@ export function ShareResourceDialog({
     const mutation = beginShareMutation()
     startTransition(async () => {
       try {
-        const createdShare = await createWorkspacePublicShare(
+        const result = await createWorkspacePublicShare(
           workspaceId,
           { id: resourceId, type: resourceType },
         )
         if (!isCurrentShareMutation(mutation)) return
+        if (!result.ok) {
+          setError(result.message)
+          return
+        }
+        const createdShare = result.data
         setShare(createdShare)
         await copyLink(createdShare.publicId, beginCopyOperation())
-      } catch (cause) {
+      } catch {
         if (isCurrentShareMutation(mutation)) {
-          setError(cause instanceof Error ? cause.message : 'Unable to create the public link')
+          setError('Unable to create the public link')
         }
       }
     })
@@ -211,12 +216,16 @@ export function ShareResourceDialog({
     const mutation = beginShareMutation()
     startTransition(async () => {
       try {
-        await revokeWorkspacePublicShare(workspaceId, share.id)
+        const result = await revokeWorkspacePublicShare(workspaceId, share.id)
         if (!isCurrentShareMutation(mutation)) return
+        if (!result.ok) {
+          setError(result.message)
+          return
+        }
         setShare(null)
-      } catch (cause) {
+      } catch {
         if (isCurrentShareMutation(mutation)) {
-          setError(cause instanceof Error ? cause.message : 'Unable to revoke the public link')
+          setError('Unable to revoke the public link')
         }
       }
     })
@@ -229,13 +238,17 @@ export function ShareResourceDialog({
     const dialogGeneration = dialogGenerationRef.current
     startInvitationTransition(async () => {
       try {
-        await inviteWorkspaceMember(workspaceId, inviteEmail, 'member')
+        const result = await inviteWorkspaceMember(workspaceId, inviteEmail, 'member')
         if (dialogGenerationRef.current !== dialogGeneration) return
+        if (!result.ok) {
+          setError(result.message)
+          return
+        }
         setInviteStatus(`Invitation sent to ${inviteEmail.trim().toLowerCase()}.`)
         setInviteEmail('')
-      } catch (cause) {
+      } catch {
         if (dialogGenerationRef.current === dialogGeneration) {
-          setError(cause instanceof Error ? cause.message : 'Unable to send the invitation')
+          setError('Unable to send the invitation')
         }
       }
     })

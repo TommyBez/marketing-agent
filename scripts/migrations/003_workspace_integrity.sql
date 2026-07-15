@@ -3,22 +3,11 @@ BEGIN;
 ALTER TABLE "company_profiles"
   ADD COLUMN IF NOT EXISTS "normalizedDomain" text;
 
-UPDATE "company_profiles"
-SET "normalizedDomain" = regexp_replace(
-  regexp_replace(
-    lower(split_part(split_part("websiteUrl", '://', 2), '/', 1)),
-    '^www\.',
-    ''
-  ),
-  ':[0-9]+$',
-  ''
-)
-WHERE "normalizedDomain" IS NULL;
-
-ALTER TABLE "company_profiles"
-  ALTER COLUMN "normalizedDomain" SET NOT NULL;
-
 COMMIT;
+
+-- The migration runner backfills normalizedDomain with the same WHATWG URL
+-- parser used by the application, audits canonical duplicates, and finalizes
+-- the NOT NULL constraint before creating the unique index below.
 
 -- Each statement after this marker is executed separately because PostgreSQL
 -- does not allow CREATE INDEX CONCURRENTLY inside a transaction block.

@@ -10,6 +10,7 @@ interface SendSignInCodeEmailOptions {
 }
 
 interface SendWorkspaceInvitationEmailOptions {
+  invitationExpiresAt: Date
   invitationId: string
   invitationUrl: string
   inviterName: string
@@ -58,6 +59,7 @@ export async function sendSignInCodeEmail({
 }
 
 export async function sendWorkspaceInvitationEmail({
+  invitationExpiresAt,
   invitationId,
   invitationUrl,
   inviterName,
@@ -82,7 +84,9 @@ export async function sendWorkspaceInvitationEmail({
       tags: [{ name: 'email_type', value: 'workspace_invitation' }],
       to: [to],
     },
-    { idempotencyKey: `workspace-invitation/${invitationId}` },
+    {
+      idempotencyKey: `workspace-invitation/${invitationId}/${invitationExpiresAt.getTime()}`,
+    },
   )
 
   if (error) {

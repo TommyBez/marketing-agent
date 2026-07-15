@@ -5,6 +5,7 @@ import { organization } from 'better-auth/plugins/organization'
 import { db, pool } from '@/lib/db'
 import { companyProfiles } from '@/lib/db/schema'
 import { sendSignInCodeEmail, sendWorkspaceInvitationEmail } from '@/lib/email'
+import { recordInvitationDeliveryFailure } from '@/lib/invitation-delivery'
 import { eq } from 'drizzle-orm'
 
 const OTP_EXPIRES_IN_SECONDS = 60 * 5
@@ -151,19 +152,25 @@ export const auth = betterAuth({
       invitationLimit: 100,
       cancelPendingInvitationsOnReInvite: true,
       requireEmailVerificationOnInvitation: true,
-      async sendInvitationEmail({ id, email, organization: invitedOrganization, inviter, role }, request) {
+      async sendInvitationEmail({ id, email, invitation, organization: invitedOrganization, inviter, role }, request) {
         const origin = getInvitationOrigin(request)
         const invitationUrl = new URL('/accept-invitation', origin)
         invitationUrl.searchParams.set('id', id)
 
-        await sendWorkspaceInvitationEmail({
-          invitationId: id,
-          invitationUrl: invitationUrl.toString(),
-          inviterName: inviter.user.name || inviter.user.email,
-          organizationName: invitedOrganization.name,
-          role,
-          to: email,
-        })
+        try {
+          await sendWorkspaceInvitationEmail({
+            invitationExpiresAt: invitation.expiresAt,
+            invitationId: id,
+            invitationUrl: invitationUrl.toString(),
+            inviterName: inviter.user.name || inviter.user.email,
+            organizationName: invitedOrganization.name,
+            role,
+            to: email,
+          })
+        } catch (cause) {
+          recordInvitationDeliveryFailure(cause)
+          throw cause
+        }
       },
       organizationHooks: {
         async afterUpdateOrganization({ organization: updatedOrganization }) {

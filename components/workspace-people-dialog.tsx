@@ -17,7 +17,7 @@ import { Separator } from '@/components/ui/separator'
 import { Spinner } from '@/components/ui/spinner'
 import { MailPlus, Trash2, UserRoundCog, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition, type FormEvent } from 'react'
 
 interface WorkspaceMember {
   email: string
@@ -57,31 +57,51 @@ export function WorkspacePeopleDialog({
   const router = useRouter()
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
+  const dialogGenerationRef = useRef(0)
   const isOwner = hasRole(currentRole, 'owner')
   const canManage = isOwner || hasRole(currentRole, 'admin')
 
-  function run(action: () => Promise<void>) {
+  function run(
+    action: () => ReturnType<typeof inviteWorkspaceMember>,
+    onSuccess?: () => void,
+  ) {
     setError('')
+    const dialogGeneration = dialogGenerationRef.current
     startTransition(async () => {
       try {
-        await action()
+        const result = await action()
+        if (!result.ok) {
+          if (dialogGenerationRef.current === dialogGeneration) setError(result.message)
+          return
+        }
+        if (dialogGenerationRef.current === dialogGeneration) onSuccess?.()
         router.refresh()
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : 'Unable to update workspace access')
+      } catch {
+        if (dialogGenerationRef.current === dialogGeneration) {
+          setError('Unable to update workspace access')
+        }
       }
     })
   }
 
-  function handleInvite(formData: FormData) {
+  function handleInvite(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const form = event.currentTarget
+    const formData = new FormData(form)
     run(() => inviteWorkspaceMember(
       workspaceId,
       String(formData.get('email')),
       String(formData.get('role')),
-    ))
+    ), () => form.reset())
   }
 
   return (
-    <Dialog onOpenChange={(open) => !open && setError('')}>
+    <Dialog onOpenChange={(open) => {
+      if (!open) {
+        dialogGenerationRef.current += 1
+        setError('')
+      }
+    }}>
       <DialogTrigger render={
         <Button variant="outline" size="icon" aria-label={`Manage people in ${workspaceName}`} />
       }>
@@ -102,7 +122,7 @@ export function WorkspacePeopleDialog({
         )}
 
         {canManage && (
-          <form action={handleInvite} className="rounded-xl border bg-muted/30 p-4">
+          <form onSubmit={handleInvite} className="rounded-xl border bg-muted/30 p-4">
             <FieldGroup className="gap-3 sm:grid sm:grid-cols-[1fr_8rem_auto] sm:items-end">
               <Field data-disabled={isPending}>
                 <FieldLabel htmlFor="inviteEmail">Invite by email</FieldLabel>
