@@ -6,6 +6,7 @@
     "dev": "next dev",
     "dev:eve": "eve dev",
     "email:preview": "email dev --dir emails --port 3001",
+    "validate:marketing-skills": "node scripts/validate-marketing-skills.mjs",
     "build:eve": "eve build",
     "build": "eve build && next build",
     "start": "next start",
@@ -14,7 +15,7 @@
     "db:migrate:public-shares": "node scripts/migrate-public-shares.mjs",
     "db:migrate:workspace-integrity": "node scripts/migrate-workspace-integrity.mjs",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
