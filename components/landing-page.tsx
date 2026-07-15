@@ -206,13 +206,16 @@ export function LandingPage() {
         <LandingHeader />
         <section className="landing-shell hero-section">
           <div className="hero-copy">
-            <p className="hero-kicker landing-load-reveal landing-load-1">AI marketing workspace</p>
+            <div className="hero-kicker-group landing-load-reveal landing-load-1">
+              <span aria-hidden="true" className="hero-baton" />
+              <p className="hero-kicker">AI marketing workspace</p>
+            </div>
             <h1 aria-label="Brief once. Move as one.">
               <span aria-hidden="true" className="hero-line">
-                <span className="landing-headline-reveal landing-load-2">Brief once.</span>
+                <span className="landing-headline-reveal landing-load-2">Brief once<span className="hero-accent-dot">.</span></span>
               </span>
               <span aria-hidden="true" className="hero-line hero-line-muted">
-                <span className="landing-headline-reveal landing-load-3">Move as one.</span>
+                <span className="landing-headline-reveal landing-load-3">Move as one<span className="hero-accent-dot">.</span></span>
               </span>
             </h1>
             <p className="landing-load-reveal landing-load-4">Add your website once. Branderize builds a shared brief, assigns the right specialists, and returns one coordinated answer.</p>
@@ -221,6 +224,15 @@ export function LandingPage() {
                 <SessionAwareLandingPrimaryAction />
               </Suspense>
             </div>
+            <ul className="hero-proof landing-load-reveal landing-load-6" aria-label="Disciplines coordinated in every answer">
+              <li>Positioning</li>
+              <li aria-hidden="true" className="hero-proof-sep">·</li>
+              <li>Demand</li>
+              <li aria-hidden="true" className="hero-proof-sep">·</li>
+              <li>Messaging</li>
+              <li aria-hidden="true" className="hero-proof-sep">·</li>
+              <li>Conversion</li>
+            </ul>
           </div>
           <div className="hero-visual" role="img" aria-label="Branderize turning a website into a shared company brief">
             <LandingAnalyzerDemo />
