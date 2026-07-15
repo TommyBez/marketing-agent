@@ -15,7 +15,7 @@
     "db:migrate:public-shares": "node scripts/migrate-public-shares.mjs",
     "db:migrate:workspace-integrity": "node scripts/migrate-workspace-integrity.mjs",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.5.0",
