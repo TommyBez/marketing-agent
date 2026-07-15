@@ -20,11 +20,13 @@ import { useState, useTransition } from 'react'
 interface ConversationSidebarProps {
   activeConversationId: string
   artifacts: ArtifactSummary[]
+  canInvite: boolean
   conversations: ConversationSummary[]
   workspaceId: string
+  workspaceName: string
 }
 
-export function ConversationSidebar({ activeConversationId, artifacts, conversations, workspaceId }: ConversationSidebarProps) {
+export function ConversationSidebar({ activeConversationId, artifacts, canInvite, conversations, workspaceId, workspaceName }: ConversationSidebarProps) {
   const router = useRouter()
   const { setOpenMobile } = useSidebar()
   const [selectedConversation, setSelectedConversation] = useState<ConversationSummary | null>(null)
@@ -122,7 +124,7 @@ export function ConversationSidebar({ activeConversationId, artifacts, conversat
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <ArtifactList workspaceId={workspaceId} artifacts={artifacts} />
+          <ArtifactList workspaceId={workspaceId} workspaceName={workspaceName} canInvite={canInvite} artifacts={artifacts} />
         </SidebarContent>
         <SidebarRail />
       </Sidebar>

@@ -1,8 +1,12 @@
 import { betterAuth } from 'better-auth'
 import { createAuthMiddleware } from 'better-auth/api'
 import { emailOTP } from 'better-auth/plugins/email-otp'
-import { pool } from '@/lib/db'
-import { sendSignInCodeEmail } from '@/lib/email'
+import { organization } from 'better-auth/plugins/organization'
+import { db, pool } from '@/lib/db'
+import { companyProfiles } from '@/lib/db/schema'
+import { sendSignInCodeEmail, sendWorkspaceInvitationEmail } from '@/lib/email'
+import { recordInvitationDeliveryFailure } from '@/lib/invitation-delivery'
+import { eq } from 'drizzle-orm'
 
 const OTP_EXPIRES_IN_SECONDS = 60 * 5
 
@@ -92,6 +96,21 @@ function getEnvironmentAuthConfig(): EnvironmentAuthConfig {
 
 const envConfig = getEnvironmentAuthConfig()
 
+function getInvitationOrigin(request?: Request) {
+  const canonicalBaseURL = envConfig.baseURL ?? process.env.BETTER_AUTH_URL
+  if (canonicalBaseURL) return new URL(canonicalBaseURL).origin
+
+  if (getDeploymentEnvironment() !== 'development') {
+    throw new Error('A canonical base URL is required to create invitation links')
+  }
+
+  if (request) return new URL(request.url).origin
+  if (process.env.VERCEL === '1' && process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+  return 'http://localhost:3000'
+}
+
 // This bypass is intentionally narrower than the general development config:
 // Vercel development deployments must still exercise the real email flow.
 export const isLocalAuthBypassEnabled =
@@ -123,6 +142,44 @@ export const auth = betterAuth({
           otp,
           to: email,
         })
+      },
+    }),
+    organization({
+      allowUserToCreateOrganization: true,
+      organizationLimit: 20,
+      membershipLimit: 100,
+      invitationExpiresIn: 60 * 60 * 24 * 7,
+      invitationLimit: 100,
+      cancelPendingInvitationsOnReInvite: true,
+      requireEmailVerificationOnInvitation: true,
+      async sendInvitationEmail({ id, email, invitation, organization: invitedOrganization, inviter, role }, request) {
+        const origin = getInvitationOrigin(request)
+        const invitationUrl = new URL('/accept-invitation', origin)
+        invitationUrl.searchParams.set('id', id)
+
+        try {
+          await sendWorkspaceInvitationEmail({
+            invitationExpiresAt: invitation.expiresAt,
+            invitationId: id,
+            invitationUrl: invitationUrl.toString(),
+            inviterName: inviter.user.name || inviter.user.email,
+            organizationName: invitedOrganization.name,
+            role,
+            to: email,
+          })
+        } catch (cause) {
+          recordInvitationDeliveryFailure(cause)
+          throw cause
+        }
+      },
+      organizationHooks: {
+        async afterUpdateOrganization({ organization: updatedOrganization }) {
+          if (!updatedOrganization) return
+          await db.update(companyProfiles).set({
+            name: updatedOrganization.name,
+            updatedAt: new Date(),
+          }).where(eq(companyProfiles.organizationId, updatedOrganization.id))
+        },
       },
     }),
   ],

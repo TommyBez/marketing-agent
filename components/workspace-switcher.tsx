@@ -1,6 +1,7 @@
 'use client'
 
-import { deleteWorkspace, renameWorkspace } from '@/app/actions/company'
+import { deleteWorkspace, renameWorkspace, setActiveWorkspace } from '@/app/actions/company'
+import { leaveWorkspace } from '@/app/actions/organization'
 import { CompanyOnboarding } from '@/components/company-onboarding'
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -15,13 +16,14 @@ import {
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
-import { Check, ChevronsUpDown, Pencil, Plus, Trash2 } from 'lucide-react'
+import { Check, ChevronsUpDown, LogOut, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 
 export interface WorkspaceSummary {
   id: string
   name: string
+  role: string
   websiteUrl: string
 }
 
@@ -36,8 +38,40 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isRenameOpen, setIsRenameOpen] = useState(false)
   const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isLeaveOpen, setIsLeaveOpen] = useState(false)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
+  const roles = activeWorkspace.role.split(',').map((role) => role.trim())
+  const isOwner = roles.includes('owner')
+  const canManage = isOwner || roles.includes('admin')
+
+  function handleWorkspaceChange(workspaceId: string) {
+    if (workspaceId === activeWorkspace.id) return
+    setError('')
+    startTransition(async () => {
+      try {
+        await setActiveWorkspace(workspaceId)
+        router.push(`/workspace/${workspaceId}`)
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'Unable to open workspace')
+      }
+    })
+  }
+
+  function handleRenameOpenChange(open: boolean) {
+    if (open) setError('')
+    setIsRenameOpen(open)
+  }
+
+  function handleDeleteOpenChange(open: boolean) {
+    if (open) setError('')
+    setIsDeleteOpen(open)
+  }
+
+  function handleLeaveOpenChange(open: boolean) {
+    if (open) setError('')
+    setIsLeaveOpen(open)
+  }
 
   function handleRename(formData: FormData) {
     setError('')
@@ -66,6 +100,20 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
     })
   }
 
+  function handleLeave() {
+    setError('')
+    startTransition(async () => {
+      try {
+        const result = await leaveWorkspace(activeWorkspace.id)
+        setIsLeaveOpen(false)
+        router.push(result.nextWorkspaceId ? `/workspace/${result.nextWorkspaceId}` : '/workspace')
+        router.refresh()
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'Unable to leave workspace')
+      }
+    })
+  }
+
   return (
     <>
       <DropdownMenu>
@@ -79,7 +127,7 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
           <DropdownMenuGroup>
             <DropdownMenuLabel>Workspaces</DropdownMenuLabel>
             {workspaces.map((workspace) => (
-              <DropdownMenuItem key={workspace.id} onClick={() => router.push(`/workspace/${workspace.id}`)}>
+              <DropdownMenuItem key={workspace.id} disabled={isPending} onClick={() => handleWorkspaceChange(workspace.id)}>
                 <span className="truncate">{workspace.name}</span>
                 {workspace.id === activeWorkspace.id && <Check className="ml-auto" />}
               </DropdownMenuItem>
@@ -88,8 +136,12 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => setIsCreateOpen(true)}><Plus />New workspace</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setIsRenameOpen(true)}><Pencil />Rename current</DropdownMenuItem>
-            <DropdownMenuItem variant="destructive" onClick={() => setIsDeleteOpen(true)}><Trash2 />Delete current</DropdownMenuItem>
+            {canManage && <DropdownMenuItem onClick={() => handleRenameOpenChange(true)}><Pencil />Rename current</DropdownMenuItem>}
+            {isOwner ? (
+              <DropdownMenuItem variant="destructive" onClick={() => handleDeleteOpenChange(true)}><Trash2 />Delete current</DropdownMenuItem>
+            ) : (
+              <DropdownMenuItem variant="destructive" onClick={() => handleLeaveOpenChange(true)}><LogOut />Leave current</DropdownMenuItem>
+            )}
           </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -104,7 +156,7 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
+      <Dialog open={isRenameOpen} onOpenChange={handleRenameOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rename workspace</DialogTitle>
@@ -126,7 +178,7 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+      <AlertDialog open={isDeleteOpen} onOpenChange={handleDeleteOpenChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {activeWorkspace.name}?</AlertDialogTitle>
@@ -137,6 +189,22 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
             <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction variant="destructive" disabled={isPending} onClick={handleDelete}>
               {isPending && <Spinner data-icon="inline-start" />}Delete workspace
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isLeaveOpen} onOpenChange={handleLeaveOpenChange}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Leave {activeWorkspace.name}?</AlertDialogTitle>
+            <AlertDialogDescription>You will lose access to its company brief, conversations, and saved artifacts. An owner can invite you again later.</AlertDialogDescription>
+          </AlertDialogHeader>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" disabled={isPending} onClick={handleLeave}>
+              {isPending && <Spinner data-icon="inline-start" />}Leave workspace
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

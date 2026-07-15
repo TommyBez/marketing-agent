@@ -1,12 +1,11 @@
 import 'server-only'
 
-import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { agentThreads, companyProfiles } from '@/lib/db/schema'
+import { agentThreads } from '@/lib/db/schema'
+import { requireWorkspaceMembership } from '@/lib/workspace-access'
 import { del, get, put } from '@vercel/blob'
 import { and, eq, isNull, lte, or } from 'drizzle-orm'
 import type { HandleMessageStreamEvent } from 'eve/client'
-import { headers } from 'next/headers'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 
@@ -54,30 +53,26 @@ async function readTranscript(value: unknown) {
   return transcriptEventsSchema.parse(payload) as HandleMessageStreamEvent[]
 }
 
-async function getUserId() {
-  const currentSession = await auth.api.getSession({ headers: await headers() })
-  if (!currentSession?.user) throw new ConversationPersistenceError('Unauthorized', 401)
-  return currentSession.user.id
-}
-
-async function requireConversation(userId: string, workspaceId: string, conversationId: string) {
+async function requireConversation(workspaceId: string, conversationId: string) {
   const parsedWorkspaceId = idSchema.parse(workspaceId)
   const parsedConversationId = idSchema.parse(conversationId)
+  let access
+  try {
+    access = await requireWorkspaceMembership(parsedWorkspaceId)
+  } catch (cause) {
+    if (cause instanceof Error && cause.message === 'Unauthorized') {
+      throw new ConversationPersistenceError('Unauthorized', 401)
+    }
+    throw new ConversationPersistenceError('Conversation not found', 404)
+  }
 
-  const conversation = (await db.select().from(agentThreads).innerJoin(
-    companyProfiles,
-    and(
-      eq(companyProfiles.id, agentThreads.companyProfileId),
-      eq(companyProfiles.userId, userId),
-    ),
-  ).where(and(
+  const conversation = (await db.select().from(agentThreads).where(and(
     eq(agentThreads.id, parsedConversationId),
     eq(agentThreads.companyProfileId, parsedWorkspaceId),
-    eq(agentThreads.userId, userId),
-  )).limit(1))[0]?.agent_threads
+  )).limit(1))[0]
 
   if (!conversation) throw new ConversationPersistenceError('Conversation not found', 404)
-  return conversation
+  return { conversation, userId: access.userId }
 }
 
 function assertCompatibleSession(currentSessionId: string | null, incomingSessionId: string) {
@@ -109,8 +104,7 @@ export async function persistConversationTranscript(
   events: unknown,
   firstMessage?: string,
 ) {
-  const userId = await getUserId()
-  const conversation = await requireConversation(userId, workspaceId, conversationId)
+  const { conversation, userId } = await requireConversation(workspaceId, conversationId)
   const parsedSession = sessionStateSchema.parse(sessionState)
   const parsedEvents = transcriptEventsSchema.parse(events)
 
@@ -127,7 +121,6 @@ export async function persistConversationTranscript(
       const current = (await transaction.select().from(agentThreads).where(and(
         eq(agentThreads.id, conversation.id),
         eq(agentThreads.companyProfileId, conversation.companyProfileId),
-        eq(agentThreads.userId, userId),
       )).for('update').limit(1))[0]
 
       if (!current) throw new ConversationPersistenceError('Conversation not found', 404)
@@ -160,7 +153,10 @@ export async function persistConversationTranscript(
           ? { title: createTitle(firstMessage) }
           : {}),
         updatedAt: new Date(),
-      }).where(and(eq(agentThreads.id, current.id), eq(agentThreads.userId, userId)))
+      }).where(and(
+        eq(agentThreads.id, current.id),
+        eq(agentThreads.companyProfileId, current.companyProfileId),
+      ))
 
       const previousPointer = transcriptPointerSchema.safeParse(current.events)
       return {
@@ -184,8 +180,7 @@ export async function persistConversationSession(
   sessionState: unknown,
   firstMessage?: string,
 ) {
-  const userId = await getUserId()
-  const conversation = await requireConversation(userId, workspaceId, conversationId)
+  const { conversation } = await requireConversation(workspaceId, conversationId)
   const parsedSession = sessionStateSchema.parse(sessionState)
   if (!parsedSession.sessionId) throw new ConversationPersistenceError('Missing Eve session ID', 400)
   const shouldTitle = conversation.title === 'New conversation' && Boolean(firstMessage?.trim())
@@ -200,7 +195,7 @@ export async function persistConversationSession(
     updatedAt: new Date(),
   }).where(and(
     eq(agentThreads.id, conversation.id),
-    eq(agentThreads.userId, userId),
+    eq(agentThreads.companyProfileId, conversation.companyProfileId),
     or(isNull(agentThreads.eveSessionId), eq(agentThreads.eveSessionId, parsedSession.sessionId)),
     lte(agentThreads.streamIndex, parsedSession.streamIndex),
   )).returning({ id: agentThreads.id })

@@ -9,7 +9,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { authClient } from '@/lib/auth-client'
 import { REGEXP_ONLY_DIGITS } from 'input-otp'
 import { useRouter } from 'next/navigation'
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 type AuthStep = 'email' | 'otp'
 
@@ -33,15 +33,29 @@ function displayNameFromEmail(email: string): string {
   return localPart.replaceAll(/[._+-]+/g, ' ').trim() || 'Branderize user'
 }
 
-export function AuthForm() {
+interface AuthFormProps {
+  allowEmailChange?: boolean
+  autoSendCode?: boolean
+  callbackURL?: string
+  initialEmail?: string
+}
+
+export function AuthForm({
+  allowEmailChange = true,
+  autoSendCode = false,
+  callbackURL = '/workspace',
+  initialEmail = '',
+}: AuthFormProps) {
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
-  const [step, setStep] = useState<AuthStep>('email')
-  const [email, setEmail] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const autoSendStartedRef = useRef(false)
+  const startsAtOtp = autoSendCode && Boolean(initialEmail)
+  const [step, setStep] = useState<AuthStep>(startsAtOtp ? 'otp' : 'email')
+  const [email, setEmail] = useState(initialEmail)
+  const [isLoading, setIsLoading] = useState(startsAtOtp)
   const [error, setError] = useState('')
 
-  async function sendCode(targetEmail: string) {
+  const sendCode = useCallback(async (targetEmail: string) => {
     setIsLoading(true)
     setError('')
 
@@ -63,7 +77,13 @@ export function AuthForm() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    if (!startsAtOtp || autoSendStartedRef.current) return
+    autoSendStartedRef.current = true
+    void sendCode(initialEmail)
+  }, [initialEmail, sendCode, startsAtOtp])
 
   async function handleSubmit(formData: FormData) {
     if (step === 'email') {
@@ -87,7 +107,7 @@ export function AuthForm() {
         return
       }
 
-      router.push('/workspace')
+      router.push(callbackURL)
       router.refresh()
     } catch {
       setError('We could not verify the code. Check your connection and try again.')
@@ -148,10 +168,14 @@ export function AuthForm() {
               <Button type="button" variant="link" size="sm" disabled={isLoading} onClick={() => sendCode(email)}>
                 Send a new code
               </Button>
-              <span aria-hidden="true" className="text-muted-foreground">·</span>
-              <Button type="button" variant="link" size="sm" disabled={isLoading} onClick={useDifferentEmail}>
-                Use another email
-              </Button>
+              {allowEmailChange && (
+                <>
+                  <span aria-hidden="true" className="text-muted-foreground">·</span>
+                  <Button type="button" variant="link" size="sm" disabled={isLoading} onClick={useDifferentEmail}>
+                    Use another email
+                  </Button>
+                </>
+              )}
             </div>
           </>
         )}

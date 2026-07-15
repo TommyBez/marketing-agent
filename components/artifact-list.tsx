@@ -2,6 +2,7 @@
 
 import { deleteArtifact, getArtifact, renameArtifact, type ArtifactSummary } from '@/app/actions/artifact'
 import { MessageResponse } from '@/components/ai-elements/message'
+import { ShareResourceDialog } from '@/components/share-resource-dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -10,13 +11,15 @@ import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuAction, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar'
 import { Spinner } from '@/components/ui/spinner'
-import { Bookmark, Check, Copy, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Bookmark, Check, Copy, MoreHorizontal, Pencil, Share2, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 
 interface ArtifactListProps {
   artifacts: ArtifactSummary[]
+  canInvite: boolean
   workspaceId: string
+  workspaceName: string
 }
 
 interface OpenArtifact {
@@ -46,15 +49,15 @@ function CopyArtifactButton({ text }: { text: string }) {
   )
 }
 
-export function ArtifactList({ artifacts, workspaceId }: ArtifactListProps) {
+export function ArtifactList({ artifacts, canInvite, workspaceId, workspaceName }: ArtifactListProps) {
   const router = useRouter()
   const [selectedArtifact, setSelectedArtifact] = useState<ArtifactSummary | null>(null)
   const [openArtifact, setOpenArtifact] = useState<OpenArtifact | null>(null)
-  const [dialog, setDialog] = useState<'view' | 'rename' | 'delete' | null>(null)
+  const [dialog, setDialog] = useState<'view' | 'share' | 'rename' | 'delete' | null>(null)
   const [error, setError] = useState('')
   const [isPending, startTransition] = useTransition()
 
-  function openDialog(nextDialog: 'rename' | 'delete', artifact: ArtifactSummary) {
+  function openDialog(nextDialog: 'share' | 'rename' | 'delete', artifact: ArtifactSummary) {
     setError('')
     setSelectedArtifact(artifact)
     setDialog(nextDialog)
@@ -121,6 +124,7 @@ export function ArtifactList({ artifacts, workspaceId }: ArtifactListProps) {
                   <DropdownMenuTrigger render={<SidebarMenuAction showOnHover aria-label={`Actions for ${artifact.title}`}><MoreHorizontal /></SidebarMenuAction>} />
                   <DropdownMenuContent align="start">
                     <DropdownMenuGroup>
+                      <DropdownMenuItem onClick={() => openDialog('share', artifact)}><Share2 />Share</DropdownMenuItem>
                       <DropdownMenuItem onClick={() => openDialog('rename', artifact)}><Pencil />Rename</DropdownMenuItem>
                       <DropdownMenuItem variant="destructive" onClick={() => openDialog('delete', artifact)}><Trash2 />Delete</DropdownMenuItem>
                     </DropdownMenuGroup>
@@ -147,11 +151,29 @@ export function ArtifactList({ artifacts, workspaceId }: ArtifactListProps) {
               <div className="max-h-[60vh] min-w-0 overflow-y-auto text-sm">
                 <MessageResponse mode="static">{openArtifact.content}</MessageResponse>
               </div>
-              <div className="flex justify-end"><CopyArtifactButton text={openArtifact.content} /></div>
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={() => setDialog('share')}>
+                  <Share2 data-icon="inline-start" />Share
+                </Button>
+                <CopyArtifactButton text={openArtifact.content} />
+              </div>
             </>
           )}
         </DialogContent>
       </Dialog>
+
+      {selectedArtifact && (
+        <ShareResourceDialog
+          canInvite={canInvite}
+          open={dialog === 'share'}
+          onOpenChange={(open) => !open && setDialog(null)}
+          resourceId={selectedArtifact.id}
+          resourceTitle={selectedArtifact.title}
+          resourceType="artifact"
+          workspaceId={workspaceId}
+          workspaceName={workspaceName}
+        />
+      )}
 
       <Dialog open={dialog === 'rename'} onOpenChange={(open) => !open && setDialog(null)}>
         <DialogContent>

@@ -9,7 +9,10 @@ export default async function WorkspacePage() {
   const currentSession = await auth.api.getSession({ headers: await headers() })
   if (!currentSession?.user) redirect('/sign-in')
 
-  const [workspace] = await listWorkspaces()
+  const workspaces = await listWorkspaces()
+  const workspace = workspaces.find(({ organizationId }) => (
+    organizationId === currentSession.session.activeOrganizationId
+  )) ?? workspaces[0]
   if (workspace) redirect(`/workspace/${workspace.id}`)
 
   return (

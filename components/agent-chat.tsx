@@ -28,7 +28,9 @@ import { AgentPart } from '@/components/agent-activity'
 import { ChatComposerSurface } from '@/components/chat-composer-surface'
 import { ChatSurface } from '@/components/chat-surface'
 import { SaveArtifactAction } from '@/components/save-artifact-action'
+import { ShareResourceDialog } from '@/components/share-resource-dialog'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Button } from '@/components/ui/button'
 import type { EveMessage } from 'eve/client'
 import {
   Client,
@@ -40,11 +42,12 @@ import {
   type SessionState,
 } from 'eve/client'
 import { useEveAgent } from 'eve/react'
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy, Share2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 
 interface AgentChatProps {
+  canInvite: boolean
   companyName: string
   conversationId: string
   conversationTitle: string
@@ -118,7 +121,7 @@ function CopyMessageAction({ text }: { text: string }) {
   )
 }
 
-export function AgentChat({ companyName, conversationId, conversationTitle, initialEvents, initialSession, workspaceId }: AgentChatProps) {
+export function AgentChat({ canInvite, companyName, conversationId, conversationTitle, initialEvents, initialSession, workspaceId }: AgentChatProps) {
   const router = useRouter()
   const firstMessageRef = useRef('')
   const eventsRef = useRef<HandleMessageStreamEvent[]>([...(initialEvents ?? [])])
@@ -130,6 +133,8 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
   const [displayTitle, setDisplayTitle] = useState(conversationTitle)
   const [isRestoring, setIsRestoring] = useState(() => needsStreamRestore(initialSession, initialEvents))
   const [restoreError, setRestoreError] = useState(() => getInitialSessionError(initialSession, initialEvents))
+  const [isShareOpen, setIsShareOpen] = useState(false)
+  const [isTranscriptSynced, setIsTranscriptSynced] = useState(() => !needsStreamRestore(initialSession, initialEvents))
 
   if (!clientRef.current) {
     clientRef.current = new Client({
@@ -241,10 +246,15 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
     onFinish: async (snapshot) => {
       eventsRef.current = [...snapshot.events]
       if (snapshot.session.sessionId) sessionRef.current = snapshot.session
+      const hasShareableBoundary = Boolean(
+        snapshot.events.length && isCurrentTurnBoundaryEvent(snapshot.events.at(-1)!),
+      )
       try {
         await persistConversation(true)
+        setIsTranscriptSynced(hasShareableBoundary)
         router.refresh()
       } catch (error) {
+        setIsTranscriptSynced(false)
         console.error('[v0] Failed to persist completed Eve turn:', error)
         setRestoreError('The completed Eve turn could not be saved safely. Reload before continuing.')
       }
@@ -293,12 +303,14 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
           : sessionRef.current
         await persistConversation(true)
         if (!abortController.signal.aborted) {
+          setIsTranscriptSynced(true)
           setIsRestoring(false)
           router.refresh()
         }
       } catch (error) {
         if (!abortController.signal.aborted) {
           console.error('[v0] Failed to restore eve stream:', error)
+          setIsTranscriptSynced(false)
           setRestoreError(error instanceof Error ? error.message : 'Unable to reconnect to the Eve session')
           setIsRestoring(false)
         }
@@ -329,10 +341,12 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
       setDisplayTitle(createConversationTitle(nextMessage))
     }
     setMessage('')
+    setIsTranscriptSynced(false)
     await agent.send({ message: nextMessage })
   }
 
   async function respondToInput(requestId: string, response: { optionId?: string; text?: string }) {
+    setIsTranscriptSynced(false)
     await agent.send({ inputResponses: [{ requestId, ...response }] })
   }
 
@@ -347,34 +361,48 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
     && lastMessage.parts.at(-1)?.type === 'text'
 
   return (
-    <ChatSurface
-      title={displayTitle}
-      subtitle={`Brand director for ${companyName}, coordinating the right specialists`}
-      composer={(
-        <ChatComposerSurface>
-          <PromptInput onSubmit={handleSubmit}>
-            <PromptInputBody>
-              <PromptInputTextarea
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                placeholder="Ask your brand director…"
-                aria-label="Message"
-              />
-            </PromptInputBody>
-            <PromptInputFooter>
-              <PromptInputTools>
-                <span className="px-1 text-muted-foreground text-xs">Enter to send / Shift+Enter for a new line</span>
-              </PromptInputTools>
-              <PromptInputSubmit
-                status={isRestoring ? 'submitted' : agent.status}
-                onStop={() => agent.stop()}
-                disabled={isComposerBlocked || (!isAgentProcessing && !message.trim())}
-              />
-            </PromptInputFooter>
-          </PromptInput>
-        </ChatComposerSurface>
-      )}
-    >
+    <>
+      <ChatSurface
+        actions={(
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isBusy || !isTranscriptSynced || messages.length === 0}
+            onClick={() => setIsShareOpen(true)}
+            title={isBusy || !isTranscriptSynced ? 'Wait for this conversation to finish saving' : undefined}
+          >
+            <Share2 data-icon="inline-start" />
+            Share
+          </Button>
+        )}
+        title={displayTitle}
+        subtitle={`Brand director for ${companyName}, coordinating the right specialists`}
+        composer={(
+          <ChatComposerSurface>
+            <PromptInput onSubmit={handleSubmit}>
+              <PromptInputBody>
+                <PromptInputTextarea
+                  value={message}
+                  onChange={(event) => setMessage(event.target.value)}
+                  placeholder="Ask your brand director…"
+                  aria-label="Message"
+                />
+              </PromptInputBody>
+              <PromptInputFooter>
+                <PromptInputTools>
+                  <span className="px-1 text-muted-foreground text-xs">Enter to send / Shift+Enter for a new line</span>
+                </PromptInputTools>
+                <PromptInputSubmit
+                  status={isRestoring ? 'submitted' : agent.status}
+                  onStop={() => agent.stop()}
+                  disabled={isComposerBlocked || (!isAgentProcessing && !message.trim())}
+                />
+              </PromptInputFooter>
+            </PromptInput>
+          </ChatComposerSurface>
+        )}
+      >
       <Conversation className="min-h-0 flex-1">
         <ConversationContent className="mx-auto min-h-full w-full max-w-3xl gap-6 p-4 md:p-6">
           {messages.length === 0 ? (
@@ -442,6 +470,17 @@ export function AgentChat({ companyName, conversationId, conversationTitle, init
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
-    </ChatSurface>
+      </ChatSurface>
+      <ShareResourceDialog
+        canInvite={canInvite}
+        open={isShareOpen}
+        onOpenChange={setIsShareOpen}
+        resourceId={conversationId}
+        resourceTitle={displayTitle}
+        resourceType="conversation"
+        workspaceId={workspaceId}
+        workspaceName={companyName}
+      />
+    </>
   )
 }
