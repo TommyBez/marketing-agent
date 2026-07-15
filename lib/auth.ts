@@ -95,6 +95,21 @@ function getEnvironmentAuthConfig(): EnvironmentAuthConfig {
 
 const envConfig = getEnvironmentAuthConfig()
 
+function getInvitationOrigin(request?: Request) {
+  const canonicalBaseURL = envConfig.baseURL ?? process.env.BETTER_AUTH_URL
+  if (canonicalBaseURL) return new URL(canonicalBaseURL).origin
+
+  if (getDeploymentEnvironment() !== 'development') {
+    throw new Error('A canonical base URL is required to create invitation links')
+  }
+
+  if (request) return new URL(request.url).origin
+  if (process.env.VERCEL === '1' && process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`
+  }
+  return 'http://localhost:3000'
+}
+
 // This bypass is intentionally narrower than the general development config:
 // Vercel development deployments must still exercise the real email flow.
 export const isLocalAuthBypassEnabled =
@@ -137,10 +152,7 @@ export const auth = betterAuth({
       cancelPendingInvitationsOnReInvite: true,
       requireEmailVerificationOnInvitation: true,
       async sendInvitationEmail({ id, email, organization: invitedOrganization, inviter, role }, request) {
-        const origin = request
-          ? new URL(request.url).origin
-          : envConfig.baseURL
-            ?? (process.env.VERCEL === '1' && process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+        const origin = getInvitationOrigin(request)
         const invitationUrl = new URL('/accept-invitation', origin)
         invitationUrl.searchParams.set('id', id)
 

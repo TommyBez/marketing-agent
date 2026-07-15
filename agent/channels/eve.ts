@@ -1,6 +1,6 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { companyProfiles } from '@/lib/db/schema'
+import { companyProfiles, member } from '@/lib/db/schema'
 import { and, eq } from 'drizzle-orm'
 import { eveChannel } from 'eve/channels/eve'
 import { localDev, vercelOidc } from 'eve/channels/auth'
@@ -15,10 +15,10 @@ async function betterAuthSession(request: Request) {
   const parsedWorkspaceId = workspaceIdSchema.safeParse(request.headers.get('x-relay-workspace-id'))
   if (!parsedWorkspaceId.success) return null
 
-  const workspace = (await db.select({ id: companyProfiles.id }).from(companyProfiles).where(and(
-    eq(companyProfiles.id, parsedWorkspaceId.data),
-    eq(companyProfiles.userId, currentSession.user.id),
-  )).limit(1))[0]
+  const workspace = (await db.select({ id: companyProfiles.id }).from(companyProfiles).innerJoin(member, and(
+    eq(member.organizationId, companyProfiles.organizationId),
+    eq(member.userId, currentSession.user.id),
+  )).where(eq(companyProfiles.id, parsedWorkspaceId.data)).limit(1))[0]
   if (!workspace) return null
 
   return {

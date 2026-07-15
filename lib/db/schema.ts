@@ -74,7 +74,7 @@ export const invitation = pgTable('invitation', {
 export const companyProfiles = pgTable('company_profiles', {
   id: uuid('id').primaryKey().defaultRandom(),
   organizationId: text('organizationId').notNull().references(() => organization.id, { onDelete: 'cascade' }),
-  userId: text('userId').notNull(), websiteUrl: text('websiteUrl').notNull(),
+  userId: text('userId').notNull(), websiteUrl: text('websiteUrl').notNull(), normalizedDomain: text('normalizedDomain').notNull(),
   name: text('name').notNull(), summary: text('summary').notNull().default(''), audience: text('audience').notNull().default(''),
   offering: text('offering').notNull().default(''), voice: text('voice').notNull().default(''),
   rawContext: jsonb('rawContext').notNull().default({}), createdAt: timestamp('createdAt').notNull().defaultNow(),
@@ -82,6 +82,7 @@ export const companyProfiles = pgTable('company_profiles', {
 }, (table) => [
   index('company_profiles_user_updated_idx').on(table.userId, table.updatedAt),
   uniqueIndex('company_profiles_organization_uidx').on(table.organizationId),
+  uniqueIndex('company_profiles_user_domain_uidx').on(table.userId, table.normalizedDomain),
 ])
 
 export const agentThreads = pgTable('agent_threads', {
@@ -92,7 +93,10 @@ export const agentThreads = pgTable('agent_threads', {
   events: jsonb('events').notNull().default([]), channel: text('channel').notNull().default('web'),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-}, (table) => [index('agent_threads_user_company_updated_idx').on(table.userId, table.companyProfileId, table.updatedAt)])
+}, (table) => [
+  index('agent_threads_user_company_updated_idx').on(table.userId, table.companyProfileId, table.updatedAt),
+  index('agent_threads_company_updated_idx').on(table.companyProfileId, table.updatedAt.desc()),
+])
 
 export const artifacts = pgTable('artifacts', {
   id: uuid('id').primaryKey().defaultRandom(), userId: text('userId').notNull(),
@@ -101,7 +105,10 @@ export const artifacts = pgTable('artifacts', {
   title: text('title').notNull(), content: text('content').notNull(),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
-}, (table) => [index('artifacts_user_company_updated_idx').on(table.userId, table.companyProfileId, table.updatedAt)])
+}, (table) => [
+  index('artifacts_user_company_updated_idx').on(table.userId, table.companyProfileId, table.updatedAt),
+  index('artifacts_company_updated_idx').on(table.companyProfileId, table.updatedAt.desc()),
+])
 
 export const publicShares = pgTable('public_shares', {
   id: uuid('id').primaryKey().defaultRandom(),

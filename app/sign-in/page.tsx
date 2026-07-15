@@ -2,16 +2,13 @@ import { AuthForm } from '@/components/auth-form'
 import { BrandMark } from '@/components/brand-mark'
 import { auth } from '@/lib/auth'
 import { getPendingInvitationSignInContext } from '@/lib/invitation-access'
+import { safeCallbackURL } from '@/lib/safe-callback-url'
 import { headers } from 'next/headers'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 interface SignInPageProps {
   searchParams: Promise<{ callbackURL?: string; invitationId?: string }>
-}
-
-function safeCallbackURL(value: string | undefined) {
-  return value?.startsWith('/') && !value.startsWith('//') ? value : '/workspace'
 }
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {

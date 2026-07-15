@@ -4,7 +4,7 @@ import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { companyProfiles, invitation, member, user } from '@/lib/db/schema'
 import { canManageOrganization, requireUser, requireWorkspaceMembership } from '@/lib/workspace-access'
-import { and, asc, desc, eq, ne } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, ne } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
@@ -37,6 +37,7 @@ export async function getWorkspacePeople(workspaceId: string) {
       }).from(invitation).where(and(
         eq(invitation.organizationId, access.organizationId),
         eq(invitation.status, 'pending'),
+        gt(invitation.expiresAt, new Date()),
       )).orderBy(desc(invitation.createdAt))
     : []
 

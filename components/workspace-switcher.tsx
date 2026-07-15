@@ -58,6 +58,21 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
     })
   }
 
+  function handleRenameOpenChange(open: boolean) {
+    if (open) setError('')
+    setIsRenameOpen(open)
+  }
+
+  function handleDeleteOpenChange(open: boolean) {
+    if (open) setError('')
+    setIsDeleteOpen(open)
+  }
+
+  function handleLeaveOpenChange(open: boolean) {
+    if (open) setError('')
+    setIsLeaveOpen(open)
+  }
+
   function handleRename(formData: FormData) {
     setError('')
     startTransition(async () => {
@@ -121,11 +136,11 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => setIsCreateOpen(true)}><Plus />New workspace</DropdownMenuItem>
-            {canManage && <DropdownMenuItem onClick={() => setIsRenameOpen(true)}><Pencil />Rename current</DropdownMenuItem>}
+            {canManage && <DropdownMenuItem onClick={() => handleRenameOpenChange(true)}><Pencil />Rename current</DropdownMenuItem>}
             {isOwner ? (
-              <DropdownMenuItem variant="destructive" onClick={() => setIsDeleteOpen(true)}><Trash2 />Delete current</DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onClick={() => handleDeleteOpenChange(true)}><Trash2 />Delete current</DropdownMenuItem>
             ) : (
-              <DropdownMenuItem variant="destructive" onClick={() => setIsLeaveOpen(true)}><LogOut />Leave current</DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onClick={() => handleLeaveOpenChange(true)}><LogOut />Leave current</DropdownMenuItem>
             )}
           </DropdownMenuGroup>
         </DropdownMenuContent>
@@ -141,7 +156,7 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
         </DialogContent>
       </Dialog>
 
-      <Dialog open={isRenameOpen} onOpenChange={setIsRenameOpen}>
+      <Dialog open={isRenameOpen} onOpenChange={handleRenameOpenChange}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Rename workspace</DialogTitle>
@@ -163,7 +178,7 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+      <AlertDialog open={isDeleteOpen} onOpenChange={handleDeleteOpenChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {activeWorkspace.name}?</AlertDialogTitle>
@@ -179,7 +194,7 @@ export function WorkspaceSwitcher({ activeWorkspace, workspaces, isCompact = fal
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog open={isLeaveOpen} onOpenChange={setIsLeaveOpen}>
+      <AlertDialog open={isLeaveOpen} onOpenChange={handleLeaveOpenChange}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Leave {activeWorkspace.name}?</AlertDialogTitle>

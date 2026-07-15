@@ -69,8 +69,6 @@ SET "organizationId" = "id"::text
 WHERE "organizationId" IS NULL;
 
 ALTER TABLE "company_profiles" ALTER COLUMN "organizationId" SET NOT NULL;
-CREATE UNIQUE INDEX IF NOT EXISTS "company_profiles_organization_uidx"
-  ON "company_profiles" ("organizationId");
 
 UPDATE "session" AS active_session
 SET "activeOrganizationId" = (
@@ -82,7 +80,14 @@ SET "activeOrganizationId" = (
   ORDER BY workspace."updatedAt" DESC
   LIMIT 1
 )
-WHERE active_session."activeOrganizationId" IS NULL;
+WHERE active_session."activeOrganizationId" IS NULL
+  AND EXISTS (
+    SELECT 1
+    FROM "company_profiles" AS workspace
+    INNER JOIN "member" AS workspace_member
+      ON workspace_member."organizationId" = workspace."organizationId"
+    WHERE workspace_member."userId" = active_session."userId"
+  );
 
 DO $$
 BEGIN
@@ -114,3 +119,9 @@ BEGIN
 END $$;
 
 COMMIT;
+
+-- Executed separately by the migration runner because PostgreSQL does not
+-- allow CREATE INDEX CONCURRENTLY inside a transaction block.
+-- migrate:concurrent
+CREATE UNIQUE INDEX CONCURRENTLY IF NOT EXISTS "company_profiles_organization_uidx"
+  ON "company_profiles" ("organizationId");

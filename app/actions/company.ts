@@ -29,8 +29,7 @@ export async function analyzeCompany(websiteUrl: string) {
   const matchingWorkspace = (await db.select(getTableColumns(companyProfiles)).from(companyProfiles).innerJoin(member, and(
     eq(member.organizationId, companyProfiles.organizationId),
     eq(member.userId, userId),
-  )))
-    .find((workspace) => getDomain(workspace.websiteUrl).toLowerCase() === domain)
+  )).where(eq(companyProfiles.normalizedDomain, domain)).limit(1))[0]
   if (matchingWorkspace) {
     await auth.api.setActiveOrganization({
       body: { organizationId: matchingWorkspace.organizationId },
@@ -70,14 +69,16 @@ export async function analyzeCompany(websiteUrl: string) {
     headers: requestHeaders,
   })
 
+  let workspace: typeof companyProfiles.$inferSelect | undefined
   try {
-    const [workspace] = await db.insert(companyProfiles).values({
+    const insertedWorkspaces = await db.insert(companyProfiles).values({
       organizationId: createdOrganization.id,
-      userId, websiteUrl: parsedUrl, name, summary, audience, offering, voice,
+      userId, websiteUrl: parsedUrl, normalizedDomain: domain, name, summary, audience, offering, voice,
       rawContext: { brand, markdown: scrapePayload.markdown?.slice(0, 40_000) },
+    }).onConflictDoNothing({
+      target: [companyProfiles.userId, companyProfiles.normalizedDomain],
     }).returning()
-    revalidatePath('/workspace', 'layout')
-    return workspace
+    workspace = insertedWorkspaces[0]
   } catch (cause) {
     await auth.api.deleteOrganization({
       body: { organizationId: createdOrganization.id },
@@ -85,6 +86,30 @@ export async function analyzeCompany(websiteUrl: string) {
     }).catch(() => undefined)
     throw cause
   }
+
+  if (!workspace) {
+    await auth.api.deleteOrganization({
+      body: { organizationId: createdOrganization.id },
+      headers: requestHeaders,
+    })
+
+    workspace = (await db.select(getTableColumns(companyProfiles)).from(companyProfiles).innerJoin(member, and(
+      eq(member.organizationId, companyProfiles.organizationId),
+      eq(member.userId, userId),
+    )).where(and(
+      eq(companyProfiles.userId, userId),
+      eq(companyProfiles.normalizedDomain, domain),
+    )).limit(1))[0]
+    if (!workspace) throw new Error('The workspace was created concurrently but could not be loaded')
+
+    await auth.api.setActiveOrganization({
+      body: { organizationId: workspace.organizationId },
+      headers: requestHeaders,
+    })
+  }
+
+  revalidatePath('/workspace', 'layout')
+  return workspace
 }
 
 export async function listWorkspaces() {

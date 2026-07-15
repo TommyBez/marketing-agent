@@ -31,7 +31,7 @@ import {
   ShieldCheck,
   Trash2,
 } from 'lucide-react'
-import { useEffect, useState, useTransition, type FormEvent } from 'react'
+import { useEffect, useRef, useState, useTransition, type FormEvent } from 'react'
 
 interface ShareResourceDialogProps {
   canInvite: boolean
@@ -63,11 +63,21 @@ export function ShareResourceDialog({
   const [inviteStatus, setInviteStatus] = useState('')
   const [isPending, startTransition] = useTransition()
   const [isInviting, startInvitationTransition] = useTransition()
+  const dialogGenerationRef = useRef(0)
+  const shareMutationRef = useRef(0)
+  const copyOperationRef = useRef(0)
+  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (!open) return
 
-    let isCurrent = true
+    const dialogGeneration = ++dialogGenerationRef.current
+    shareMutationRef.current += 1
+    copyOperationRef.current += 1
+    if (copyFeedbackTimeoutRef.current) {
+      clearTimeout(copyFeedbackTimeoutRef.current)
+      copyFeedbackTimeoutRef.current = null
+    }
     setOrigin(window.location.origin)
     setShare(null)
     setError('')
@@ -77,47 +87,119 @@ export function ShareResourceDialog({
 
     void getWorkspacePublicShare(workspaceId, { id: resourceId, type: resourceType })
       .then((existingShare) => {
-        if (isCurrent) setShare(existingShare)
+        if (dialogGenerationRef.current === dialogGeneration) setShare(existingShare)
       })
       .catch((cause) => {
-        if (isCurrent) {
+        if (dialogGenerationRef.current === dialogGeneration) {
           setError(cause instanceof Error ? cause.message : 'Unable to load the public link')
         }
       })
       .finally(() => {
-        if (isCurrent) setIsLoading(false)
+        if (dialogGenerationRef.current === dialogGeneration) setIsLoading(false)
       })
 
     return () => {
-      isCurrent = false
+      if (dialogGenerationRef.current === dialogGeneration) {
+        dialogGenerationRef.current += 1
+      }
+      shareMutationRef.current += 1
+      copyOperationRef.current += 1
+      if (copyFeedbackTimeoutRef.current) {
+        clearTimeout(copyFeedbackTimeoutRef.current)
+        copyFeedbackTimeoutRef.current = null
+      }
     }
   }, [open, resourceId, resourceType, workspaceId])
 
   const shareUrl = share ? `${origin}/s/${share.publicId}` : ''
   const resourceLabel = resourceType === 'artifact' ? 'artifact' : 'conversation'
 
-  async function copyLink(publicId: string) {
-    try {
-      await navigator.clipboard.writeText(`${window.location.origin}/s/${publicId}`)
-      setIsCopied(true)
-      setTimeout(() => setIsCopied(false), 2000)
-    } catch {
-      setError('The link is ready, but it could not be copied automatically.')
+  function beginShareMutation() {
+    copyOperationRef.current += 1
+    return {
+      dialogGeneration: dialogGenerationRef.current,
+      shareMutation: ++shareMutationRef.current,
     }
+  }
+
+  function isCurrentShareMutation(mutation: ReturnType<typeof beginShareMutation>) {
+    return mutation.dialogGeneration === dialogGenerationRef.current
+      && mutation.shareMutation === shareMutationRef.current
+  }
+
+  function beginCopyOperation() {
+    return {
+      copyOperation: ++copyOperationRef.current,
+      dialogGeneration: dialogGenerationRef.current,
+    }
+  }
+
+  function isCurrentCopyOperation(operation: ReturnType<typeof beginCopyOperation>) {
+    return operation.dialogGeneration === dialogGenerationRef.current
+      && operation.copyOperation === copyOperationRef.current
+  }
+
+  function clearCopyFeedback() {
+    if (copyFeedbackTimeoutRef.current) {
+      clearTimeout(copyFeedbackTimeoutRef.current)
+      copyFeedbackTimeoutRef.current = null
+    }
+    setIsCopied(false)
+  }
+
+  function handleDialogOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      dialogGenerationRef.current += 1
+      shareMutationRef.current += 1
+      copyOperationRef.current += 1
+      clearCopyFeedback()
+    }
+    onOpenChange(nextOpen)
+  }
+
+  async function copyLink(
+    publicId: string,
+    operation: ReturnType<typeof beginCopyOperation>,
+  ) {
+    try {
+      if (!isCurrentCopyOperation(operation)) return
+      await navigator.clipboard.writeText(`${window.location.origin}/s/${publicId}`)
+      if (!isCurrentCopyOperation(operation)) return
+      setIsCopied(true)
+      copyFeedbackTimeoutRef.current = setTimeout(() => {
+        if (isCurrentCopyOperation(operation)) setIsCopied(false)
+        copyFeedbackTimeoutRef.current = null
+      }, 2000)
+    } catch {
+      if (isCurrentCopyOperation(operation)) {
+        setError('The link is ready, but it could not be copied automatically.')
+      }
+    }
+  }
+
+  function handleCopy(publicId: string) {
+    clearCopyFeedback()
+    const operation = beginCopyOperation()
+    void copyLink(publicId, operation)
   }
 
   function handleCreate() {
     setError('')
+    clearCopyFeedback()
+    const mutation = beginShareMutation()
     startTransition(async () => {
       try {
         const createdShare = await createWorkspacePublicShare(
           workspaceId,
           { id: resourceId, type: resourceType },
         )
+        if (!isCurrentShareMutation(mutation)) return
         setShare(createdShare)
-        await copyLink(createdShare.publicId)
+        await copyLink(createdShare.publicId, beginCopyOperation())
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : 'Unable to create the public link')
+        if (isCurrentShareMutation(mutation)) {
+          setError(cause instanceof Error ? cause.message : 'Unable to create the public link')
+        }
       }
     })
   }
@@ -125,13 +207,17 @@ export function ShareResourceDialog({
   function handleRevoke() {
     if (!share) return
     setError('')
+    clearCopyFeedback()
+    const mutation = beginShareMutation()
     startTransition(async () => {
       try {
         await revokeWorkspacePublicShare(workspaceId, share.id)
+        if (!isCurrentShareMutation(mutation)) return
         setShare(null)
-        setIsCopied(false)
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : 'Unable to revoke the public link')
+        if (isCurrentShareMutation(mutation)) {
+          setError(cause instanceof Error ? cause.message : 'Unable to revoke the public link')
+        }
       }
     })
   }
@@ -140,19 +226,23 @@ export function ShareResourceDialog({
     event.preventDefault()
     setInviteStatus('')
     setError('')
+    const dialogGeneration = dialogGenerationRef.current
     startInvitationTransition(async () => {
       try {
         await inviteWorkspaceMember(workspaceId, inviteEmail, 'member')
+        if (dialogGenerationRef.current !== dialogGeneration) return
         setInviteStatus(`Invitation sent to ${inviteEmail.trim().toLowerCase()}.`)
         setInviteEmail('')
       } catch (cause) {
-        setError(cause instanceof Error ? cause.message : 'Unable to send the invitation')
+        if (dialogGenerationRef.current === dialogGeneration) {
+          setError(cause instanceof Error ? cause.message : 'Unable to send the invitation')
+        }
       }
     })
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleDialogOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Share “{resourceTitle}”</DialogTitle>
@@ -190,7 +280,7 @@ export function ShareResourceDialog({
                         className="font-mono text-xs"
                         onFocus={(event) => event.currentTarget.select()}
                       />
-                      <Button type="button" variant="outline" size="icon" aria-label="Copy public link" onClick={() => void copyLink(share.publicId)}>
+                      <Button type="button" variant="outline" size="icon" aria-label="Copy public link" disabled={isPending} onClick={() => handleCopy(share.publicId)}>
                         {isCopied ? <Check /> : <Copy />}
                       </Button>
                       <a
