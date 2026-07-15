@@ -77,7 +77,7 @@ export const companyProfiles = pgTable('company_profiles', {
   userId: text('userId').notNull(), websiteUrl: text('websiteUrl').notNull(), normalizedDomain: text('normalizedDomain').notNull(),
   name: text('name').notNull(), summary: text('summary').notNull().default(''), audience: text('audience').notNull().default(''),
   offering: text('offering').notNull().default(''), voice: text('voice').notNull().default(''),
-  rawContext: jsonb('rawContext').notNull().default({}), createdAt: timestamp('createdAt').notNull().defaultNow(),
+  rawContext: jsonb('rawContext').$type<Record<string, unknown>>().notNull().default({}), createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 }, (table) => [
   index('company_profiles_user_updated_idx').on(table.userId, table.updatedAt),
