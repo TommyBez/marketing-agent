@@ -1,4 +1,5 @@
 import { acceptWorkspaceInvitation } from '@/app/actions/organization'
+import { AuthPageSkeleton } from '@/components/auth-page-skeleton'
 import { BrandMark } from '@/components/brand-mark'
 import { SignOutButton } from '@/components/sign-out-button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
@@ -7,20 +8,30 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { auth } from '@/lib/auth'
 import { getPendingInvitationSignInContext } from '@/lib/invitation-access'
-import { headers } from 'next/headers'
+import { getRequestAuthContext } from '@/lib/session'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 
 interface AcceptInvitationPageProps {
   searchParams: Promise<{ id?: string }>
 }
 
-export default async function AcceptInvitationPage({ searchParams }: AcceptInvitationPageProps) {
-  const invitationId = (await searchParams).id
+export default function AcceptInvitationPage({ searchParams }: AcceptInvitationPageProps) {
+  return (
+    <Suspense fallback={<AuthPageSkeleton />}>
+      <AcceptInvitationPageContent searchParams={searchParams} />
+    </Suspense>
+  )
+}
+
+async function AcceptInvitationPageContent({ searchParams }: AcceptInvitationPageProps) {
+  const [{ id: invitationId }, { requestHeaders, session: currentSession }] = await Promise.all([
+    searchParams,
+    getRequestAuthContext(),
+  ])
   if (!invitationId) return <InvalidInvitation />
 
-  const requestHeaders = await headers()
-  const currentSession = await auth.api.getSession({ headers: requestHeaders })
   if (!currentSession?.user) {
     const invitationContext = await getPendingInvitationSignInContext(invitationId)
     if (!invitationContext) return <InvalidInvitation />

@@ -3,10 +3,11 @@
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { companyProfiles, member, type CompanyContext } from '@/lib/db/schema'
+import { getPublicShareWorkspaceCacheTag } from '@/lib/public-share'
 import { requireUser, requireWorkspaceMembership } from '@/lib/workspace-access'
 import { normalizeWorkspaceDomain } from '@/lib/workspace-domain.mjs'
 import { and, desc, eq, getTableColumns, ne } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
 
@@ -169,6 +170,7 @@ export async function deleteWorkspace(workspaceId: string) {
     body: { organizationId },
     headers: requestHeaders,
   })
+  updateTag(getPublicShareWorkspaceCacheTag(workspace.id))
   revalidatePath('/workspace', 'layout')
   return { nextWorkspaceId: nextWorkspace?.id ?? null }
 }

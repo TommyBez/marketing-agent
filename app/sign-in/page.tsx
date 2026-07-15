@@ -1,27 +1,36 @@
 import { AuthForm } from '@/components/auth-form'
+import { AuthPageSkeleton } from '@/components/auth-page-skeleton'
 import { BrandMark } from '@/components/brand-mark'
-import { auth } from '@/lib/auth'
 import { getPendingInvitationSignInContext } from '@/lib/invitation-access'
 import { safeCallbackURL } from '@/lib/safe-callback-url'
-import { headers } from 'next/headers'
+import { getCurrentSession } from '@/lib/session'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 
 interface SignInPageProps {
   searchParams: Promise<{ callbackURL?: string; invitationId?: string }>
 }
 
-export default async function SignInPage({ searchParams }: SignInPageProps) {
+export default function SignInPage({ searchParams }: SignInPageProps) {
+  return (
+    <Suspense fallback={<AuthPageSkeleton />}>
+      <SignInPageContent searchParams={searchParams} />
+    </Suspense>
+  )
+}
+
+async function SignInPageContent({ searchParams }: SignInPageProps) {
   const { callbackURL: requestedCallbackURL, invitationId } = await searchParams
   const callbackURL = invitationId
     ? `/accept-invitation?id=${encodeURIComponent(invitationId)}`
     : safeCallbackURL(requestedCallbackURL)
-  const session = await auth.api.getSession({ headers: await headers() })
+  const [session, invitationContext] = await Promise.all([
+    getCurrentSession(),
+    invitationId ? getPendingInvitationSignInContext(invitationId) : null,
+  ])
   if (session?.user) redirect(callbackURL)
 
-  const invitationContext = invitationId
-    ? await getPendingInvitationSignInContext(invitationId)
-    : null
   if (invitationId && !invitationContext) redirect(callbackURL)
 
   const isInvitationSignIn = Boolean(invitationContext)

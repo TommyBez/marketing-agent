@@ -11,6 +11,7 @@ import {
 } from '@/lib/public-share-contract'
 import {
   createPublicConversationMessages,
+  getPublicShareCacheTag,
   getConversationShareRestriction,
   parsePublicShareSnapshot,
 } from '@/lib/public-share'
@@ -18,7 +19,7 @@ import { canManageOrganization, requireWorkspaceMembership } from '@/lib/workspa
 import { and, eq } from 'drizzle-orm'
 import { isCurrentTurnBoundaryEvent } from 'eve/client'
 import { nanoid } from 'nanoid'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { z } from 'zod'
 
 const resourceSchema = z.discriminatedUnion('type', [
@@ -200,6 +201,7 @@ export async function revokeWorkspacePublicShare(
     eq(publicShares.id, parsedShareId),
     eq(publicShares.companyProfileId, access.workspace.id),
   ))
+  updateTag(getPublicShareCacheTag(share.publicId))
   revalidatePath(`/s/${share.publicId}`)
   revalidatePath(`/workspace/${workspaceId}`)
   return actionSuccess(null)

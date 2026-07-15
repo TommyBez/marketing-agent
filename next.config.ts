@@ -2,6 +2,7 @@ import type { NextConfig } from 'next'
 import { withEve } from 'eve/next'
 
 const nextConfig: NextConfig = {
+  cacheComponents: true,
   experimental: {
     // Next.js has no per-rewrite timeout. withEve provides this app's only
     // rewrite, whose streams can remain silent while subagents work.

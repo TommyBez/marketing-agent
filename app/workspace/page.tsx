@@ -1,12 +1,21 @@
 import { listWorkspaces } from '@/app/actions/company'
 import { CompanyOnboarding } from '@/components/company-onboarding'
 import { Card } from '@/components/ui/card'
-import { auth } from '@/lib/auth'
-import { headers } from 'next/headers'
+import { WorkspaceLoadingPage } from '@/components/workspace-loading'
+import { getCurrentSession } from '@/lib/session'
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 
-export default async function WorkspacePage() {
-  const currentSession = await auth.api.getSession({ headers: await headers() })
+export default function WorkspacePage() {
+  return (
+    <Suspense fallback={<WorkspaceLoadingPage />}>
+      <WorkspacePageContent />
+    </Suspense>
+  )
+}
+
+async function WorkspacePageContent() {
+  const currentSession = await getCurrentSession()
   if (!currentSession?.user) redirect('/sign-in')
 
   const workspaces = await listWorkspaces()

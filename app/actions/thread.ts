@@ -3,10 +3,11 @@
 import { db } from '@/lib/db'
 import { agentThreads, companyProfiles } from '@/lib/db/schema'
 import { getConversationTranscriptBlobPath, readConversationTranscript } from '@/lib/conversation-transcript'
+import { getPublicShareResourceCacheTag } from '@/lib/public-share'
 import { requireWorkspaceMembership } from '@/lib/workspace-access'
 import { del } from '@vercel/blob'
 import { and, desc, eq } from 'drizzle-orm'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, updateTag } from 'next/cache'
 import { z } from 'zod'
 
 const idSchema = z.uuid()
@@ -105,6 +106,7 @@ export async function deleteConversation(workspaceId: string, conversationId: st
     eq(agentThreads.id, conversation.id),
     eq(agentThreads.companyProfileId, conversation.companyProfileId),
   ))
+  updateTag(getPublicShareResourceCacheTag('conversation', conversation.id))
   const blobPath = getConversationTranscriptBlobPath(conversation.events)
   if (blobPath) await del(blobPath).catch(() => undefined)
   revalidatePath(`/workspace/${workspaceId}`)

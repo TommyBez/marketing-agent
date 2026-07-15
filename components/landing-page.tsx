@@ -4,8 +4,11 @@ import { LandingAnalyzerDemo } from '@/components/landing-analyzer-demo'
 import { LandingStoryMotion } from '@/components/landing-motion'
 import { SpecialistActivityItem } from '@/components/specialist-activity-item'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { getCurrentSession } from '@/lib/session'
 import { ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { Suspense } from 'react'
 
 const expertiseExamples = [
   { name: 'Positioning', detail: 'Clarify the market, offer, and decision context' },
@@ -44,28 +47,75 @@ interface LandingPageProps {
   isSignedIn: boolean
 }
 
-function LandingHeader({ isSignedIn }: LandingPageProps) {
+function LandingHeaderNavigation({ isSignedIn }: LandingPageProps) {
   const primaryHref = isSignedIn ? '/workspace' : '/sign-in'
   const primaryLabel = isSignedIn ? 'Open workspace' : 'Create your workspace'
 
+  return (
+    <nav aria-label="Main navigation" className="landing-nav">
+      {!isSignedIn && <Link className="landing-nav-link" href="/sign-in">Sign in</Link>}
+      <Button className="landing-cta" nativeButton={false} render={<Link href={primaryHref} />}>
+        {isSignedIn ? primaryLabel : (
+          <>
+            <span className="landing-header-cta-full">Create your workspace</span>
+            <span className="landing-header-cta-compact">Create workspace</span>
+          </>
+        )}
+      </Button>
+    </nav>
+  )
+}
+
+async function SessionAwareLandingHeaderNavigation() {
+  const session = await getCurrentSession()
+  return <LandingHeaderNavigation isSignedIn={Boolean(session?.user)} />
+}
+
+function LandingHeaderNavigationSkeleton() {
+  return (
+    <div className="landing-nav" aria-hidden="true">
+      <Skeleton className="h-9 w-14" />
+      <Skeleton className="h-9 w-40" />
+    </div>
+  )
+}
+
+function LandingHeader() {
   return (
     <header className="landing-shell landing-header">
       <Link href="/" aria-label="Branderize home">
         <BrandMark />
       </Link>
-      <nav aria-label="Main navigation" className="landing-nav">
-        {!isSignedIn && <Link className="landing-nav-link" href="/sign-in">Sign in</Link>}
-        <Button className="landing-cta" nativeButton={false} render={<Link href={primaryHref} />}>
-          {isSignedIn ? primaryLabel : (
-            <>
-              <span className="landing-header-cta-full">Create your workspace</span>
-              <span className="landing-header-cta-compact">Create workspace</span>
-            </>
-          )}
-        </Button>
-      </nav>
+      <Suspense fallback={<LandingHeaderNavigationSkeleton />}>
+        <SessionAwareLandingHeaderNavigation />
+      </Suspense>
     </header>
   )
+}
+
+interface LandingPrimaryActionProps extends LandingPageProps {
+  className?: string
+  variant?: 'default' | 'secondary'
+}
+
+function LandingPrimaryAction({ className, isSignedIn, variant = 'default' }: LandingPrimaryActionProps) {
+  const href = isSignedIn ? '/workspace' : '/sign-in'
+  const label = isSignedIn ? 'Open workspace' : 'Create your workspace'
+
+  return (
+    <Button className={className ?? 'landing-cta'} size="lg" variant={variant} nativeButton={false} render={<Link href={href} />}>
+      {label}<ArrowRight data-icon="inline-end" />
+    </Button>
+  )
+}
+
+async function SessionAwareLandingPrimaryAction({ className, variant }: Omit<LandingPrimaryActionProps, 'isSignedIn'>) {
+  const session = await getCurrentSession()
+  return <LandingPrimaryAction className={className} isSignedIn={Boolean(session?.user)} variant={variant} />
+}
+
+function LandingPrimaryActionSkeleton() {
+  return <Skeleton className="h-10 w-48" aria-hidden="true" />
 }
 
 function DisciplineScore() {
@@ -150,13 +200,10 @@ function OrchestrationStory() {
   )
 }
 
-export function LandingPage({ isSignedIn }: LandingPageProps) {
-  const primaryHref = isSignedIn ? '/workspace' : '/sign-in'
-  const primaryLabel = isSignedIn ? 'Open workspace' : 'Create your workspace'
-
+export function LandingPage() {
   return (
     <main className="landing-page">
-        <LandingHeader isSignedIn={isSignedIn} />
+        <LandingHeader />
         <section className="landing-shell hero-section">
           <div className="hero-copy">
             <p className="hero-kicker landing-load-reveal landing-load-1">AI marketing workspace</p>
@@ -170,9 +217,9 @@ export function LandingPage({ isSignedIn }: LandingPageProps) {
             </h1>
             <p className="landing-load-reveal landing-load-4">Add your website once. Branderize builds a shared brief, assigns the right specialists, and returns one coordinated answer.</p>
             <div className="hero-actions landing-load-reveal landing-load-5">
-              <Button className="landing-cta" size="lg" nativeButton={false} render={<Link href={primaryHref} />}>
-                {primaryLabel}<ArrowRight data-icon="inline-end" />
-              </Button>
+              <Suspense fallback={<LandingPrimaryActionSkeleton />}>
+                <SessionAwareLandingPrimaryAction />
+              </Suspense>
             </div>
           </div>
           <div className="hero-visual" role="img" aria-label="Branderize turning a website into a shared company brief">
@@ -186,15 +233,9 @@ export function LandingPage({ isSignedIn }: LandingPageProps) {
             <p>Your move</p>
             <h2>Your next brief already has a team.</h2>
             <span>Create your account, add your website, and make your first request. No credit card required.</span>
-            <Button
-              className="landing-cta landing-closing-cta"
-              size="lg"
-              variant="secondary"
-              nativeButton={false}
-              render={<Link href={primaryHref} />}
-            >
-              {primaryLabel}<ArrowRight data-icon="inline-end" />
-            </Button>
+            <Suspense fallback={<LandingPrimaryActionSkeleton />}>
+              <SessionAwareLandingPrimaryAction className="landing-cta landing-closing-cta" variant="secondary" />
+            </Suspense>
           </div>
           <div className="landing-shell footer-bottom">
             <BrandMark />

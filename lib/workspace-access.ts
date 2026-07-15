@@ -1,10 +1,10 @@
 import 'server-only'
 
-import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { companyProfiles, member } from '@/lib/db/schema'
+import { getRequestAuthContext } from '@/lib/session'
 import { and, eq } from 'drizzle-orm'
-import { headers } from 'next/headers'
+import { cache } from 'react'
 import { z } from 'zod'
 
 const workspaceIdSchema = z.uuid()
@@ -16,16 +16,12 @@ function includesRole(role: string, allowedRoles: OrganizationRole[]) {
 }
 
 export async function requireUser() {
-  const requestHeaders = await headers()
-  const currentSession = await auth.api.getSession({ headers: requestHeaders })
-  if (!currentSession?.user) throw new Error('Unauthorized')
-  return { requestHeaders, session: currentSession, userId: currentSession.user.id }
+  const { requestHeaders, session } = await getRequestAuthContext()
+  if (!session?.user) throw new Error('Unauthorized')
+  return { requestHeaders, session, userId: session.user.id }
 }
 
-export async function requireWorkspaceMembership(
-  workspaceId: string,
-  allowedRoles?: OrganizationRole[],
-) {
+const getWorkspaceMembership = cache(async (workspaceId: string) => {
   const parsedWorkspaceId = workspaceIdSchema.safeParse(workspaceId)
   if (!parsedWorkspaceId.success) throw new Error('Invalid workspace')
 
@@ -39,9 +35,6 @@ export async function requireWorkspaceMembership(
   )).where(eq(companyProfiles.id, parsedWorkspaceId.data)).limit(1))[0]
 
   if (!result) throw new Error('Workspace not found')
-  if (allowedRoles && !includesRole(result.role, allowedRoles)) {
-    throw new Error('You do not have permission to manage this workspace')
-  }
 
   return {
     organizationId: result.workspace.organizationId,
@@ -51,6 +44,17 @@ export async function requireWorkspaceMembership(
     userId,
     workspace: result.workspace,
   }
+})
+
+export async function requireWorkspaceMembership(
+  workspaceId: string,
+  allowedRoles?: OrganizationRole[],
+) {
+  const access = await getWorkspaceMembership(workspaceId)
+  if (allowedRoles && !includesRole(access.role, allowedRoles)) {
+    throw new Error('You do not have permission to manage this workspace')
+  }
+  return access
 }
 
 export function canManageOrganization(role: string) {
