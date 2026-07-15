@@ -67,6 +67,8 @@ export function CompanyOnboardingView({
                 defaultValue={websiteUrl}
                 placeholder="https://yourcompany.com"
                 className="onboarding-focus-input"
+                aria-invalid={Boolean(error)}
+                aria-describedby={error ? `${websiteInputId}-error` : undefined}
               />
               <Button
                 type="submit"
@@ -86,7 +88,11 @@ export function CompanyOnboardingView({
                 <span className="onboarding-focus-status" role="status" aria-live="polite">{statusLine}</span>
               )}
             </div>
-            {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription id={`${websiteInputId}-error`}>{error}</AlertDescription>
+              </Alert>
+            )}
           </form>
         </Card>
       </section>
@@ -109,6 +115,8 @@ export function CompanyOnboardingView({
             defaultValue={websiteUrl}
             placeholder="https://yourcompany.com"
             className="h-11 flex-1"
+            aria-invalid={Boolean(error) && !isDemo}
+            aria-describedby={error && !isDemo ? `${websiteInputId}-error` : undefined}
           />
           <Button
             type={isDemo ? 'button' : 'submit'}
@@ -140,7 +148,11 @@ export function CompanyOnboardingView({
         {isDemo ? <div aria-hidden="true" inert>{input}</div> : <form onSubmit={onSubmit}>{input}</form>}
 
         {(isLoading || isComplete) && <CompanyAnalysisProgress activeStage={activeStage} isComplete={isComplete} />}
-        {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription id={`${websiteInputId}-error`}>{error}</AlertDescription>
+          </Alert>
+        )}
       </CardContent>
       {!isCompact && !isDemo && (
         <CardFooter className="flex-col items-stretch gap-4 bg-transparent">
