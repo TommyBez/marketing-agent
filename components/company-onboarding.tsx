@@ -1,5 +1,6 @@
 'use client'
 
+import posthog from 'posthog-js'
 import { analyzeCompany } from '@/app/actions/company'
 import { companyAnalysisStages } from '@/components/company-analysis-progress'
 import { CompanyOnboardingView } from '@/components/company-onboarding-view'
@@ -29,6 +30,7 @@ export function CompanyOnboarding({ isCompact = false, onCreated }: CompanyOnboa
     setIsLoading(true)
     setActiveStage(0)
     setError('')
+    posthog.capture('workspace_analysis_submitted')
     try {
       const workspace = await analyzeCompany(String(formData.get('websiteUrl')))
       onCreated?.()

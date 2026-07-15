@@ -1,5 +1,6 @@
 'use client'
 
+import posthog from 'posthog-js'
 import { saveArtifact } from '@/app/actions/artifact'
 import { MessageAction } from '@/components/ai-elements/message'
 import { Button } from '@/components/ui/button'
@@ -41,6 +42,7 @@ export function SaveArtifactAction({ conversationId, text, workspaceId }: SaveAr
           content: text,
           conversationId,
         })
+        posthog.capture('artifact_saved')
         setIsDialogOpen(false)
         setIsSaved(true)
         setTimeout(() => setIsSaved(false), 2000)

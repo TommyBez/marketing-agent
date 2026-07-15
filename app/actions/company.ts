@@ -1,5 +1,6 @@
 'use server'
 
+import { getPostHogClient } from '@/lib/posthog-server'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { companyProfiles, member, type CompanyContext } from '@/lib/db/schema'
@@ -111,6 +112,13 @@ export async function analyzeCompany(websiteUrl: string) {
   }
 
   revalidatePath('/workspace', 'layout')
+  const posthog = getPostHogClient()
+  posthog.capture({
+    distinctId: userId,
+    event: 'workspace_created',
+    properties: { workspace_id: workspace.id },
+  })
+  await posthog.flush()
   return workspace
 }
 
@@ -172,6 +180,13 @@ export async function deleteWorkspace(workspaceId: string) {
   })
   updateTag(getPublicShareWorkspaceCacheTag(workspace.id))
   revalidatePath('/workspace', 'layout')
+  const posthog = getPostHogClient()
+  posthog.capture({
+    distinctId: userId,
+    event: 'workspace_deleted',
+    properties: { workspace_id: workspace.id },
+  })
+  await posthog.flush()
   return { nextWorkspaceId: nextWorkspace?.id ?? null }
 }
 
