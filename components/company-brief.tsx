@@ -1,17 +1,8 @@
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import {
-  ArrowUpRight,
-  BookOpenText,
-  Check,
-  MessageSquareText,
-  PackageOpen,
-  Target,
-  UsersRound,
-  type LucideIcon,
-} from 'lucide-react'
-import type { ComponentProps } from 'react'
+import { ArrowUpRight, BookOpenText, Check } from 'lucide-react'
+import type { ComponentProps, ReactNode } from 'react'
 
 export interface CompanyBriefData {
   name: string
@@ -27,11 +18,12 @@ interface CompanyBriefProps extends Omit<ComponentProps<'article'>, 'children'> 
   density?: 'compact' | 'default'
 }
 
-interface BriefFieldProps {
-  icon: LucideIcon
+interface LedgerRowProps {
   label: string
-  value: string
+  children: ReactNode
   isCompact: boolean
+  emphasized?: boolean
+  section?: string
 }
 
 function cleanValue(value: string | null | undefined, fallback: string) {
@@ -48,15 +40,32 @@ function getWebsite(websiteUrl: string) {
   }
 }
 
-function BriefField({ icon: Icon, label, value, isCompact }: BriefFieldProps) {
+function LedgerRow({ label, children, isCompact, emphasized = false, section }: LedgerRowProps) {
   return (
-    <section data-company-brief-field className={cn('min-w-0 border-t border-border', isCompact ? 'pt-3' : 'pt-4')}>
-      <div className="mb-2 flex items-center gap-2 text-muted-foreground">
-        <Icon aria-hidden="true" className="size-3.5 text-primary" />
-        <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em]">{label}</h3>
-      </div>
-      <p className={cn('text-foreground', isCompact ? 'text-xs leading-5' : 'text-sm leading-6')}>{value}</p>
-    </section>
+    <div
+      data-company-brief-field
+      data-company-brief-section={section}
+      className={cn(
+        'grid items-start gap-x-3 border-t border-border',
+        isCompact ? 'grid-cols-[5rem_minmax(0,1fr)]' : 'grid-cols-[8.5rem_minmax(0,1fr)]',
+        emphasized && 'bg-muted/45',
+        emphasized
+          ? isCompact ? 'px-4 py-3.5' : 'px-5 py-4 sm:px-6'
+          : isCompact ? 'px-4 py-2.5' : 'px-5 py-3.5 sm:px-6',
+      )}
+    >
+      <h3
+        className={cn(
+          'font-mono font-semibold uppercase tracking-[0.14em]',
+          emphasized ? 'text-primary' : 'text-muted-foreground',
+          isCompact ? 'text-[9px]' : 'text-[10px]',
+          emphasized ? 'pt-1' : 'pt-0.5',
+        )}
+      >
+        {label}
+      </h3>
+      {children}
+    </div>
   )
 }
 
@@ -87,25 +96,27 @@ export function CompanyBrief({ brief, density = 'default', className, ...props }
       )}
     >
       <article {...props}>
-        <header data-company-brief-section="header" className={cn('flex items-start justify-between gap-5', isCompact ? 'p-4' : 'p-5 pr-12 sm:p-6 sm:pr-14')}>
-          <div className="flex min-w-0 items-start gap-3">
+        <header
+          data-company-brief-section="header"
+          className={cn('flex items-center justify-between gap-4', isCompact ? 'p-4' : 'px-5 py-4 sm:px-6')}
+        >
+          <div className="flex min-w-0 items-center gap-3">
             <span className={cn(
               'flex shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm',
-              isCompact ? 'size-8' : 'size-10',
+              isCompact ? 'size-8' : 'size-9',
             )}>
-              <BookOpenText aria-hidden="true" className={isCompact ? 'size-4' : 'size-5'} />
+              <BookOpenText aria-hidden="true" className={isCompact ? 'size-4' : 'size-4.5'} />
             </span>
-            <div className="min-w-0">
-              <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-primary">Company brief</p>
+            <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
               <h2 className={cn(
                 'truncate font-semibold leading-tight tracking-tight text-foreground',
-                isCompact ? 'mt-1 text-base' : 'mt-1.5 text-xl',
+                isCompact ? 'text-base' : 'text-lg',
               )}>
                 {name}
               </h2>
               {website.href ? (
                 <a
-                  className="mt-1 inline-flex max-w-full items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  className="inline-flex max-w-full items-center gap-1 text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                   href={website.href}
                   rel="noreferrer"
                   target="_blank"
@@ -114,36 +125,33 @@ export function CompanyBrief({ brief, density = 'default', className, ...props }
                   <ArrowUpRight aria-hidden="true" className="size-3 shrink-0" />
                 </a>
               ) : (
-                <p className="mt-1 truncate text-xs text-muted-foreground">{website.label}</p>
+                <p className="truncate text-xs text-muted-foreground">{website.label}</p>
               )}
             </div>
           </div>
-          <Badge variant="secondary" className="hidden font-mono text-[9px] uppercase tracking-[0.12em] sm:inline-flex">
+          <Badge variant="secondary" className="hidden shrink-0 font-mono text-[9px] uppercase tracking-[0.12em] sm:inline-flex">
             Shared context
           </Badge>
         </header>
 
-        <section data-company-brief-section="positioning" className={cn('relative border-y bg-muted/45', isCompact ? 'px-4 py-4' : 'px-5 py-5 sm:px-6')}>
-          <span aria-hidden="true" className="absolute inset-y-0 left-0 w-1 bg-primary" />
-          <div className="mb-2 flex items-center gap-2 text-primary">
-            <Target aria-hidden="true" className="size-3.5" />
-            <h3 className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em]">Positioning</h3>
-          </div>
-          <p className={cn(
-            'max-w-3xl font-medium text-foreground text-balance',
-            isCompact ? 'text-sm leading-5' : 'text-base leading-7 sm:text-lg',
-          )}>
-            {summary}
-          </p>
-        </section>
-
-        <div data-company-brief-section="fields" className={cn(
-          'grid',
-          isCompact ? 'gap-3 p-4' : 'gap-5 p-5 sm:p-6 md:grid-cols-3',
-        )}>
-          <BriefField icon={UsersRound} label="Audience" value={audience} isCompact={isCompact} />
-          <BriefField icon={PackageOpen} label="Offering" value={offering} isCompact={isCompact} />
-          <BriefField icon={MessageSquareText} label="Voice" value={voice} isCompact={isCompact} />
+        <div data-company-brief-section="fields">
+          <LedgerRow label="Positioning" isCompact={isCompact} emphasized section="positioning">
+            <p className={cn(
+              'font-medium text-foreground text-pretty',
+              isCompact ? 'text-sm leading-5' : 'text-base leading-relaxed sm:text-[1.05rem]',
+            )}>
+              {summary}
+            </p>
+          </LedgerRow>
+          <LedgerRow label="Audience" isCompact={isCompact}>
+            <p className={cn('text-foreground', isCompact ? 'text-xs leading-5' : 'text-sm leading-6')}>{audience}</p>
+          </LedgerRow>
+          <LedgerRow label="Offering" isCompact={isCompact}>
+            <p className={cn('text-foreground', isCompact ? 'text-xs leading-5' : 'text-sm leading-6')}>{offering}</p>
+          </LedgerRow>
+          <LedgerRow label="Voice" isCompact={isCompact}>
+            <p className={cn('text-foreground', isCompact ? 'text-xs leading-5' : 'text-sm leading-6')}>{voice}</p>
+          </LedgerRow>
         </div>
 
         <footer data-company-brief-section="footer" className={cn(
