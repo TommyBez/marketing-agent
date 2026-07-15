@@ -4,27 +4,27 @@
     {
       "id": 1,
       "prompt": "I want to set up my product marketing context. We're a B2B SaaS company that sells a customer feedback platform to product teams.",
-      "expected_output": "Should check if .agents/product-marketing.md already exists. If not, should offer two options: (1) Auto-draft from codebase (recommended) or (2) Start from scratch. If user chooses start from scratch, should walk through sections conversationally one at a time. Should cover all applicable sections: Product Overview, Target Audience, Personas, Problems You Solve, Competitive Landscape, Differentiation, Objections, Switching Dynamics, Customer Language, Brand Voice, Proof Points, and Goals. Should create the file at .agents/product-marketing.md when complete.",
+      "expected_output": "Should inspect the authenticated workspace brief and productMarketingContext already supplied by the server. If no product marketing context exists, should offer two options: (1) Auto-draft from workspace evidence (recommended) or (2) Start from scratch. If the user chooses start from scratch, should walk through sections conversationally one at a time. Should cover all applicable sections: Product Overview, Target Audience, Personas, Problems You Solve, Competitive Landscape, Differentiation, Objections, Switching Dynamics, Customer Language, Brand Voice, Proof Points, and Goals. Should present the completed sections and request approval for update_product_marketing_context when ready to persist them.",
       "assertions": [
-        "Checks for existing product-marketing.md",
+        "Checks the authenticated workspace for existing product marketing context",
         "Offers two options: auto-draft or start from scratch",
         "Covers applicable sections",
         "Walks through sections conversationally one at a time",
-        "Creates file at .agents/product-marketing.md"
+        "Uses update_product_marketing_context after user review"
       ],
       "files": []
     },
     {
       "id": 2,
       "prompt": "Update our product marketing context. We just added a new enterprise tier and our target audience has expanded to include VP of Engineering, not just Product Managers.",
-      "expected_output": "Should check for existing .agents/product-marketing.md and read it. Should identify which sections need updating based on the changes: Target Audience (add VP of Engineering), Personas (add new persona), Product Overview (new enterprise tier, including pricing updates within that section), Objections (enterprise-specific), and Competitive Landscape (enterprise competitors). Should update only the relevant sections, preserving existing content that hasn't changed.",
+      "expected_output": "Should read the existing productMarketingContext from the authenticated workspace brief. Should identify which sections need updating based on the changes: Target Audience (add VP of Engineering), Personas (add new persona), Product Overview (new enterprise tier, including pricing updates within that section), Objections (enterprise-specific), and Competitive Landscape (enterprise competitors). Should present only those proposed changes, preserve unchanged sections, and request approval for update_product_marketing_context.",
       "assertions": [
-        "Reads existing product-marketing.md",
+        "Reads existing workspace product marketing context",
         "Identifies sections that need updating",
         "Updates Target Audience with VP of Engineering",
         "Adds new persona for the expanded audience",
         "Updates Product Overview for enterprise tier",
-        "Preserves unchanged sections"
+        "Preserves unchanged sections through a partial workspace update"
       ],
       "files": []
     },
@@ -39,30 +39,30 @@
         "Adapts questions for early-stage B2C mobile app",
         "Notes some sections may be sparse early on",
         "Skips non-applicable sections rather than forcing all 12",
-        "Creates file at .agents/product-marketing.md"
+        "Uses the authenticated workspace profile instead of a filesystem file"
       ],
       "files": []
     },
     {
       "id": 4,
-      "prompt": "Can you auto-draft our product marketing context from our existing codebase and marketing materials?",
-      "expected_output": "Should activate the auto-draft workflow mode. Should scan the codebase for existing marketing context: README, landing page copy, pricing page, about page, meta descriptions, any existing documentation. Should draft the product-marketing.md from what it finds, filling in sections where information is available and flagging sections that need manual input. Should present the draft for review before saving.",
+      "prompt": "Can you auto-draft our product marketing context from our workspace and marketing materials?",
+      "expected_output": "Should activate the auto-draft workflow mode. Should start from the authenticated workspace brief, website, existing product marketing sections, and current Context.dev evidence where needed. Should draft the product marketing sections from supported information, flag assumptions and sections that need manual input, and present the draft for review before requesting approval to persist it.",
       "assertions": [
         "Activates auto-draft workflow mode",
-        "Scans codebase for existing marketing materials",
+        "Uses workspace and current website evidence",
         "Drafts context from found information",
         "Flags sections needing manual input",
-        "Presents draft for review before saving"
+        "Presents draft for review before requesting persistence approval"
       ],
       "files": []
     },
     {
       "id": 5,
       "prompt": "Do we have a product marketing context set up? I want to make sure the other marketing skills have context about our product.",
-      "expected_output": "Should check for .agents/product-marketing.md (and the older .claude/product-marketing.md location). Should report whether it exists and summarize its contents if found. If it doesn't exist, should offer to create one and explain why it's valuable (other skills like copywriting, cro, seo-audit check for it first). Should explain how other skills use this context document.",
+      "expected_output": "Should inspect productMarketingContext in the authenticated workspace brief. Should report whether it exists and summarize its contents if found without exposing raw profile fields. If it doesn't exist, should offer to create it and explain why it is valuable. Should explain that the root passes relevant workspace context to the specialist subagents.",
       "assertions": [
-        "Checks both file locations",
-        "Reports whether context doc exists",
+        "Checks the authenticated workspace profile",
+        "Reports whether product marketing context exists",
         "Summarizes contents if found",
         "Offers to create if missing",
         "Explains how other skills use it"
@@ -72,11 +72,11 @@
     {
       "id": 6,
       "prompt": "Write homepage copy for our SaaS product.",
-      "expected_output": "Should recognize this is a copywriting task, not a product marketing context task. Should check for product-marketing.md (as other skills do), and if it doesn't exist, may suggest creating one first. But should defer to the copywriting skill for actually writing the homepage copy.",
+      "expected_output": "Should recognize this is a copywriting task, not a product marketing context update. Should use the current authenticated workspace brief and may suggest initializing missing product marketing context first, but should delegate the actual homepage copy to the copy-creative specialist.",
       "assertions": [
         "Recognizes this as a copywriting task",
-        "May check for or suggest creating product-marketing.md",
-        "References or defers to copywriting skill for the actual copy",
+        "May check for or suggest initializing workspace product marketing context",
+        "References or delegates to the copy-creative specialist for the actual copy",
         "Does not attempt to write homepage copy using context creation patterns"
       ],
       "files": []

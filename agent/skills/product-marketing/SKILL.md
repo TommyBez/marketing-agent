@@ -1,30 +1,31 @@
 ---
 name: product-marketing
-description: "When the user wants to create or update their product marketing context document. Also use when the user mentions 'product context,' 'marketing context,' 'set up context,' 'positioning,' 'who is my target audience,' 'describe my product,' 'ICP,' 'ideal customer profile,' or wants to avoid repeating foundational information across marketing tasks. Use this at the start of any new project before using other marketing skills — it creates `.agents/product-marketing.md` that all other skills reference for product, audience, and positioning context."
+description: "When the user wants to create or update the selected workspace's product marketing context. Also use when the user mentions 'product context,' 'marketing context,' 'set up context,' 'positioning,' 'who is my target audience,' 'describe my product,' 'ICP,' 'ideal customer profile,' or wants to avoid repeating foundational information across marketing tasks. Use this at the start of a new workspace before using other marketing skills — it maintains the authenticated workspace profile that the root agent passes to specialists."
 metadata:
   version: 2.0.0
+  variant: workspace-profile
 ---
 
 # Product Marketing Context
 
-You help users create and maintain a product marketing context document. This captures foundational positioning and messaging information that other marketing skills reference, so users don't repeat themselves.
+You help users create and maintain the selected workspace's product marketing context. This captures foundational positioning and messaging information that other marketing skills receive from the root agent, so users don't repeat themselves.
 
-The document is stored at `.agents/product-marketing.md`.
+The authoritative context is stored in the authenticated workspace profile and is injected into the root agent as `productMarketingContext`. Never read or write repo-local product-marketing context files. Company details supplied in chat are proposed changes until the user approves the `update_product_marketing_context` tool call.
 
 ## Workflow
 
-### Step 1: Check for Existing Context
+### Step 1: Check the Workspace Context
 
-First, check if `.agents/product-marketing.md` already exists. Also check `.claude/product-marketing.md` and the legacy filename `product-marketing-context.md` (in either `.agents/` or `.claude/`) for older setups — if found anywhere other than `.agents/product-marketing.md`, offer to move it to the canonical location.
+First, inspect the authoritative workspace brief already present in your system context. Use `productMarketingContext` when available and the compact `summary`, `audience`, `offering`, and `voice` fields as the starting point. Do not ask the user to paste a context file and do not inspect filesystem locations for one.
 
-**If it exists:**
-- Read it and summarize what's captured
+**If product marketing context exists:**
+- Summarize what's captured without exposing raw or internal profile fields
 - Ask which sections they want to update
 - Only gather info for those sections
 
 **If it doesn't exist, offer two options:**
 
-1. **Auto-draft from codebase** (recommended): You'll study the repo—README, landing pages, marketing copy, package.json, etc.—and draft a V1 of the context document. The user then reviews, corrects, and fills gaps. This is faster than starting from scratch.
+1. **Auto-draft from workspace evidence** (recommended): Use the existing workspace brief, website, supporting evidence, and current Context.dev research where needed to draft a V1. The user then reviews, corrects, and fills gaps. This is faster than starting from scratch.
 
 2. **Start from scratch**: Walk through each section conversationally, gathering info one section at a time.
 
@@ -33,10 +34,12 @@ Most users prefer option 1. After presenting the draft, ask: "What needs correct
 ### Step 2: Gather Information
 
 **If auto-drafting:**
-1. Read the codebase: README, landing pages, marketing copy, about pages, meta descriptions, package.json, any existing docs
-2. Draft all sections based on what you find
-3. Present the draft and ask what needs correcting or is missing
-4. Iterate until the user is satisfied
+1. Start from the authenticated workspace brief and existing product marketing sections
+2. Use the company website and current Context.dev evidence to fill supported gaps; never invent findings
+3. Treat details supplied in chat as proposed edits, not stored facts
+4. Draft all applicable sections and distinguish evidence from assumptions
+5. Present the draft and ask what needs correcting or is missing
+6. Iterate until the user is satisfied
 
 **If starting from scratch:**
 Walk through each section below conversationally, one at a time. Don't dump all questions at once.
@@ -126,9 +129,9 @@ The JTBD Four Forces:
 
 ---
 
-## Step 3: Create the Document
+## Step 3: Prepare the Workspace Update
 
-After gathering information, create `.agents/product-marketing.md` with this structure:
+After gathering information, prepare the applicable sections with this structure. Preserve every existing section the user did not ask to change:
 
 ```markdown
 # Product Marketing Context
@@ -225,10 +228,11 @@ After gathering information, create `.agents/product-marketing.md` with this str
 
 ## Step 4: Confirm and Save
 
-- Show the completed document
-- Ask if anything needs adjustment
-- Save to `.agents/product-marketing.md`
-- Tell them: "Other marketing skills will now use this context automatically. Run `/product-marketing` anytime to update it."
+- Show the completed or changed sections and clearly identify assumptions
+- Ask if anything needs adjustment before persistence
+- Call `update_product_marketing_context` with only the sections the user wants changed; its approval prompt is the final confirmation before the workspace profile is updated
+- Omit unchanged sections. Use `null` only when the user explicitly wants to clear a previously stored section
+- After a successful tool result, tell them: "Other marketing specialists will now receive this workspace context automatically. Ask me to update the product marketing context anytime."
 
 ---
 

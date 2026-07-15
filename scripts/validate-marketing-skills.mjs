@@ -50,6 +50,7 @@ const assignments = {
 }
 
 const rootSkill = 'product-marketing'
+const rootAdapterFiles = new Set(['SKILL.md', 'evals/evals.json'])
 const assignedSkills = Object.values(assignments).flat()
 const catalog = [rootSkill, ...assignedSkills]
 
@@ -114,13 +115,57 @@ async function assertExactUpstreamPackage(skill, target) {
   }
 }
 
+async function assertWorkspaceProfileAdapter(skill, target) {
+  const source = join(upstreamRoot, skill)
+  const [sourceFiles, targetFiles] = await Promise.all([
+    filesBelow(source),
+    filesBelow(target),
+  ])
+
+  assertEqualList(`${skill} adapter package files`, targetFiles, sourceFiles)
+
+  for (const file of sourceFiles) {
+    if (rootAdapterFiles.has(file)) continue
+
+    const [sourceContent, targetContent] = await Promise.all([
+      readFile(join(source, file)),
+      readFile(join(target, file)),
+    ])
+    if (!sourceContent.equals(targetContent)) {
+      fail(`${skill}/${file} differs from upstream outside the declared adapter files`)
+    }
+  }
+
+  const [runtimeSkill, runtimeEvals] = await Promise.all([
+    readFile(join(target, 'SKILL.md'), 'utf8'),
+    readFile(join(target, 'evals', 'evals.json'), 'utf8'),
+  ])
+
+  for (const forbiddenPath of [
+    '.agents/product-marketing.md',
+    '.claude/product-marketing.md',
+    'product-marketing-context.md',
+  ]) {
+    if (runtimeSkill.includes(forbiddenPath) || runtimeEvals.includes(forbiddenPath))
+      fail(`${skill} adapter still references repo-local path ${forbiddenPath}`)
+  }
+
+  for (const requiredMarker of [
+    'variant: workspace-profile',
+    'update_product_marketing_context',
+  ]) {
+    if (!runtimeSkill.includes(requiredMarker))
+      fail(`${skill} adapter is missing required marker: ${requiredMarker}`)
+  }
+}
+
 if (catalog.length !== 47) fail(`expected 47 catalog entries, found ${catalog.length}`)
 if (new Set(catalog).size !== catalog.length) fail('a catalog skill is assigned more than once')
 
 const rootSkills = await packagedSkillNames(join(root, 'agent', 'skills'))
 const rootCatalogSkills = rootSkills.filter((skill) => catalog.includes(skill))
 assertEqualList('root catalog skills', rootCatalogSkills, [rootSkill])
-await assertExactUpstreamPackage(rootSkill, join(root, 'agent', 'skills', rootSkill))
+await assertWorkspaceProfileAdapter(rootSkill, join(root, 'agent', 'skills', rootSkill))
 
 const subagentEntries = await readdir(join(root, 'agent', 'subagents'), {
   withFileTypes: true,
@@ -141,5 +186,5 @@ for (const [subagent, expectedSkills] of Object.entries(assignments)) {
 }
 
 console.log(
-  `Marketing skill coverage valid: ${assignedSkills.length} subagent skills + 1 root-only skill = ${catalog.length}/47`,
+  `Marketing skill coverage valid: ${assignedSkills.length} exact upstream subagent skills + 1 workspace-profile root adapter = ${catalog.length}/47`,
 )
