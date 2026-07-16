@@ -1,5 +1,6 @@
 'use server'
 
+import { getPostHogClient } from '@/lib/posthog-server'
 import { db } from '@/lib/db'
 import { agentThreads, artifacts } from '@/lib/db/schema'
 import { getPublicShareResourceCacheTag } from '@/lib/public-share'
@@ -85,6 +86,7 @@ export async function renameArtifact(workspaceId: string, artifactId: string, ti
 }
 
 export async function deleteArtifact(workspaceId: string, artifactId: string) {
+  const { userId } = await requireWorkspaceMembership(workspaceId)
   const artifact = await requireArtifact(workspaceId, artifactId)
   await db.delete(artifacts).where(and(
     eq(artifacts.id, artifact.id),
@@ -92,4 +94,11 @@ export async function deleteArtifact(workspaceId: string, artifactId: string) {
   ))
   updateTag(getPublicShareResourceCacheTag('artifact', artifact.id))
   revalidatePath(`/workspace/${workspaceId}`)
+  const posthog = getPostHogClient()
+  posthog.capture({
+    distinctId: userId,
+    event: 'artifact_deleted',
+    properties: { workspace_id: workspaceId },
+  })
+  await posthog.flush()
 }

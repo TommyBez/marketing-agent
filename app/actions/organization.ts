@@ -1,5 +1,6 @@
 'use server'
 
+import { getPostHogClient } from '@/lib/posthog-server'
 import { auth } from '@/lib/auth'
 import { actionFailure, actionSuccess, type ActionResult } from '@/lib/action-result'
 import { db } from '@/lib/db'
@@ -205,7 +206,7 @@ export async function leaveWorkspace(workspaceId: string) {
 
 export async function acceptWorkspaceInvitation(invitationId: string) {
   const parsedInvitationId = invitationIdSchema.parse(invitationId)
-  const { requestHeaders } = await requireUser()
+  const { requestHeaders, userId } = await requireUser()
   const accepted = await auth.api.acceptInvitation({
     body: { invitationId: parsedInvitationId },
     headers: requestHeaders,
@@ -214,5 +215,12 @@ export async function acceptWorkspaceInvitation(invitationId: string) {
     eq(companyProfiles.organizationId, accepted.invitation.organizationId),
   ).limit(1))[0]
   revalidatePath('/workspace', 'layout')
+  const posthog = getPostHogClient()
+  posthog.capture({
+    distinctId: userId,
+    event: 'invitation_accepted',
+    properties: { organization_id: accepted.invitation.organizationId },
+  })
+  await posthog.flush()
   redirect(workspace ? `/workspace/${workspace.id}` : '/workspace')
 }

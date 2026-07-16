@@ -1,5 +1,6 @@
 'use server'
 
+import { getPostHogClient } from '@/lib/posthog-server'
 import { db } from '@/lib/db'
 import { agentThreads, companyProfiles } from '@/lib/db/schema'
 import { getConversationTranscriptBlobPath, readConversationTranscript } from '@/lib/conversation-transcript'
@@ -101,6 +102,7 @@ export async function renameConversation(workspaceId: string, conversationId: st
 }
 
 export async function deleteConversation(workspaceId: string, conversationId: string) {
+  const { userId } = await requireWorkspaceMembership(workspaceId)
   const conversation = await requireConversation(workspaceId, conversationId)
   await db.delete(agentThreads).where(and(
     eq(agentThreads.id, conversation.id),
@@ -110,4 +112,11 @@ export async function deleteConversation(workspaceId: string, conversationId: st
   const blobPath = getConversationTranscriptBlobPath(conversation.events)
   if (blobPath) await del(blobPath).catch(() => undefined)
   revalidatePath(`/workspace/${workspaceId}`)
+  const posthog = getPostHogClient()
+  posthog.capture({
+    distinctId: userId,
+    event: 'conversation_deleted',
+    properties: { workspace_id: workspaceId },
+  })
+  await posthog.flush()
 }

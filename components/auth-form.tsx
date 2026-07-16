@@ -1,5 +1,6 @@
 'use client'
 
+import posthog from 'posthog-js'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field'
@@ -72,6 +73,7 @@ export function AuthForm({
 
       setEmail(targetEmail)
       setStep('otp')
+      posthog.capture('otp_code_requested')
     } catch {
       setError('We could not send the code. Check your connection and try again.')
     } finally {
@@ -106,6 +108,14 @@ export function AuthForm({
         setError(authErrorMessage(result.error))
         return
       }
+
+      if (result.data?.user) {
+        posthog.identify(result.data.user.id, {
+          email: result.data.user.email,
+          name: result.data.user.name,
+        })
+      }
+      posthog.capture('user_signed_in')
 
       router.push(callbackURL)
       router.refresh()

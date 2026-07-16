@@ -1,5 +1,6 @@
 'use client'
 
+import posthog from 'posthog-js'
 import {
   createWorkspacePublicShare,
   getWorkspacePublicShare,
@@ -200,6 +201,7 @@ export function ShareResourceDialog({
         }
         const createdShare = result.data
         setShare(createdShare)
+        posthog.capture('public_share_created', { resource_type: resourceType })
         await copyLink(createdShare.publicId, beginCopyOperation())
       } catch {
         if (isCurrentShareMutation(mutation)) {
@@ -222,6 +224,7 @@ export function ShareResourceDialog({
           setError(result.message)
           return
         }
+        posthog.capture('public_share_revoked', { resource_type: resourceType })
         setShare(null)
       } catch {
         if (isCurrentShareMutation(mutation)) {
@@ -244,6 +247,7 @@ export function ShareResourceDialog({
           setError(result.message)
           return
         }
+        posthog.capture('workspace_member_invited', { role: 'member' })
         setInviteStatus(`Invitation sent to ${inviteEmail.trim().toLowerCase()}.`)
         setInviteEmail('')
       } catch {
