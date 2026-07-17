@@ -24,6 +24,33 @@ pnpm dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+## Database environments and migrations
+
+Neon is connected through Vercel as a single project with three database lifecycles:
+
+- the persistent `main` branch serves Production;
+- the persistent `development` branch serves local Development;
+- Preview deployments receive an isolated `preview/*` branch for their Git branch.
+
+For local development, pull the Development environment and apply the committed migrations before starting the app:
+
+```bash
+vercel env pull .env.local --environment=development --yes
+pnpm db:migrate
+pnpm dev
+```
+
+`lib/db/schema.ts` is the source of truth. After changing it, generate and review a migration, then commit both the schema and generated `drizzle/` files:
+
+```bash
+pnpm db:generate --name=<change-name>
+pnpm db:check
+```
+
+Vercel runs `pnpm db:migrate` before every Preview and Production build. Preview pushes therefore migrate only their corresponding preview database, while merges to `main` migrate Production. Do not use `drizzle-kit push`; deployment databases are advanced only through committed migrations.
+
+When a pull request is merged into `main`, `.github/workflows/cleanup-neon-preview.yml` deletes its `preview/*` branch immediately. The workflow expects `NEON_PROJECT_ID` as a GitHub repository variable and `NEON_API_KEY` as a GitHub Actions secret; the official Neon GitHub integration can provision both.
+
 ## Passwordless authentication
 
 Branderize signs users in with a six-digit code sent through Resend. Configure these server-side environment variables before using the authentication flow:
