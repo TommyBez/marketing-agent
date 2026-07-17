@@ -47,9 +47,9 @@ pnpm db:generate --name=<change-name>
 pnpm db:check
 ```
 
-Vercel runs `pnpm db:migrate` before every Preview and Production build. Preview pushes therefore migrate only their corresponding preview database, while merges to `main` migrate Production. Do not use `drizzle-kit push`; deployment databases are advanced only through committed migrations.
+Vercel validates the migration history, builds the application, and then runs `pnpm db:migrate` for every Preview and Production deployment. Preview pushes therefore migrate only their corresponding preview database, while merges to `main` migrate Production. A Production migration runs while the previous deployment is still live, so schema changes must follow an expand/contract sequence and remain compatible with the currently deployed application. Do not use `drizzle-kit push`; deployment databases are advanced only through committed migrations.
 
-When a pull request is merged into `main`, `.github/workflows/cleanup-neon-preview.yml` deletes its `preview/*` branch immediately. The workflow expects `NEON_PROJECT_ID` as a GitHub repository variable and `NEON_API_KEY` as a GitHub Actions secret; the official Neon GitHub integration can provision both.
+When a pull request is merged into `main`, `.github/workflows/cleanup-neon-preview.yml` deletes its `preview/*` branch immediately. Vercel remains the only creator of Preview branches. The cleanup workflow uses the manually configured `NEON_PROJECT_ID` repository variable and a project-scoped Neon key stored as the `NEON_API_KEY` GitHub Actions secret; no Neon GitHub integration is required.
 
 ## Passwordless authentication
 
