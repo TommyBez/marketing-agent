@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { boolean, check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
+import { boolean, check, foreignKey, index, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex, uuid } from 'drizzle-orm/pg-core'
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -94,6 +94,7 @@ export const agentThreads = pgTable('agent_threads', {
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 }, (table) => [
+  unique('agent_threads_company_id_unique').on(table.companyProfileId, table.id),
   index('agent_threads_user_company_updated_idx').on(table.userId, table.companyProfileId, table.updatedAt),
   index('agent_threads_company_updated_idx').on(table.companyProfileId, table.updatedAt.desc()),
 ])
@@ -106,6 +107,12 @@ export const artifacts = pgTable('artifacts', {
   createdAt: timestamp('createdAt').notNull().defaultNow(),
   updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 }, (table) => [
+  unique('artifacts_company_id_unique').on(table.companyProfileId, table.id),
+  foreignKey({
+    name: 'artifacts_company_thread_fk',
+    columns: [table.companyProfileId, table.threadId],
+    foreignColumns: [agentThreads.companyProfileId, agentThreads.id],
+  }),
   index('artifacts_user_company_updated_idx').on(table.userId, table.companyProfileId, table.updatedAt),
   index('artifacts_company_updated_idx').on(table.companyProfileId, table.updatedAt.desc()),
 ])
@@ -116,11 +123,21 @@ export const publicShares = pgTable('public_shares', {
   companyProfileId: uuid('companyProfileId').notNull().references(() => companyProfiles.id, { onDelete: 'cascade' }),
   createdByUserId: text('createdByUserId').references(() => user.id, { onDelete: 'set null' }),
   resourceType: text('resourceType').notNull(),
-  artifactId: uuid('artifactId').references(() => artifacts.id, { onDelete: 'cascade' }),
-  threadId: uuid('threadId').references(() => agentThreads.id, { onDelete: 'cascade' }),
+  artifactId: uuid('artifactId'),
+  threadId: uuid('threadId'),
   snapshot: jsonb('snapshot').notNull(),
   createdAt: timestamp('createdAt').notNull().defaultNow(),
 }, (table) => [
+  foreignKey({
+    name: 'public_shares_company_artifact_fk',
+    columns: [table.companyProfileId, table.artifactId],
+    foreignColumns: [artifacts.companyProfileId, artifacts.id],
+  }).onDelete('cascade'),
+  foreignKey({
+    name: 'public_shares_company_thread_fk',
+    columns: [table.companyProfileId, table.threadId],
+    foreignColumns: [agentThreads.companyProfileId, agentThreads.id],
+  }).onDelete('cascade'),
   uniqueIndex('public_shares_public_id_uidx').on(table.publicId),
   uniqueIndex('public_shares_artifact_uidx').on(table.artifactId),
   uniqueIndex('public_shares_thread_uidx').on(table.threadId),
