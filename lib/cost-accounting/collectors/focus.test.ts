@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { focusUpsertBatches, normalizeFocusRow } from "./focus";
+import {
+  belongsToProjectOrSharedCharge,
+  focusUpsertBatches,
+  normalizeFocusRow,
+  parseFocusJsonLines,
+} from "./focus";
 
 test("FOCUS normalization preserves decimals and prefers the readable SKU name", () => {
   const normalized = normalizeFocusRow({
@@ -52,4 +57,78 @@ test("FOCUS upserts are chunked and deduplicate conflicts globally", () => {
   const crossBatchResult = focusUpsertBatches(crossBatchDuplicate);
   assert.deepEqual(crossBatchResult.map((items) => items.length), [250, 1]);
   assert.equal(crossBatchResult.flat()[0]?.value, 999);
+});
+
+test("FOCUS project matching requires an exact ID or a delimited token", () => {
+  const projectId = "prj_abc123";
+
+  assert.equal(
+    belongsToProjectOrSharedCharge({ x_Vercel_ProjectId: projectId }, projectId),
+    true,
+  );
+  assert.equal(
+    belongsToProjectOrSharedCharge(
+      { ResourceId: `project/${projectId}/sandbox/sbx_1` },
+      projectId,
+    ),
+    true,
+  );
+  assert.equal(
+    belongsToProjectOrSharedCharge(
+      { Tags: { project: `owner:${projectId}` } },
+      projectId,
+    ),
+    true,
+  );
+  assert.equal(
+    belongsToProjectOrSharedCharge(
+      { x_Vercel_ProjectId: `${projectId}extra` },
+      projectId,
+    ),
+    false,
+  );
+  assert.equal(
+    belongsToProjectOrSharedCharge(
+      { ResourceId: `project/${projectId}extra/sandbox/sbx_1` },
+      projectId,
+    ),
+    false,
+  );
+  assert.equal(
+    belongsToProjectOrSharedCharge({ ChargeCategory: "credit" }, projectId),
+    true,
+  );
+  assert.equal(
+    belongsToProjectOrSharedCharge({ ChargeCategory: "usage" }, projectId),
+    false,
+  );
+});
+
+test("FOCUS NDJSON parsing warns and continues after malformed records", async () => {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode('{"ChargeId":"valid-1"}\n{"Charge'));
+      controller.enqueue(encoder.encode('Id":\n{"ChargeId":"valid-2"}\n42\n{"ChargeId":'));
+      controller.close();
+    },
+  });
+  const parsed = [];
+
+  for await (const line of parseFocusJsonLines(stream)) {
+    parsed.push(line);
+  }
+
+  assert.deepEqual(
+    parsed.filter((line) => line.kind === "row").map((line) => line.row.ChargeId),
+    ["valid-1", "valid-2"],
+  );
+  assert.deepEqual(
+    parsed.filter((line) => line.kind === "warning"),
+    [
+      { kind: "warning", lineNumber: 2, message: "Malformed JSON record" },
+      { kind: "warning", lineNumber: 4, message: "Expected a JSON object" },
+      { kind: "warning", lineNumber: 5, message: "Malformed JSON record" },
+    ],
+  );
 });

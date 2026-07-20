@@ -7,6 +7,10 @@ import type { CollectorWindow } from "./types";
 type FocusRow = Record<string, unknown>;
 type FocusChargeInsert = typeof vercelBillingCharges.$inferInsert;
 
+export type FocusJsonLine =
+  | { kind: "row"; lineNumber: number; row: FocusRow }
+  | { kind: "warning"; lineNumber: number; message: string };
+
 const FOCUS_WRITE_BATCH_SIZE = 250;
 
 export type FocusCollectorResult = {
@@ -59,8 +63,18 @@ export async function collectFocusCharges(input: {
   const warnings: FocusCollectorResult["warnings"] = [];
   const charges: FocusChargeInsert[] = [];
 
-  for await (const row of parseJsonLines(response.body)) {
+  for await (const parsedLine of parseFocusJsonLines(response.body)) {
     rowsRead += 1;
+    if (parsedLine.kind === "warning") {
+      warnings.push({
+        operation: "parseCharge",
+        resourceId: `line:${parsedLine.lineNumber}`,
+        message: parsedLine.message,
+      });
+      continue;
+    }
+
+    const row = parsedLine.row;
     if (!belongsToProjectOrSharedCharge(row, projectId)) {
       rowsOutsideProject += 1;
       continue;
@@ -247,34 +261,79 @@ export function normalizeFocusRow(row: FocusRow) {
   };
 }
 
-function belongsToProjectOrSharedCharge(row: FocusRow, projectId: string): boolean {
-  const values = [
+export function belongsToProjectOrSharedCharge(
+  row: FocusRow,
+  projectId: string,
+): boolean {
+  const scopedIds = [
     stringField(row, "SubAccountId", "subAccountId", "sub_account_id"),
-    stringField(row, "ResourceId", "resourceId", "resource_id"),
     stringField(row, "x_Vercel_ProjectId", "x_vercel_project_id", "projectId"),
+  ].filter((value): value is string => Boolean(value));
+  if (scopedIds.some((value) => value === projectId)) {
+    return true;
+  }
+
+  const embeddedValues = [
+    stringField(row, "ResourceId", "resourceId", "resource_id"),
     ...Object.values(objectField(row, "Tags", "tags") ?? {}).map(String),
   ].filter((value): value is string => Boolean(value));
-
-  if (values.some((value) => value === projectId || value.includes(projectId))) {
+  if (embeddedValues.some((value) => containsProjectIdToken(value, projectId))) {
     return true;
   }
 
   const category = (
     stringField(row, "ChargeCategory", "chargeCategory") ?? ""
   ).toLowerCase();
-  const subAccountId = stringField(row, "SubAccountId", "subAccountId");
+  const subAccountId = stringField(
+    row,
+    "SubAccountId",
+    "subAccountId",
+    "sub_account_id",
+  );
 
   // Team-wide credits and adjustments have no project scope. They are retained
   // and allocated to platform_shared instead of being attributed to a tester.
   return !subAccountId && (category === "credit" || category === "adjustment");
 }
 
-async function* parseJsonLines(
+function containsProjectIdToken(value: string, projectId: string): boolean {
+  const escapedProjectId = projectId.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+  return new RegExp(
+    `(?:^|[^A-Za-z0-9_])${escapedProjectId}(?:$|[^A-Za-z0-9_])`,
+    "u",
+  ).test(value);
+}
+
+function parseFocusJsonLine(line: string, lineNumber: number): FocusJsonLine {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(line) as unknown;
+  } catch {
+    return {
+      kind: "warning",
+      lineNumber,
+      message: "Malformed JSON record",
+    };
+  }
+
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return {
+      kind: "warning",
+      lineNumber,
+      message: "Expected a JSON object",
+    };
+  }
+
+  return { kind: "row", lineNumber, row: parsed as FocusRow };
+}
+
+export async function* parseFocusJsonLines(
   stream: ReadableStream<Uint8Array>,
-): AsyncGenerator<FocusRow> {
+): AsyncGenerator<FocusJsonLine> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
   let buffer = "";
+  let lineNumber = 0;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -283,21 +342,17 @@ async function* parseJsonLines(
     buffer = lines.pop() ?? "";
 
     for (const line of lines) {
+      lineNumber += 1;
       if (!line.trim()) continue;
-      const parsed = JSON.parse(line) as unknown;
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        yield parsed as FocusRow;
-      }
+      yield parseFocusJsonLine(line, lineNumber);
     }
 
     if (done) break;
   }
 
   if (buffer.trim()) {
-    const parsed = JSON.parse(buffer) as unknown;
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-      yield parsed as FocusRow;
-    }
+    lineNumber += 1;
+    yield parseFocusJsonLine(buffer, lineNumber);
   }
 }
 

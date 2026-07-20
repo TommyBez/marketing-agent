@@ -44,6 +44,8 @@ export function hasRedisEnvironment(
 export function costAccountingLockKey(
   env: Readonly<Record<string, string | undefined>> = process.env,
 ): string {
+  // Reconciliation and reporting intentionally share one lock so reports never
+  // read usage facts or allocations while a reconciliation is updating them.
   return `${gatewayReportingTag(env)}:cron:cost-accounting:v1`;
 }
 

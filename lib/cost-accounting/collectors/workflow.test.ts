@@ -5,6 +5,7 @@ import {
   collectWorkflowUsage,
   readWorkflowObservation,
   resolveEveWorkflowLineage,
+  WORKFLOW_READ_CONCURRENCY,
   type WorkflowAnalyticsEvent,
   type WorkflowAnalyticsRun,
   type WorkflowAnalyticsStep,
@@ -78,8 +79,8 @@ const retryEvent: WorkflowAnalyticsEvent = {
 test('Workflow observation paginates, filters to Eve, and only performs metadata reads', async () => {
   const stepReads: string[] = []
   const eventReads: string[] = []
+  const storageReads: string[] = []
   const pageLimits: number[] = []
-  let storageListReads = 0
   const api: WorkflowReadApi = {
     async listRuns(params) {
       pageLimits.push(params.limit)
@@ -106,11 +107,10 @@ test('Workflow observation paginates, filters to Eve, and only performs metadata
         hasMore: false,
       }
     },
-    async listStorageRuns(params) {
-      pageLimits.push(params.limit)
-      storageListReads += 1
-      return {
-        data: [{
+    async getStorageRun(runId) {
+      storageReads.push(runId)
+      const run = runId === 'retained-run'
+        ? {
           runId: 'retained-run',
           status: 'completed',
           deploymentId: 'deployment-1',
@@ -121,24 +121,21 @@ test('Workflow observation paginates, filters to Eve, and only performs metadata
           completedAt: new Date('2026-07-01T01:00:00.000Z'),
           blobStorageBytes: 1_000_000_000,
           streamStorageBytes: 0,
-        }, ...[rootRun, turnRun].map((run) => ({
-          runId: run.runId,
-          status: run.status,
-          deploymentId: run.deploymentId,
-          workflowName: run.workflowName,
-          attributes: run.attributes,
-          createdAt: run.createdAt,
-          updatedAt: run.updatedAt,
-          completedAt: run.completedAt ?? undefined,
-          blobStorageBytes: 1_000_000_000,
-          streamStorageBytes: 0,
-        }))],
-        cursor: null,
-        hasMore: false,
+        }
+        : [rootRun, turnRun].find((candidate) => candidate.runId === runId)
+      if (!run) throw new Error(`Unexpected storage run ${runId}`)
+      return {
+        runId: run.runId,
+        status: run.status,
+        deploymentId: run.deploymentId,
+        workflowName: run.workflowName,
+        attributes: run.attributes,
+        createdAt: run.createdAt,
+        updatedAt: run.updatedAt,
+        completedAt: run.completedAt ?? undefined,
+        blobStorageBytes: 1_000_000_000,
+        streamStorageBytes: 0,
       }
-    },
-    async getStorageRun() {
-      throw new Error('getStorageRun should not be called for a listed run')
     },
   }
 
@@ -148,6 +145,7 @@ test('Workflow observation paginates, filters to Eve, and only performs metadata
       end: new Date('2026-07-18T00:00:00.000Z'),
     },
     api,
+    pendingRunIds: ['root-run', 'retained-run', 'retained-run'],
   })
 
   assert.deepEqual(
@@ -159,8 +157,97 @@ test('Workflow observation paginates, filters to Eve, and only performs metadata
   assert.deepEqual(stepReads, ['root-run', 'turn-run'])
   assert.deepEqual(eventReads, ['root-run', 'turn-run'])
   assert.deepEqual(observation.eventsByRun.get('root-run'), [event])
-  assert.equal(storageListReads, 1)
+  assert.deepEqual(storageReads.sort(), ['retained-run', 'root-run', 'turn-run'])
   assert.deepEqual(observation.warnings, [])
+})
+
+test('Workflow observation bounds concurrent reads and isolates per-resource failures', async () => {
+  const runs = Array.from({ length: 12 }, (_, index): WorkflowAnalyticsRun => ({
+    ...rootRun,
+    runId: `run-${index}`,
+    attributes: { '$eve.type': 'session' },
+  }))
+  let readsInFlight = 0
+  let maxReadsInFlight = 0
+
+  async function tracked<T>(read: () => T | Promise<T>): Promise<T> {
+    readsInFlight += 1
+    maxReadsInFlight = Math.max(maxReadsInFlight, readsInFlight)
+    try {
+      await new Promise<void>((resolve) => setImmediate(resolve))
+      return await read()
+    } finally {
+      readsInFlight -= 1
+    }
+  }
+
+  const api: WorkflowReadApi = {
+    async listRuns() {
+      return { data: runs, cursor: null, hasMore: false }
+    },
+    async listSteps({ runId }) {
+      return tracked(() => {
+        if (runId === 'run-3') throw new Error('step read failed')
+        return { data: [], cursor: null, hasMore: false }
+      })
+    },
+    async listEvents() {
+      return tracked(() => ({ data: [], cursor: null, hasMore: false }))
+    },
+    async getStorageRun(runId) {
+      return tracked(() => {
+        if (runId === 'run-4' || runId === 'pending-run') {
+          throw new Error('storage read failed')
+        }
+        const run = runs.find((candidate) => candidate.runId === runId)
+        if (!run) throw new Error(`Unexpected storage run ${runId}`)
+        return {
+          runId: run.runId,
+          status: run.status,
+          deploymentId: run.deploymentId,
+          workflowName: run.workflowName,
+          attributes: run.attributes,
+          createdAt: run.createdAt,
+          updatedAt: run.updatedAt,
+          completedAt: run.completedAt ?? undefined,
+          blobStorageBytes: 0,
+          streamStorageBytes: 0,
+        }
+      })
+    },
+  }
+
+  const observation = await readWorkflowObservation({
+    window: {
+      start: new Date('2026-07-16T00:00:00.000Z'),
+      end: new Date('2026-07-18T00:00:00.000Z'),
+    },
+    api,
+    pendingRunIds: ['pending-run'],
+  })
+
+  assert.ok(maxReadsInFlight > 1)
+  assert.ok(maxReadsInFlight <= WORKFLOW_READ_CONCURRENCY)
+  assert.equal(observation.stepsByRun.size, runs.length - 1)
+  assert.equal(observation.eventsByRun.size, runs.length)
+  assert.equal(observation.storageByRun.size, runs.length - 1)
+  assert.deepEqual(observation.warnings, [
+    {
+      operation: 'list-workflow-steps',
+      resourceId: 'run-3',
+      message: 'step read failed',
+    },
+    {
+      operation: 'get-workflow-storage-metadata',
+      resourceId: 'run-4',
+      message: 'storage read failed',
+    },
+    {
+      operation: 'reconcile-workflow-pending-retention',
+      resourceId: 'pending-run',
+      message: 'storage read failed',
+    },
+  ])
 })
 
 test('Workflow lineage maps root, turn, and subagent runs to execution sessions', () => {
@@ -316,9 +403,6 @@ test('Workflow recovers persisted pending runs and finalizes retention beyond th
     async listEvents() {
       return { data: [], cursor: null, hasMore: false }
     },
-    async listStorageRuns() {
-      return { data: [], cursor: null, hasMore: false }
-    },
     async getStorageRun(runId) {
       assert.equal(runId, recoveredRun.runId)
       return {
@@ -381,11 +465,20 @@ test('known Data Written coverage gap stays visible without degrading collector 
       async listEvents() {
         return emptyPage
       },
-      async listStorageRuns() {
-        return emptyPage
-      },
-      async getStorageRun() {
-        throw new Error('getStorageRun should not be called without pending runs')
+      async getStorageRun(runId) {
+        assert.equal(runId, rootRun.runId)
+        return {
+          runId: rootRun.runId,
+          status: rootRun.status,
+          deploymentId: rootRun.deploymentId,
+          workflowName: rootRun.workflowName,
+          attributes: rootRun.attributes,
+          createdAt: rootRun.createdAt,
+          updatedAt: rootRun.updatedAt,
+          completedAt: rootRun.completedAt ?? undefined,
+          blobStorageBytes: 0,
+          streamStorageBytes: 0,
+        }
       },
     },
   })

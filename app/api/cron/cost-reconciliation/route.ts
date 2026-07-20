@@ -37,7 +37,7 @@ export async function GET(request: Request): Promise<Response> {
   try {
     const result = await runCostReconciliation({ trigger: "scheduled" });
     return Response.json(result, {
-      status: result.status === "failed" ? 500 : 200,
+      status: result.status === "complete" ? 200 : 500,
     });
   } catch (error) {
     console.error("[cost-accounting] reconciliation cron failed", {

@@ -32,9 +32,10 @@ const TERMINAL_WORKFLOW_STATUSES = new Set(['completed', 'failed', 'cancelled'])
 const EVE_RUN_TYPES = new Set(['session', 'subagent', 'turn'])
 const EVE_WORKFLOW_NAMES = new Set(['workflowEntry', 'turnWorkflow'])
 const BYTES_PER_DECIMAL_GIGABYTE = 1_000_000_000
-// Vercel Workflow analytics/storage APIs currently reject limits above 100.
+// Vercel Workflow analytics APIs currently reject limits above 100.
 // Keep the collector at the provider maximum and follow cursors for larger sets.
 const PAGE_SIZE = 100
+export const WORKFLOW_READ_CONCURRENCY = 8
 
 export type WorkflowAnalyticsRun = {
   runId: string
@@ -118,10 +119,6 @@ export type WorkflowReadApi = {
     cursor?: string
     limit: number
   }): Promise<WorkflowPage<WorkflowAnalyticsEvent>>
-  listStorageRuns(params: {
-    cursor?: string
-    limit: number
-  }): Promise<WorkflowPage<WorkflowStorageRun>>
   getStorageRun(runId: string): Promise<WorkflowStorageRun>
 }
 
@@ -186,16 +183,6 @@ function defaultWorkflowReadApi(config?: APIConfig): WorkflowReadApi {
           sortOrder: 'asc',
         },
       }) as Promise<WorkflowPage<WorkflowAnalyticsEvent>>
-    },
-    listStorageRuns(params) {
-      return storage.runs.list({
-        resolveData: 'none',
-        pagination: {
-          cursor: params.cursor,
-          limit: params.limit,
-          sortOrder: 'asc',
-        },
-      }) as unknown as Promise<WorkflowPage<WorkflowStorageRun>>
     },
     getStorageRun(runId) {
       return storage.runs.get(runId, {
@@ -362,6 +349,35 @@ async function paginated<T>(
   }
 }
 
+async function runConcurrent<T>(
+  tasks: ReadonlyArray<() => Promise<T>>,
+  concurrency: number,
+): Promise<T[]> {
+  if (!Number.isInteger(concurrency) || concurrency < 1) {
+    throw new Error('Workflow read concurrency must be a positive integer')
+  }
+
+  const results = new Array<T>(tasks.length)
+  let nextIndex = 0
+
+  async function worker(): Promise<void> {
+    for (;;) {
+      const index = nextIndex
+      nextIndex += 1
+      if (index >= tasks.length) return
+      results[index] = await tasks[index]!()
+    }
+  }
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(concurrency, tasks.length) },
+      () => worker(),
+    ),
+  )
+  return results
+}
+
 /**
  * Reads only Workflow analytics and metadata-only storage records. It never
  * starts, resumes, cancels, retries, or mutates a Workflow run.
@@ -378,80 +394,105 @@ export async function readWorkflowObservation(input: {
     cursor,
     limit: PAGE_SIZE,
   }))
-  const analyticsRuns = listedRuns.filter(isEveRun)
+  const analyticsRunsById = new Map<string, WorkflowAnalyticsRun>()
+  for (const run of listedRuns) {
+    if (isEveRun(run)) analyticsRunsById.set(run.runId, run)
+  }
+  const analyticsRuns = [...analyticsRunsById.values()]
   const stepsByRun = new Map<string, WorkflowAnalyticsStep[]>()
   const eventsByRun = new Map<string, WorkflowAnalyticsEvent[]>()
   const storageByRun = new Map<string, WorkflowStorageRun>()
+  const tasks: Array<() => Promise<CollectorWarning | undefined>> = []
 
   for (const run of analyticsRuns) {
-    try {
-      const steps = await paginated((cursor) => input.api.listSteps({
-        runId: run.runId,
-        cursor,
-        limit: PAGE_SIZE,
-      }))
-      stepsByRun.set(run.runId, steps)
-    } catch (error) {
-      warnings.push({
-        operation: 'list-workflow-steps',
-        resourceId: run.runId,
-        message: errorMessage(error),
-      })
-    }
+    tasks.push(async () => {
+      try {
+        const steps = await paginated((cursor) => input.api.listSteps({
+          runId: run.runId,
+          cursor,
+          limit: PAGE_SIZE,
+        }))
+        stepsByRun.set(run.runId, steps)
+        return undefined
+      } catch (error) {
+        return {
+          operation: 'list-workflow-steps',
+          resourceId: run.runId,
+          message: errorMessage(error),
+        }
+      }
+    })
 
-    try {
-      const events = await paginated((cursor) => input.api.listEvents({
-        runId: run.runId,
-        cursor,
-        limit: PAGE_SIZE,
-      }))
-      eventsByRun.set(run.runId, events)
-    } catch (error) {
-      warnings.push({
-        operation: 'list-workflow-events',
-        resourceId: run.runId,
-        message: errorMessage(error),
-      })
-    }
-  }
-
-  try {
-    const storageRuns = await paginated((cursor) => input.api.listStorageRuns({
-      cursor,
-      limit: PAGE_SIZE,
-    }))
-    for (const run of storageRuns.filter(isEveStorageRun)) {
-      storageByRun.set(run.runId, run)
-    }
-  } catch (error) {
-    warnings.push({
-      operation: 'list-workflow-storage-metadata',
-      message: errorMessage(error),
+    tasks.push(async () => {
+      try {
+        const events = await paginated((cursor) => input.api.listEvents({
+          runId: run.runId,
+          cursor,
+          limit: PAGE_SIZE,
+        }))
+        eventsByRun.set(run.runId, events)
+        return undefined
+      } catch (error) {
+        return {
+          operation: 'list-workflow-events',
+          resourceId: run.runId,
+          message: errorMessage(error),
+        }
+      }
     })
   }
 
-  for (const runId of new Set(input.pendingRunIds ?? [])) {
-    if (storageByRun.has(runId)) continue
-
-    try {
-      const run = await input.api.getStorageRun(runId)
-      if (isEveStorageRun(run)) {
-        storageByRun.set(run.runId, run)
-      } else {
-        warnings.push({
-          operation: 'reconcile-workflow-pending-retention',
-          resourceId: runId,
-          message: 'Pending Workflow retention run is no longer identifiable as an Eve run',
-        })
-      }
-    } catch (error) {
-      warnings.push({
-        operation: 'reconcile-workflow-pending-retention',
-        resourceId: runId,
-        message: errorMessage(error),
-      })
-    }
+  const storageRequests = new Map<string, {
+    runId: string
+    identifiedByAnalytics: boolean
+    pending: boolean
+  }>()
+  for (const run of analyticsRuns) {
+    storageRequests.set(run.runId, {
+      runId: run.runId,
+      identifiedByAnalytics: true,
+      pending: false,
+    })
   }
+  for (const runId of new Set(input.pendingRunIds ?? [])) {
+    const existing = storageRequests.get(runId)
+    storageRequests.set(runId, {
+      runId,
+      identifiedByAnalytics: existing?.identifiedByAnalytics ?? false,
+      pending: true,
+    })
+  }
+
+  for (const request of storageRequests.values()) {
+    tasks.push(async () => {
+      try {
+        const run = await input.api.getStorageRun(request.runId)
+        if (!request.identifiedByAnalytics && !isEveStorageRun(run)) {
+          return {
+            operation: 'reconcile-workflow-pending-retention',
+            resourceId: request.runId,
+            message: 'Pending Workflow retention run is no longer identifiable as an Eve run',
+          }
+        }
+
+        storageByRun.set(run.runId, run)
+        return undefined
+      } catch (error) {
+        return {
+          operation: request.pending
+            ? 'reconcile-workflow-pending-retention'
+            : 'get-workflow-storage-metadata',
+          resourceId: request.runId,
+          message: errorMessage(error),
+        }
+      }
+    })
+  }
+
+  const taskWarnings = await runConcurrent(tasks, WORKFLOW_READ_CONCURRENCY)
+  warnings.push(...taskWarnings.filter(
+    (warning): warning is CollectorWarning => warning !== undefined,
+  ))
 
   const runsById = new Map(analyticsRuns.map((run) => [run.runId, run]))
   for (const storageRun of storageByRun.values()) {
@@ -647,7 +688,7 @@ export function buildWorkflowRecords(input: {
           streamStorageBytes,
           retainedHours: bucket.hours,
           caveat: 'Provider byte totals are current snapshots, not a byte-month time series.',
-          source: '@workflow/world-vercel.createStorage.runs.list',
+          source: '@workflow/world-vercel.createStorage.runs.get',
         },
         observedAt: input.observedAt,
       }))

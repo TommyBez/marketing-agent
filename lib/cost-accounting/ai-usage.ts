@@ -295,16 +295,6 @@ export async function recordEveLifecycleEvent(
         });
     }
   });
-
-  if (isRoot && input.type === "session.started") {
-    await linkEveSessionIdentity({
-      userId: input.userId,
-      workspaceId: input.workspaceId,
-      organizationId,
-      conversationId: input.conversationId,
-      eveSessionId: input.eveSessionId,
-    });
-  }
 }
 
 export async function beginAiModelCall(

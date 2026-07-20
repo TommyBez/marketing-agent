@@ -30,7 +30,7 @@ AI_CREDIT_ENFORCEMENT=false
 
 `VERCEL_BILLING_TOKEN` needs read access to the Billing Charges API and is also used for local/manual Workflow collection. Deployed Sandbox collection can use Vercel OIDC automatically. Keep all of these variables server-only.
 
-Both cron routes share one environment-scoped Upstash lock key, for example `branderize:production:cron:cost-accounting:v1`. Preview deployments return `404` before authentication or lock acquisition, so the jobs cannot be invoked there even manually. Acquisition uses `SET NX PX 330000`; release is an owner-checked Lua delete. The client accepts either the native `UPSTASH_REDIS_REST_*` pair or the Vercel Marketplace `KV_REST_API_*` pair. A concurrent invocation returns `204`, and unavailable Redis returns `503` so accounting never runs without its lock.
+Both cron routes intentionally share one environment-scoped Upstash lock key, for example `branderize:production:cron:cost-accounting:v1`, so report generation cannot read usage facts or allocations while reconciliation is updating them. Their normal schedules are one hour apart, well beyond the 330-second lock TTL. Preview deployments return `404` before authentication or lock acquisition, so the jobs cannot be invoked there even manually. Acquisition uses `SET NX PX 330000`; release is an owner-checked Lua delete. The client accepts either the native `UPSTASH_REDIS_REST_*` pair or the Vercel Marketplace `KV_REST_API_*` pair. A concurrent invocation returns `204`, and unavailable Redis returns `503` so accounting never runs without its lock.
 
 ## Deployment sequence
 

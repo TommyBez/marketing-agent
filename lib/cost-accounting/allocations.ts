@@ -15,6 +15,7 @@ import {
   vercelBillingCharges,
 } from "@/lib/db/schema";
 import { usdDecimal } from "@/lib/cost-accounting/money";
+import { overlapShare } from "@/lib/cost-accounting/usage-proration";
 
 export type AllocatableService =
   | "sandbox"
@@ -306,8 +307,6 @@ export function weightsByWorkspace(
   }));
 }
 
-const DISCRETE_METRICS = new Set(["creation", "event"]);
-
 function costInsideChargePeriod(
   fact: {
     metric: string;
@@ -322,32 +321,7 @@ function costInsideChargePeriod(
   const cost = Number(fact.standardCostUsd ?? 0);
   if (!(cost > 0)) return 0;
 
-  if (DISCRETE_METRICS.has(fact.metric)) {
-    return fact.periodStart >= chargePeriodStart &&
-      fact.periodStart < chargePeriodEnd
-      ? cost
-      : 0;
-  }
-
-  // Pending facts have no periodEnd, but their quantity and standard cost are
-  // measured through observedAt. Prorating the measured interval prevents a
-  // long-lived resource's full lifetime cost from weighting every daily
-  // billing charge it happens to overlap.
-  const factEnd = fact.periodEnd ?? fact.observedAt;
-  const factDurationMs = factEnd.getTime() - fact.periodStart.getTime();
-  if (!(factDurationMs > 0)) return 0;
-
-  const overlapStartMs = Math.max(
-    fact.periodStart.getTime(),
-    chargePeriodStart.getTime(),
-  );
-  const overlapEndMs = Math.min(
-    factEnd.getTime(),
-    chargePeriodEnd.getTime(),
-  );
-  const overlapMs = Math.max(0, overlapEndMs - overlapStartMs);
-
-  return cost * Math.min(1, overlapMs / factDurationMs);
+  return cost * overlapShare(fact, chargePeriodStart, chargePeriodEnd);
 }
 
 function normalizeService(

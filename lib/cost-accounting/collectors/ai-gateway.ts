@@ -1,5 +1,5 @@
 import { createGateway } from "ai";
-import { and, eq, gte, isNotNull, lt } from "drizzle-orm";
+import { and, eq, gte, isNotNull, lt, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { aiModelCalls, companyProfiles, member } from "@/lib/db/schema";
 import {
@@ -62,6 +62,7 @@ export async function collectAiGatewayUsage(input: {
         gte(aiModelCalls.startedAt, start),
         lt(aiModelCalls.startedAt, endExclusive),
         isNotNull(aiModelCalls.gatewayGenerationId),
+        ne(aiModelCalls.status, "reconciled"),
       ),
     );
 

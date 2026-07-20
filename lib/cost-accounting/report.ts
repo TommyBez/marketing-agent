@@ -27,6 +27,7 @@ import {
   type TimeWindow,
   utcDateKey,
 } from "@/lib/cost-accounting/time";
+import { overlapShare } from "@/lib/cost-accounting/usage-proration";
 
 type WorkspaceSummary = {
   workspaceId: string;
@@ -129,7 +130,7 @@ export async function generatePilotCostReports(
       event: "pilot_cost_report_generated",
       reportKey,
       status,
-      report,
+      totals: (report as { totals?: unknown }).totals,
     }));
     reports.push(report);
   }
@@ -446,7 +447,7 @@ async function buildPilotCostReport(
   let sharedStandardInfrastructureCostUsd = 0;
 
   for (const fact of facts) {
-    const periodShare = usageFactShareInsidePeriod(fact, period);
+    const periodShare = overlapShare(fact, period.start, period.end);
     if (!(periodShare > 0)) continue;
     const costUsd = Number(fact.standardCostUsd ?? 0) * periodShare;
     standardInfrastructureCostUsd += costUsd;
@@ -678,34 +679,4 @@ function pricingScenario(
       ),
     })),
   };
-}
-
-const DISCRETE_USAGE_METRICS = new Set(["creation", "event"]);
-
-function usageFactShareInsidePeriod(
-  fact: {
-    metric: string;
-    periodStart: Date;
-    periodEnd: Date | null;
-    observedAt: Date;
-  },
-  period: TimeWindow,
-): number {
-  if (DISCRETE_USAGE_METRICS.has(fact.metric)) {
-    return fact.periodStart >= period.start && fact.periodStart < period.end
-      ? 1
-      : 0;
-  }
-
-  const factEnd = fact.periodEnd ?? fact.observedAt;
-  const durationMs = factEnd.getTime() - fact.periodStart.getTime();
-  if (!(durationMs > 0)) return 0;
-
-  const overlapStartMs = Math.max(
-    fact.periodStart.getTime(),
-    period.start.getTime(),
-  );
-  const overlapEndMs = Math.min(factEnd.getTime(), period.end.getTime());
-  const overlapMs = Math.max(0, overlapEndMs - overlapStartMs);
-  return Math.min(1, overlapMs / durationMs);
 }
