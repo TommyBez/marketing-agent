@@ -99,6 +99,36 @@ test("FOCUS project matching requires an exact ID or a delimited token", () => {
     true,
   );
   assert.equal(
+    belongsToProjectOrSharedCharge(
+      {
+        x_Vercel_ProjectId: "prj_other",
+        ChargeCategory: "credit",
+      },
+      projectId,
+    ),
+    false,
+  );
+  assert.equal(
+    belongsToProjectOrSharedCharge(
+      {
+        Tags: { ProjectId: "prj_other" },
+        ChargeCategory: "adjustment",
+      },
+      projectId,
+    ),
+    false,
+  );
+  assert.equal(
+    belongsToProjectOrSharedCharge(
+      {
+        ResourceId: "project/prj_other/sandbox/sbx_1",
+        ChargeCategory: "credit",
+      },
+      projectId,
+    ),
+    false,
+  );
+  assert.equal(
     belongsToProjectOrSharedCharge({ ChargeCategory: "usage" }, projectId),
     false,
   );

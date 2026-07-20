@@ -265,6 +265,8 @@ export function belongsToProjectOrSharedCharge(
   row: FocusRow,
   projectId: string,
 ): boolean {
+  const tags = objectField(row, "Tags", "tags") ?? {};
+  const resourceId = stringField(row, "ResourceId", "resourceId", "resource_id");
   const scopedIds = [
     stringField(row, "SubAccountId", "subAccountId", "sub_account_id"),
     stringField(row, "x_Vercel_ProjectId", "x_vercel_project_id", "projectId"),
@@ -274,8 +276,8 @@ export function belongsToProjectOrSharedCharge(
   }
 
   const embeddedValues = [
-    stringField(row, "ResourceId", "resourceId", "resource_id"),
-    ...Object.values(objectField(row, "Tags", "tags") ?? {}).map(String),
+    resourceId,
+    ...Object.values(tags).map(String),
   ].filter((value): value is string => Boolean(value));
   if (embeddedValues.some((value) => containsProjectIdToken(value, projectId))) {
     return true;
@@ -284,16 +286,17 @@ export function belongsToProjectOrSharedCharge(
   const category = (
     stringField(row, "ChargeCategory", "chargeCategory") ?? ""
   ).toLowerCase();
-  const subAccountId = stringField(
-    row,
-    "SubAccountId",
-    "subAccountId",
-    "sub_account_id",
+  const hasProjectScopeTag = Object.entries(tags).some(
+    ([key, value]) => key.toLowerCase().includes("project") && Boolean(value),
   );
 
   // Team-wide credits and adjustments have no project scope. They are retained
   // and allocated to platform_shared instead of being attributed to a tester.
-  return !subAccountId && (category === "credit" || category === "adjustment");
+  const hasExplicitScope =
+    scopedIds.length > 0 || Boolean(resourceId) || hasProjectScopeTag;
+  return (
+    !hasExplicitScope && (category === "credit" || category === "adjustment")
+  );
 }
 
 function containsProjectIdToken(value: string, projectId: string): boolean {
