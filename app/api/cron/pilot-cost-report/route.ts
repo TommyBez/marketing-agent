@@ -1,6 +1,7 @@
 import {
   acquireAccountingCronLock,
   CronLockUnavailableError,
+  isAccountingCronEnabled,
   isAuthorizedCronRequest,
 } from "@/lib/cost-accounting/cron-lock";
 import { generatePilotCostReports } from "@/lib/cost-accounting/report";
@@ -8,6 +9,10 @@ import { generatePilotCostReports } from "@/lib/cost-accounting/report";
 export const maxDuration = 300;
 
 export async function GET(request: Request): Promise<Response> {
+  if (!isAccountingCronEnabled()) {
+    return new Response(null, { status: 404 });
+  }
+
   if (!isAuthorizedCronRequest(request)) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -2,6 +2,7 @@ import {
   createGateway,
   gateway,
   wrapLanguageModel,
+  type JSONValue,
   type LanguageModelMiddleware,
 } from "ai";
 import { defineDynamic } from "eve";
@@ -15,7 +16,10 @@ import {
   type AiModelCallKind,
   type ModelCallUsage,
 } from "@/lib/cost-accounting/ai-usage";
-import { gatewayUserIdForIdentity } from "@/lib/cost-accounting/gateway-identity";
+import {
+  gatewayReportingTag,
+  gatewayUserIdForIdentity,
+} from "@/lib/cost-accounting/gateway-identity";
 
 type StepStartedEvent = {
   type: "step.started";
@@ -106,6 +110,7 @@ function createMeteringMiddleware(input: {
     input.identity.workspaceId,
     input.identity.userId,
   );
+  const reportingTag = gatewayReportingTag();
 
   const startCall = async (operation: "generate" | "stream") => {
     let callKind: AiModelCallKind = "step";
@@ -136,6 +141,7 @@ function createMeteringMiddleware(input: {
       attempt: retryAttempt,
       callKind,
       gatewayUserId,
+      gatewayReportingTag: reportingTag,
     });
     const state = { id: call.id, outcome: "pending" as const } as {
       id: string;
@@ -151,10 +157,11 @@ function createMeteringMiddleware(input: {
       ...params,
       providerOptions: {
         ...params.providerOptions,
-        gateway: {
-          ...asRecord(params.providerOptions?.gateway),
-          user: gatewayUserId,
-        },
+        gateway: meteredGatewayOptions(
+          params.providerOptions?.gateway,
+          gatewayUserId,
+          reportingTag,
+        ),
       },
     }),
     wrapGenerate: async ({ doGenerate }) => {
@@ -255,6 +262,23 @@ function createMeteringMiddleware(input: {
         throw error;
       }
     },
+  };
+}
+
+export function meteredGatewayOptions(
+  existing: unknown,
+  gatewayUserId: string,
+  reportingTag = gatewayReportingTag(),
+): Record<string, JSONValue | undefined> {
+  const options = asRecord(existing) as Record<string, JSONValue | undefined>;
+  const existingTags = Array.isArray(options.tags)
+    ? options.tags.filter((tag): tag is string => typeof tag === "string")
+    : [];
+
+  return {
+    ...options,
+    user: gatewayUserId,
+    tags: [...new Set([...existingTags, reportingTag])],
   };
 }
 

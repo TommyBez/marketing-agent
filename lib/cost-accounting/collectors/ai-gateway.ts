@@ -7,7 +7,10 @@ import {
   type ModelCallUsage,
 } from "@/lib/cost-accounting/ai-usage";
 import { applyGatewaySpendAdjustment } from "@/lib/cost-accounting/credits";
-import { gatewayUserIdForIdentity } from "@/lib/cost-accounting/gateway-identity";
+import {
+  gatewayReportingTag,
+  gatewayUserIdForIdentity,
+} from "@/lib/cost-accounting/gateway-identity";
 import { usdToMicrousd } from "@/lib/cost-accounting/money";
 import { addUtcDays, startOfUtcDay, utcDateKey } from "@/lib/cost-accounting/time";
 import type { CollectorWindow } from "./types";
@@ -40,6 +43,7 @@ export async function collectAiGatewayUsage(input: {
     apiKey,
     teamIdOrSlug: process.env.VERCEL_TEAM_ID,
   });
+  const reportingTag = gatewayReportingTag();
   const warnings: Warning[] = [];
   const start = startOfUtcDay(input.window.start);
   const requestedEnd = startOfUtcDay(input.window.end);
@@ -107,6 +111,7 @@ export async function collectAiGatewayUsage(input: {
           startDate: utcDateKey(day),
           endDate: utcDateKey(day),
           groupBy: "user",
+          tags: [reportingTag],
         }),
       })),
     ),
@@ -161,6 +166,7 @@ export async function collectAiGatewayUsage(input: {
   >();
 
   for (const call of localCalls) {
+    if (!hasGatewayReportingTag(call.rawUsage, reportingTag)) continue;
     const gatewayUserId = stringValue(call.rawUsage.gatewayUserId);
     if (!gatewayUserId) continue;
 
@@ -280,6 +286,13 @@ export async function collectAiGatewayUsage(input: {
     ledgerAdjustmentMicrousd: ledgerAdjustmentMicrousd.toString(),
     warnings,
   };
+}
+
+export function hasGatewayReportingTag(
+  rawUsage: Record<string, unknown>,
+  reportingTag: string,
+): boolean {
+  return stringValue(rawUsage.gatewayReportingTag) === reportingTag;
 }
 
 async function mapWithConcurrency<T>(

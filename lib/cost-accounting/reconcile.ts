@@ -11,6 +11,7 @@ import { reconciliationWindows, startOfUtcDay, utcDateKey } from "@/lib/cost-acc
 
 type SourceResult = {
   status: "complete" | "partial" | "failed";
+  window?: { start: string; end: string };
   result?: unknown;
   error?: Record<string, unknown>;
 };
@@ -87,12 +88,23 @@ export async function runCostReconciliation(input?: {
   const entries = Object.entries(collectors);
   const settled = await Promise.allSettled(entries.map(([, collect]) => collect()));
   const sources: Record<string, SourceResult> = {};
+  const sourceWindows: Record<string, { start: Date; end: Date }> = {
+    aiGateway: windows.aiGateway,
+    sandbox: windows.sandbox,
+    workflow: windows.workflow,
+    focus: windows.focus,
+  };
 
   settled.forEach((outcome, index) => {
     const sourceName = entries[index]?.[0] ?? `unknown-${index}`;
+    const window = sourceWindows[sourceName];
+    const serializedWindow = window
+      ? { start: window.start.toISOString(), end: window.end.toISOString() }
+      : undefined;
     if (outcome.status === "rejected") {
       sources[sourceName] = {
         status: "failed",
+        window: serializedWindow,
         error: safeError(outcome.reason),
       };
       return;
@@ -101,15 +113,30 @@ export async function runCostReconciliation(input?: {
     const result = outcome.value as { status?: string };
     sources[sourceName] = {
       status: result.status === "partial" ? "partial" : "complete",
+      window: serializedWindow,
       result,
     };
   });
 
   try {
     const allocationResult = await allocateFocusCharges(run.id);
-    sources.allocations = { status: "complete", result: allocationResult };
+    sources.allocations = {
+      status: "complete",
+      window: {
+        start: windows.focus.start.toISOString(),
+        end: windows.focus.end.toISOString(),
+      },
+      result: allocationResult,
+    };
   } catch (error) {
-    sources.allocations = { status: "failed", error: safeError(error) };
+    sources.allocations = {
+      status: "failed",
+      window: {
+        start: windows.focus.start.toISOString(),
+        end: windows.focus.end.toISOString(),
+      },
+      error: safeError(error),
+    };
   }
 
   const sourceValues = Object.values(sources);
@@ -162,4 +189,3 @@ function safeError(error: unknown): Record<string, unknown> {
   }
   return { message: String(error), errorId: randomUUID() };
 }
-

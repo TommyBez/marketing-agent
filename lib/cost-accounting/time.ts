@@ -25,8 +25,10 @@ export function reconciliationWindows(now = new Date()): {
   const today = startOfUtcDay(now);
 
   return {
-    aiGateway: { start: addUtcDays(today, -7), end },
-    focus: { start: addUtcDays(today, -7), end },
+    // The weekly report settles after 72 hours. Fourteen days keeps the whole
+    // reported week inside a post-settlement Gateway and FOCUS snapshot.
+    aiGateway: { start: addUtcDays(today, -14), end },
+    focus: { start: addUtcDays(today, -14), end },
     workflow: { start: new Date(now.getTime() - 30 * 60 * 60 * 1_000), end },
     sandbox: { start: addUtcDays(today, -2), end },
   };
@@ -47,4 +49,3 @@ export function previousFullUtcWeek(now = new Date(), weeksAgo = 1): TimeWindow 
 export function utcDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
-

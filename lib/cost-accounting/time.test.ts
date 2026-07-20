@@ -23,8 +23,8 @@ describe('UTC accounting windows', () => {
     const now = new Date('2026-07-17T15:45:00.000Z')
     const windows = reconciliationWindows(now)
 
-    assert.equal(windows.aiGateway.start.toISOString(), '2026-07-10T00:00:00.000Z')
-    assert.equal(windows.focus.start.toISOString(), '2026-07-10T00:00:00.000Z')
+    assert.equal(windows.aiGateway.start.toISOString(), '2026-07-03T00:00:00.000Z')
+    assert.equal(windows.focus.start.toISOString(), '2026-07-03T00:00:00.000Z')
     assert.equal(windows.sandbox.start.toISOString(), '2026-07-15T00:00:00.000Z')
     assert.equal(windows.workflow.start.toISOString(), '2026-07-16T09:45:00.000Z')
     assert.equal(windows.aiGateway.end, now)

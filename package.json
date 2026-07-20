@@ -15,7 +15,7 @@
     "db:migrate": "drizzle-kit migrate",
     "lint": "eslint .",
     "pilot:grant": "tsx scripts/grant-pilot-credits.ts",
-    "test:cost-accounting": "tsx --test agent/lib/metered-model.test.ts lib/cost-accounting/money.test.ts lib/cost-accounting/ledger-math.test.ts lib/cost-accounting/gateway-identity.test.ts lib/cost-accounting/rates.test.ts lib/cost-accounting/time.test.ts lib/cost-accounting/cron-lock.test.ts lib/cost-accounting/allocations.test.ts lib/cost-accounting/collectors/focus.test.ts lib/cost-accounting/collectors/storage-buckets.test.ts lib/cost-accounting/collectors/sandbox.test.ts lib/cost-accounting/collectors/workflow.test.ts",
+    "test:cost-accounting": "tsx --test agent/lib/metered-model.test.ts lib/cost-accounting/money.test.ts lib/cost-accounting/ledger-math.test.ts lib/cost-accounting/gateway-identity.test.ts lib/cost-accounting/rates.test.ts lib/cost-accounting/time.test.ts lib/cost-accounting/cron-lock.test.ts lib/cost-accounting/allocations.test.ts lib/cost-accounting/report.test.ts lib/cost-accounting/collectors/ai-gateway.test.ts lib/cost-accounting/collectors/focus.test.ts lib/cost-accounting/collectors/storage-buckets.test.ts lib/cost-accounting/collectors/sandbox.test.ts lib/cost-accounting/collectors/workflow.test.ts",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {

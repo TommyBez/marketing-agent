@@ -3,6 +3,7 @@ import test from "node:test";
 import {
   estimateGatewayCost,
   gatewayUsageFromStreamPart,
+  meteredGatewayOptions,
   unattributedCallGuard,
 } from "./metered-model";
 
@@ -71,6 +72,20 @@ test("captures Gateway generation and cost metadata from an early stream chunk",
     {
       generationId: "gen_01",
       costUsd: 0.00849,
+    },
+  );
+});
+
+test("Gateway attribution preserves existing tags and adds the app environment tag", () => {
+  assert.deepEqual(
+    meteredGatewayOptions(
+      { tags: ["existing", "branderize:development"] },
+      "brz_user",
+      "branderize:development",
+    ),
+    {
+      tags: ["existing", "branderize:development"],
+      user: "brz_user",
     },
   );
 });

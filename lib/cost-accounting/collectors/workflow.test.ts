@@ -78,15 +78,18 @@ const retryEvent: WorkflowAnalyticsEvent = {
 test('Workflow observation paginates, filters to Eve, and only performs metadata reads', async () => {
   const stepReads: string[] = []
   const eventReads: string[] = []
+  const pageLimits: number[] = []
   let storageListReads = 0
   const api: WorkflowReadApi = {
     async listRuns(params) {
+      pageLimits.push(params.limit)
       if (!params.cursor) {
         return { data: [rootRun, unrelatedRun], cursor: 'next', hasMore: true }
       }
       return { data: [turnRun], cursor: null, hasMore: false }
     },
     async listSteps(params) {
+      pageLimits.push(params.limit)
       stepReads.push(params.runId)
       return {
         data: params.runId === 'root-run' ? [step] : [],
@@ -95,6 +98,7 @@ test('Workflow observation paginates, filters to Eve, and only performs metadata
       }
     },
     async listEvents(params) {
+      pageLimits.push(params.limit)
       eventReads.push(params.runId)
       return {
         data: params.runId === 'root-run' ? [event] : [],
@@ -102,7 +106,8 @@ test('Workflow observation paginates, filters to Eve, and only performs metadata
         hasMore: false,
       }
     },
-    async listStorageRuns() {
+    async listStorageRuns(params) {
+      pageLimits.push(params.limit)
       storageListReads += 1
       return {
         data: [{
@@ -149,6 +154,8 @@ test('Workflow observation paginates, filters to Eve, and only performs metadata
     observation.runs.map((run) => run.runId),
     ['retained-run', 'root-run', 'turn-run'],
   )
+  assert.ok(pageLimits.length > 0)
+  assert.ok(pageLimits.every((limit) => limit === 100))
   assert.deepEqual(stepReads, ['root-run', 'turn-run'])
   assert.deepEqual(eventReads, ['root-run', 'turn-run'])
   assert.deepEqual(observation.eventsByRun.get('root-run'), [event])

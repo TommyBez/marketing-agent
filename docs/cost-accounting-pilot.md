@@ -18,6 +18,7 @@ Set these server-side variables in Vercel Production:
 
 ```dotenv
 CRON_SECRET=
+# Native Upstash names; Vercel Marketplace KV_REST_API_URL/TOKEN are also accepted.
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 VERCEL_TEAM_ID=
@@ -29,7 +30,7 @@ AI_CREDIT_ENFORCEMENT=false
 
 `VERCEL_BILLING_TOKEN` needs read access to the Billing Charges API and is also used for local/manual Workflow collection. Deployed Sandbox collection can use Vercel OIDC automatically. Keep all of these variables server-only.
 
-Both cron routes share the Upstash lock key `branderize:production:cron:cost-accounting:v1`. Acquisition uses `SET NX PX 330000`; release is an owner-checked Lua delete. A concurrent invocation returns `204`, and unavailable Redis returns `503` so accounting never runs without its lock.
+Both cron routes share one environment-scoped Upstash lock key, for example `branderize:production:cron:cost-accounting:v1`. Preview deployments return `404` before authentication or lock acquisition, so the jobs cannot be invoked there even manually. Acquisition uses `SET NX PX 330000`; release is an owner-checked Lua delete. The client accepts either the native `UPSTASH_REDIS_REST_*` pair or the Vercel Marketplace `KV_REST_API_*` pair. A concurrent invocation returns `204`, and unavailable Redis returns `503` so accounting never runs without its lock.
 
 ## Deployment sequence
 
@@ -65,7 +66,7 @@ The grant command is safe to repeat: its ledger idempotency key is fixed per wor
 
 ## Runtime measurement
 
-Every physical AI SDK provider call is wrapped by `meteredModel`, including retries, subagents, and Eve compaction calls. The request carries a verified workspace, user, conversation, and Eve session identity; production generation fails closed if that identity cannot be resolved, including after an internal service-principal hop. AI Gateway receives a stable opaque user hash rather than a database identifier. The runtime debits the provider-reported Gateway cost immediately when present, captures generation metadata from every stream chunk, and falls back to generation lookup or the Gateway's current model catalog for a provisional debit. Eve lifecycle hooks provide a second observation path, while the daily Gateway collector replaces provisional cost with the provider-reported exact value, writes only the residual ledger adjustment, and warns about any completed call still missing direct model-level cost.
+Every physical AI SDK provider call is wrapped by `meteredModel`, including retries, subagents, and Eve compaction calls. The request carries a verified workspace, user, conversation, and Eve session identity; production generation fails closed if that identity cannot be resolved, including after an internal service-principal hop. AI Gateway receives a stable opaque user hash rather than a database identifier plus an environment tag such as `branderize:production`. The same tag is persisted on the physical call, so account-wide Gateway spend reports can filter out unrelated applications and compare only like-for-like local cost. The runtime debits the provider-reported Gateway cost immediately when present, captures generation metadata from every stream chunk, and falls back to generation lookup or the Gateway's current model catalog for a provisional debit. Eve lifecycle hooks provide a second observation path, while the daily Gateway collector replaces provisional cost with the provider-reported exact value, writes only the residual ledger adjustment, and warns about any completed call still missing direct model-level cost.
 
 The cutoff is intentionally a soft transactional cutoff, not a reservation system: each call checks the locked workspace balance before starting. The final allowed call can take the balance below zero by its full cost, and concurrent calls can increase that overshoot; all subsequent calls are blocked after their debits land. A reservation ledger can be added later if pilot data shows this edge case matters.
 
@@ -73,14 +74,15 @@ Sandbox collection is read-only (`resume: false`). It revisits all returned sess
 
 Workflow collection reads analytics and metadata without resolving payload data. It records every provider event exactly at the current public rate of $0.02 per 1,000 events, including retries and non-step state transitions. Retained bytes are converted to an explicitly `experimental` GB-month estimate at $0.50/GB-month. The API does not expose the semantically distinct Data Written counter, so no $0.50/GB estimate is invented; the collector emits a warning and its FOCUS charge deliberately remains `platform_shared` rather than being allocated using retained bytes. These rates follow Vercel's product-specific [Workflow pricing](https://vercel.com/docs/workflows/pricing), not an older step-based price card.
 
-The daily reconciliation also imports Vercel FOCUS billing charges and allocates actual billed/effective infrastructure cost by measured usage where attribution exists. Unattributed or team-wide charges remain `platform_shared` instead of being assigned to a tester.
+The daily reconciliation also imports Vercel FOCUS billing charges and allocates actual billed/effective infrastructure cost by measured usage where attribution exists. AI Gateway and FOCUS use a 14-day lookback so a post-settlement run can refresh an entire reported week. Unattributed or team-wide charges remain `platform_shared` instead of being assigned to a tester.
 
 ## Scheduled outputs
 
 - `/api/cron/cost-reconciliation` runs every day at 02:15 UTC.
 - `/api/cron/pilot-cost-report` runs every Monday at 03:15 UTC.
 - Both require `Authorization: Bearer $CRON_SECRET`, run for at most 300 seconds, and use the shared Redis lock.
+- Scheduling and route execution are Production-only; Preview returns `404` for both routes.
 
-The weekly job stores the last two full UTC weeks. A week remains provisional for 72 hours and is then finalized by a later run. Reports include model cost by workspace/user/model, token counts, credit debits and current balances, standard-rate infrastructure cost, actual FOCUS allocations, pending and unattributed quality signals, and platform-to-model COGS ratio. Pricing simulations show monthly floors at 70%, 80%, and 85% target gross margin under three separate bases: standard marginal rates (recommended), actual billed infrastructure, and actual effective infrastructure after credits or adjustments. Unclassified FOCUS charges are reported but excluded from infrastructure pricing to avoid double-counting AI Gateway spend.
+The weekly job stores the last two full UTC weeks. A week remains provisional for at least 72 hours and is finalized only when every source has gap-free successful coverage for that week. AI Gateway and FOCUS must also complete a full-week refresh after the 72-hour settlement point; Sandbox and Workflow need both continuous daily-window coverage and a successful post-settlement pass, and FOCUS allocation must succeed in that late pass. The coverage evidence is embedded in each report. Any missing interval, failed source, or stale snapshot keeps the report `provisional`. Reports include model cost by workspace/user/model, token counts, credit debits and current balances, standard-rate infrastructure cost, actual FOCUS allocations, pending and unattributed quality signals, and platform-to-model COGS ratio. Pricing simulations show monthly floors at 70%, 80%, and 85% target gross margin under three separate bases: standard marginal rates (recommended), actual billed infrastructure, and actual effective infrastructure after credits or adjustments. Unclassified FOCUS charges are reported but excluded from infrastructure pricing to avoid double-counting AI Gateway spend.
 
 No customer-facing amount should be derived from a provisional report or from `estimated`/`experimental` facts without reviewing its quality breakdown.

@@ -1,8 +1,7 @@
 import { randomUUID, timingSafeEqual } from "node:crypto";
 import { Redis } from "@upstash/redis";
+import { gatewayReportingTag } from "@/lib/cost-accounting/gateway-identity";
 
-export const COST_ACCOUNTING_LOCK_KEY =
-  "branderize:production:cron:cost-accounting:v1";
 export const COST_ACCOUNTING_LOCK_TTL_MS = 330_000;
 
 const RELEASE_LOCK_SCRIPT = `
@@ -25,16 +24,33 @@ export class CronLockUnavailableError extends Error {
 }
 
 function getRedis(): Redis {
-  if (
-    !process.env.UPSTASH_REDIS_REST_URL ||
-    !process.env.UPSTASH_REDIS_REST_TOKEN
-  ) {
+  if (!hasRedisEnvironment()) {
     throw new CronLockUnavailableError(
-      "UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN are required",
+      "Upstash Redis REST URL and token are required",
     );
   }
 
   return Redis.fromEnv();
+}
+
+export function hasRedisEnvironment(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): boolean {
+  const url = env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL;
+  const token = env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN;
+  return Boolean(url && token);
+}
+
+export function costAccountingLockKey(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): string {
+  return `${gatewayReportingTag(env)}:cron:cost-accounting:v1`;
+}
+
+export function isAccountingCronEnabled(
+  env: Readonly<Record<string, string | undefined>> = process.env,
+): boolean {
+  return env.VERCEL_ENV !== "preview";
 }
 
 export async function acquireAccountingCronLock(): Promise<
@@ -42,10 +58,11 @@ export async function acquireAccountingCronLock(): Promise<
 > {
   const redis = getRedis();
   const runId = randomUUID();
+  const lockKey = costAccountingLockKey();
 
   let result;
   try {
-    result = await redis.set(COST_ACCOUNTING_LOCK_KEY, runId, {
+    result = await redis.set(lockKey, runId, {
       nx: true,
       px: COST_ACCOUNTING_LOCK_TTL_MS,
     });
@@ -63,7 +80,7 @@ export async function acquireAccountingCronLock(): Promise<
     runId,
     release: async () => {
       try {
-        await redis.eval(RELEASE_LOCK_SCRIPT, [COST_ACCOUNTING_LOCK_KEY], [runId]);
+        await redis.eval(RELEASE_LOCK_SCRIPT, [lockKey], [runId]);
       } catch (error) {
         console.error("[cost-accounting] unable to release cron lock", {
           runId,

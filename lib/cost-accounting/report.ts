@@ -47,11 +47,30 @@ type ActualAllocationRow = {
   effectiveCostUsd: string;
 };
 
+const REQUIRED_REPORT_SOURCES = [
+  "aiGateway",
+  "sandbox",
+  "workflow",
+  "focus",
+] as const;
+
+type ReportSource = (typeof REQUIRED_REPORT_SOURCES)[number];
+
+export type PilotCoverageRun = {
+  id: string;
+  completedAt: Date | null;
+  sourceStatuses: Record<string, unknown>;
+};
+
 export async function generatePilotCostReports(
   now = new Date(),
 ): Promise<Array<Record<string, unknown>>> {
-  const [latestRun] = await db
-    .select({ id: costReconciliationRuns.id })
+  const runs = await db
+    .select({
+      id: costReconciliationRuns.id,
+      completedAt: costReconciliationRuns.completedAt,
+      sourceStatuses: costReconciliationRuns.sourceStatuses,
+    })
     .from(costReconciliationRuns)
     .where(
       or(
@@ -59,9 +78,9 @@ export async function generatePilotCostReports(
         eq(costReconciliationRuns.status, "partial"),
       ),
     )
-    .orderBy(desc(costReconciliationRuns.completedAt))
-    .limit(1);
+    .orderBy(desc(costReconciliationRuns.completedAt));
 
+  const latestRun = runs[0];
   if (!latestRun) {
     throw new Error("A completed or partial reconciliation run is required");
   }
@@ -69,8 +88,17 @@ export async function generatePilotCostReports(
   const reports: Array<Record<string, unknown>> = [];
   for (const weeksAgo of [1, 2]) {
     const period = previousFullUtcWeek(now, weeksAgo);
-    const report = await buildPilotCostReport(period, now);
-    const complete = now.getTime() >= period.end.getTime() + 72 * 60 * 60 * 1_000;
+    const reconciliationCoverage = pilotReportCoverage({ period, runs });
+    const report = {
+      ...await buildPilotCostReport(period, now),
+      reconciliationCoverage,
+    };
+    const status = pilotReportStatus({
+      now,
+      periodEnd: period.end,
+      sourceCoverageComplete: reconciliationCoverage.complete,
+    });
+    const complete = status === "complete";
     const reportKey = `pilot-cost:v1:${utcDateKey(period.start)}:${utcDateKey(period.end)}`;
 
     await db
@@ -80,7 +108,7 @@ export async function generatePilotCostReports(
         generatedFromRunId: latestRun.id,
         periodStart: period.start,
         periodEnd: period.end,
-        status: complete ? "complete" : "provisional",
+        status,
         report,
         finalizedAt: complete ? now : null,
       })
@@ -88,7 +116,7 @@ export async function generatePilotCostReports(
         target: pilotCostReports.reportKey,
         set: {
           generatedFromRunId: latestRun.id,
-          status: complete ? "complete" : "provisional",
+          status,
           version: sql`${pilotCostReports.version} + 1`,
           report,
           generatedAt: now,
@@ -100,13 +128,143 @@ export async function generatePilotCostReports(
     console.info(JSON.stringify({
       event: "pilot_cost_report_generated",
       reportKey,
-      status: complete ? "complete" : "provisional",
+      status,
       report,
     }));
     reports.push(report);
   }
 
   return reports;
+}
+
+export function pilotReportStatus(input: {
+  now: Date;
+  periodEnd: Date;
+  sourceCoverageComplete: boolean;
+}): "provisional" | "complete" {
+  const settled = input.now.getTime()
+    >= input.periodEnd.getTime() + 72 * 60 * 60 * 1_000;
+  return settled && input.sourceCoverageComplete
+    ? "complete"
+    : "provisional";
+}
+
+export function pilotReportCoverage(input: {
+  period: TimeWindow;
+  runs: readonly PilotCoverageRun[];
+}) {
+  const settledAt = new Date(
+    input.period.end.getTime() + 72 * 60 * 60 * 1_000,
+  );
+  const sources = Object.fromEntries(
+    REQUIRED_REPORT_SOURCES.map((source) => {
+      const evidence = input.runs
+        .map((run) => sourceEvidence(run, source))
+        .filter((value): value is SourceEvidence => value !== undefined);
+      const coveredPeriod = intervalsCoverWindow(
+        evidence.map(({ window }) => window),
+        input.period,
+      );
+      const observedAfterSettlement = evidence.some(
+        ({ completedAt }) => completedAt >= settledAt,
+      );
+      const refreshedAfterSettlement = source === "aiGateway" || source === "focus"
+        ? evidence.some(
+            ({ completedAt, window }) =>
+              completedAt >= settledAt && windowCovers(window, input.period),
+          )
+        : observedAfterSettlement;
+
+      return [source, {
+        coveredPeriod,
+        observedAfterSettlement,
+        refreshedAfterSettlement,
+        complete: coveredPeriod && refreshedAfterSettlement,
+      }];
+    }),
+  ) as Record<ReportSource, {
+    coveredPeriod: boolean;
+    observedAfterSettlement: boolean;
+    refreshedAfterSettlement: boolean;
+    complete: boolean;
+  }>;
+  const allocationsCompleteAfterSettlement = input.runs.some((run) => {
+    const focus = sourceEvidence(run, "focus");
+    const allocations = sourceEvidence(run, "allocations");
+    return Boolean(
+      focus
+      && allocations
+      && focus.completedAt >= settledAt
+      && windowCovers(focus.window, input.period)
+      && windowCovers(allocations.window, input.period),
+    );
+  });
+
+  return {
+    complete:
+      REQUIRED_REPORT_SOURCES.every((source) => sources[source].complete)
+      && allocationsCompleteAfterSettlement,
+    settledAt: settledAt.toISOString(),
+    sources,
+    allocationsCompleteAfterSettlement,
+  };
+}
+
+type SourceEvidence = {
+  completedAt: Date;
+  window: TimeWindow;
+};
+
+function sourceEvidence(
+  run: PilotCoverageRun,
+  source: ReportSource | "allocations",
+): SourceEvidence | undefined {
+  if (!run.completedAt) return undefined;
+  const rawSource = asRecord(run.sourceStatuses[source]);
+  if (rawSource.status !== "complete") return undefined;
+  const rawWindow = asRecord(rawSource.window);
+  const start = validDate(rawWindow.start);
+  const end = validDate(rawWindow.end);
+  if (!start || !end || end <= start) return undefined;
+  return { completedAt: run.completedAt, window: { start, end } };
+}
+
+function intervalsCoverWindow(
+  intervals: readonly TimeWindow[],
+  target: TimeWindow,
+): boolean {
+  let coveredUntil = target.start.getTime();
+  const targetEnd = target.end.getTime();
+  const sorted = [...intervals].sort(
+    (left, right) => left.start.getTime() - right.start.getTime(),
+  );
+
+  for (const interval of sorted) {
+    const start = interval.start.getTime();
+    const end = interval.end.getTime();
+    if (end <= coveredUntil) continue;
+    if (start > coveredUntil) return false;
+    coveredUntil = end;
+    if (coveredUntil >= targetEnd) return true;
+  }
+
+  return coveredUntil >= targetEnd;
+}
+
+function windowCovers(window: TimeWindow, target: TimeWindow): boolean {
+  return window.start <= target.start && window.end >= target.end;
+}
+
+function validDate(value: unknown): Date | undefined {
+  if (typeof value !== "string" && !(value instanceof Date)) return undefined;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? undefined : parsed;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
 }
 
 async function buildPilotCostReport(

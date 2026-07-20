@@ -40,6 +40,7 @@ export type BeginAiModelCallInput = AiUsageIdentity & {
   attempt: number;
   callKind: AiModelCallKind;
   gatewayUserId: string;
+  gatewayReportingTag: string;
 };
 
 export type AiModelCallKind = "step" | "retry" | "compaction" | "other";
@@ -389,6 +390,7 @@ export async function beginAiModelCall(
         rawUsage: {
           operation: input.operation,
           gatewayUserId: input.gatewayUserId,
+          gatewayReportingTag: input.gatewayReportingTag,
         },
       });
 

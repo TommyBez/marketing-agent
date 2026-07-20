@@ -1,9 +1,13 @@
 import { createHash } from "node:crypto";
+import { sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { vercelBillingCharges } from "@/lib/db/schema";
 import type { CollectorWindow } from "./types";
 
 type FocusRow = Record<string, unknown>;
+type FocusChargeInsert = typeof vercelBillingCharges.$inferInsert;
+
+const FOCUS_WRITE_BATCH_SIZE = 250;
 
 export type FocusCollectorResult = {
   service: "vercel_focus";
@@ -53,6 +57,7 @@ export async function collectFocusCharges(input: {
   let billedCostUsd = 0;
   let effectiveCostUsd = 0;
   const warnings: FocusCollectorResult["warnings"] = [];
+  const charges: FocusChargeInsert[] = [];
 
   for await (const row of parseJsonLines(response.body)) {
     rowsRead += 1;
@@ -63,42 +68,23 @@ export async function collectFocusCharges(input: {
 
     try {
       const normalized = normalizeFocusRow(row);
-      await db
-        .insert(vercelBillingCharges)
-        .values({
-          reconciliationRunId: input.reconciliationRunId,
-          sourceChargeKey: normalized.sourceChargeKey,
-          serviceName: normalized.serviceName,
-          skuId: normalized.skuId,
-          skuName: normalized.skuName,
-          chargeCategory: normalized.chargeCategory,
-          chargePeriodStart: normalized.chargePeriodStart,
-          chargePeriodEnd: normalized.chargePeriodEnd,
-          usageQuantity: normalized.usageQuantity,
-          usageUnit: normalized.usageUnit,
-          listCostUsd: normalized.listCostUsd,
-          billedCostUsd: normalized.billedCostUsd,
-          effectiveCostUsd: normalized.effectiveCostUsd,
-          currency: normalized.currency,
-          rawCharge: row,
-        })
-        .onConflictDoUpdate({
-          target: [
-            vercelBillingCharges.reconciliationRunId,
-            vercelBillingCharges.sourceChargeKey,
-          ],
-          set: {
-            billedCostUsd: normalized.billedCostUsd,
-            effectiveCostUsd: normalized.effectiveCostUsd,
-            listCostUsd: normalized.listCostUsd,
-            usageQuantity: normalized.usageQuantity,
-            rawCharge: row,
-            importedAt: new Date(),
-          },
-        });
-      rowsImported += 1;
-      billedCostUsd += Number(normalized.billedCostUsd);
-      effectiveCostUsd += Number(normalized.effectiveCostUsd);
+      charges.push({
+        reconciliationRunId: input.reconciliationRunId,
+        sourceChargeKey: normalized.sourceChargeKey,
+        serviceName: normalized.serviceName,
+        skuId: normalized.skuId,
+        skuName: normalized.skuName,
+        chargeCategory: normalized.chargeCategory,
+        chargePeriodStart: normalized.chargePeriodStart,
+        chargePeriodEnd: normalized.chargePeriodEnd,
+        usageQuantity: normalized.usageQuantity,
+        usageUnit: normalized.usageUnit,
+        listCostUsd: normalized.listCostUsd,
+        billedCostUsd: normalized.billedCostUsd,
+        effectiveCostUsd: normalized.effectiveCostUsd,
+        currency: normalized.currency,
+        rawCharge: row,
+      });
     } catch (error) {
       warnings.push({
         operation: "normalizeCharge",
@@ -107,6 +93,40 @@ export async function collectFocusCharges(input: {
       });
     }
   }
+
+  const upsertBatches = focusUpsertBatches(charges);
+  const uniqueCharges = upsertBatches.flat();
+  rowsImported = uniqueCharges.length;
+  billedCostUsd = uniqueCharges.reduce(
+    (total, charge) => total + Number(charge.billedCostUsd),
+    0,
+  );
+  effectiveCostUsd = uniqueCharges.reduce(
+    (total, charge) => total + Number(charge.effectiveCostUsd),
+    0,
+  );
+
+  await db.transaction(async (tx) => {
+    for (const batch of upsertBatches) {
+      await tx
+        .insert(vercelBillingCharges)
+        .values(batch)
+        .onConflictDoUpdate({
+          target: [
+            vercelBillingCharges.reconciliationRunId,
+            vercelBillingCharges.sourceChargeKey,
+          ],
+          set: {
+            billedCostUsd: sql`excluded."billedCostUsd"`,
+            effectiveCostUsd: sql`excluded."effectiveCostUsd"`,
+            listCostUsd: sql`excluded."listCostUsd"`,
+            usageQuantity: sql`excluded."usageQuantity"`,
+            rawCharge: sql`excluded."rawCharge"`,
+            importedAt: new Date(),
+          },
+        });
+    }
+  });
 
   return {
     service: "vercel_focus",
@@ -118,6 +138,27 @@ export async function collectFocusCharges(input: {
     effectiveCostUsd,
     warnings,
   };
+}
+
+export function focusUpsertBatches<T extends { sourceChargeKey: string }>(
+  rows: T[],
+  batchSize = FOCUS_WRITE_BATCH_SIZE,
+): T[][] {
+  if (!Number.isInteger(batchSize) || batchSize < 1) {
+    throw new Error("FOCUS batch size must be a positive integer");
+  }
+
+  const deduped = new Map<string, T>();
+  for (const row of rows) {
+    deduped.set(row.sourceChargeKey, row);
+  }
+
+  const uniqueRows = [...deduped.values()];
+  const batches: T[][] = [];
+  for (let index = 0; index < uniqueRows.length; index += batchSize) {
+    batches.push(uniqueRows.slice(index, index + batchSize));
+  }
+  return batches;
 }
 
 export function normalizeFocusRow(row: FocusRow) {

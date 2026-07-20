@@ -32,7 +32,9 @@ const TERMINAL_WORKFLOW_STATUSES = new Set(['completed', 'failed', 'cancelled'])
 const EVE_RUN_TYPES = new Set(['session', 'subagent', 'turn'])
 const EVE_WORKFLOW_NAMES = new Set(['workflowEntry', 'turnWorkflow'])
 const BYTES_PER_DECIMAL_GIGABYTE = 1_000_000_000
-const PAGE_SIZE = 1_000
+// Vercel Workflow analytics/storage APIs currently reject limits above 100.
+// Keep the collector at the provider maximum and follow cursors for larger sets.
+const PAGE_SIZE = 100
 
 export type WorkflowAnalyticsRun = {
   runId: string
