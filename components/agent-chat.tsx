@@ -139,7 +139,10 @@ export function AgentChat({ canInvite, companyName, conversationId, conversation
   if (!clientRef.current) {
     clientRef.current = new Client({
       host: '',
-      headers: { 'x-relay-workspace-id': workspaceId },
+      headers: {
+        'x-relay-conversation-id': conversationId,
+        'x-relay-workspace-id': workspaceId,
+      },
       maxReconnectAttempts: streamReconnectAttempts,
       preserveCompletedSessions: true,
     })

@@ -14,6 +14,8 @@
     "db:check": "drizzle-kit check",
     "db:migrate": "drizzle-kit migrate",
     "lint": "eslint .",
+    "pilot:grant": "tsx scripts/grant-pilot-credits.ts",
+    "test:cost-accounting": "tsx --test agent/lib/metered-model.test.ts lib/cost-accounting/money.test.ts lib/cost-accounting/ledger-math.test.ts lib/cost-accounting/gateway-identity.test.ts lib/cost-accounting/rates.test.ts lib/cost-accounting/time.test.ts lib/cost-accounting/cron-lock.test.ts lib/cost-accounting/allocations.test.ts lib/cost-accounting/report.test.ts lib/cost-accounting/collectors/ai-gateway.test.ts lib/cost-accounting/collectors/focus.test.ts lib/cost-accounting/collectors/storage-buckets.test.ts lib/cost-accounting/collectors/sandbox.test.ts lib/cost-accounting/collectors/workflow.test.ts",
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
@@ -24,8 +26,11 @@
     "@streamdown/code": "^1.1.1",
     "@streamdown/math": "^1.0.2",
     "@streamdown/mermaid": "^1.0.2",
+    "@upstash/redis": "^1.38.0",
     "@vercel/analytics": "1.6.1",
     "@vercel/blob": "^2.6.1",
+    "@vercel/sandbox": "2.3.0",
+    "@workflow/world-vercel": "5.0.0-beta.27",
     "ai": "^7.0.22",
     "better-auth": "^1.6.23",
     "class-variance-authority": "^0.7.1",
@@ -62,6 +67,7 @@
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@typescript/native": "npm:typescript@7.0.2",
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.7.0",
     "eslint-config-next": "^16.2.10",
@@ -69,7 +75,8 @@
     "microsandbox": "^0.6.6",
     "postcss": "^8.5",
     "tailwindcss": "^4.2.0",
-    "typescript": "5.7.3"
+    "tsx": "^4.23.1",
+    "typescript": "npm:@typescript/typescript6@6.0.2"
   },
   "pnpm": {
     "overrides": {

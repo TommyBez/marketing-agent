@@ -62,6 +62,10 @@ RESEND_FROM_EMAIL="Branderize <auth@your-verified-domain.com>"
 
 The sender address must belong to a domain verified in Resend. To preview the React Email template locally, run `pnpm email:preview` and open [http://localhost:3001](http://localhost:3001).
 
+## Pilot cost accounting
+
+The internal pilot measures per-user and per-workspace AI usage, maintains the shared 25-credit workspace balance, reconciles AI Gateway and Vercel costs daily, and produces a weekly pricing report. Deployment variables, grant commands, rollout checks, measurement caveats, and cron behavior are documented in [`docs/cost-accounting-pilot.md`](docs/cost-accounting-pilot.md).
+
 To opt into the development-only authentication bypass, create `.env.development.local` with:
 
 ```bash

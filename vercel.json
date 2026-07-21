@@ -1,4 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm db:check && pnpm build && pnpm db:migrate"
+  "buildCommand": "pnpm db:check && pnpm build && pnpm db:migrate",
+  "crons": [
+    {
+      "path": "/api/cron/cost-reconciliation",
+      "schedule": "15 2 * * *"
+    },
+    {
+      "path": "/api/cron/pilot-cost-report",
+      "schedule": "15 3 * * 1"
+    }
+  ]
 }
