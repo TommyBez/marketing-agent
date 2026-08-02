@@ -2,12 +2,12 @@ import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { costReconciliationRuns } from "@/lib/db/schema";
-import { allocateFocusCharges } from "@/lib/cost-accounting/allocations";
 import { collectAiGatewayUsage } from "@/lib/cost-accounting/collectors/ai-gateway";
-import { collectFocusCharges } from "@/lib/cost-accounting/collectors/focus";
-import { collectSandboxUsage } from "@/lib/cost-accounting/collectors/sandbox";
-import { collectWorkflowUsage } from "@/lib/cost-accounting/collectors/workflow";
 import { reconciliationWindows, startOfUtcDay, utcDateKey } from "@/lib/cost-accounting/time";
+
+// Below the route's 300-second maxDuration so a hung collector still reaches
+// the failed-run update instead of leaving the row in "running" forever.
+const RECONCILIATION_TIMEOUT_MS = 4 * 60 * 1_000;
 
 type SourceResult = {
   status: "complete" | "partial" | "failed";
@@ -44,7 +44,6 @@ export async function runCostReconciliation(input?: {
         status: "running",
         windowStart: windows.aiGateway.start,
         windowEnd: now,
-        billingSnapshotComplete: false,
         sourceStatuses: {},
         error: null,
         startedAt: now,
@@ -58,83 +57,26 @@ export async function runCostReconciliation(input?: {
     throw new Error("Unable to create reconciliation run");
   }
 
-  const workflowApiConfig = {
-    token: process.env.VERCEL_BILLING_TOKEN,
-    projectConfig: {
-      projectId: process.env.VERCEL_PROJECT_ID,
-      teamId: process.env.VERCEL_TEAM_ID,
-      environment: "production",
-    },
+  const serializedWindow = {
+    start: windows.aiGateway.start.toISOString(),
+    end: windows.aiGateway.end.toISOString(),
   };
-  const collectors = {
-    aiGateway: () => collectAiGatewayUsage({ window: windows.aiGateway }),
-    sandbox: () => collectSandboxUsage({
-      reconciliationRunId: run.id,
-      window: windows.sandbox,
-      observedAt: now,
-    }),
-    workflow: () => collectWorkflowUsage({
-      reconciliationRunId: run.id,
-      window: windows.workflow,
-      observedAt: now,
-      apiConfig: workflowApiConfig,
-    }),
-    focus: () => collectFocusCharges({
-      reconciliationRunId: run.id,
-      window: windows.focus,
-    }),
-  } as const;
-
-  const entries = Object.entries(collectors);
-  const settled = await Promise.allSettled(entries.map(([, collect]) => collect()));
   const sources: Record<string, SourceResult> = {};
-  const sourceWindows: Record<string, { start: Date; end: Date }> = {
-    aiGateway: windows.aiGateway,
-    sandbox: windows.sandbox,
-    workflow: windows.workflow,
-    focus: windows.focus,
-  };
 
-  settled.forEach((outcome, index) => {
-    const sourceName = entries[index]?.[0] ?? `unknown-${index}`;
-    const window = sourceWindows[sourceName];
-    const serializedWindow = window
-      ? { start: window.start.toISOString(), end: window.end.toISOString() }
-      : undefined;
-    if (outcome.status === "rejected") {
-      sources[sourceName] = {
-        status: "failed",
-        window: serializedWindow,
-        error: safeError(outcome.reason),
-      };
-      return;
-    }
-
-    const result = outcome.value as { status?: string };
-    sources[sourceName] = {
+  try {
+    const result = await withDeadline(
+      collectAiGatewayUsage({ window: windows.aiGateway }),
+      RECONCILIATION_TIMEOUT_MS,
+    );
+    sources.aiGateway = {
       status: result.status === "partial" ? "partial" : "complete",
       window: serializedWindow,
       result,
     };
-  });
-
-  try {
-    const allocationResult = await allocateFocusCharges(run.id);
-    sources.allocations = {
-      status: "complete",
-      window: {
-        start: windows.focus.start.toISOString(),
-        end: windows.focus.end.toISOString(),
-      },
-      result: allocationResult,
-    };
   } catch (error) {
-    sources.allocations = {
+    sources.aiGateway = {
       status: "failed",
-      window: {
-        start: windows.focus.start.toISOString(),
-        end: windows.focus.end.toISOString(),
-      },
+      window: serializedWindow,
       error: safeError(error),
     };
   }
@@ -153,7 +95,6 @@ export async function runCostReconciliation(input?: {
     .update(costReconciliationRuns)
     .set({
       status,
-      billingSnapshotComplete: sources.focus?.status === "complete",
       sourceStatuses: sources,
       error:
         status === "complete"
@@ -177,6 +118,19 @@ export async function runCostReconciliation(input?: {
   }));
 
   return { runId: run.id, status, sources };
+}
+
+function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error(`Reconciliation exceeded ${ms}ms`)),
+        ms,
+      );
+      timer.unref?.();
+    }),
+  ]);
 }
 
 function safeError(error: unknown): Record<string, unknown> {
