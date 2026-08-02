@@ -64,7 +64,7 @@ The sender address must belong to a domain verified in Resend. To preview the Re
 
 ## Pilot cost accounting
 
-The internal pilot measures per-user and per-workspace AI usage, maintains the shared 25-credit workspace balance, reconciles AI Gateway and Vercel costs daily, and produces a weekly pricing report. Deployment variables, grant commands, rollout checks, measurement caveats, and cron behavior are documented in [`docs/cost-accounting-pilot.md`](docs/cost-accounting-pilot.md).
+The internal pilot measures per-user and per-workspace AI usage, maintains the shared 25-credit workspace balance, and reconciles AI Gateway spend daily. Deployment variables, grant commands, rollout checks, measurement caveats, and cron behavior are documented in [`docs/cost-accounting-pilot.md`](docs/cost-accounting-pilot.md).
 
 To opt into the development-only authentication bypass, create `.env.development.local` with:
 

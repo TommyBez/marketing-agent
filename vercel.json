@@ -5,10 +5,6 @@
     {
       "path": "/api/cron/cost-reconciliation",
       "schedule": "15 2 * * *"
-    },
-    {
-      "path": "/api/cron/pilot-cost-report",
-      "schedule": "15 3 * * 1"
     }
   ]
 }
