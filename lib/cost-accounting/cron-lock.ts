@@ -24,28 +24,22 @@ export class CronLockUnavailableError extends Error {
 }
 
 function getRedis(): Redis {
-  const credentials = redisCredentials();
-  if (!credentials) {
+  if (!hasRedisEnvironment()) {
     throw new CronLockUnavailableError(
       "Upstash Redis REST URL and token are required",
     );
   }
 
-  return new Redis(credentials);
+  return Redis.fromEnv();
 }
 
-export function redisCredentials(
-  env: Readonly<Record<string, string | undefined>> = process.env,
-): { url: string; token: string } | null {
-  const url = env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL;
-  const token = env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN;
-  return url && token ? { url, token } : null;
-}
-
+// Mirrors the variables Redis.fromEnv() reads.
 export function hasRedisEnvironment(
   env: Readonly<Record<string, string | undefined>> = process.env,
 ): boolean {
-  return redisCredentials(env) !== null;
+  const url = env.UPSTASH_REDIS_REST_URL || env.KV_REST_API_URL;
+  const token = env.UPSTASH_REDIS_REST_TOKEN || env.KV_REST_API_TOKEN;
+  return Boolean(url && token);
 }
 
 export function costAccountingLockKey(

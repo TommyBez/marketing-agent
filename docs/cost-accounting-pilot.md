@@ -18,7 +18,6 @@ Set these server-side variables in Vercel Production:
 
 ```dotenv
 CRON_SECRET=
-# Native Upstash names; Vercel Marketplace KV_REST_API_URL/TOKEN are also accepted.
 UPSTASH_REDIS_REST_URL=
 UPSTASH_REDIS_REST_TOKEN=
 VERCEL_TEAM_ID=
@@ -28,7 +27,7 @@ AI_CREDIT_ENFORCEMENT=false
 
 Keep all of these variables server-only.
 
-The reconciliation cron uses an environment-scoped Upstash lock key, for example `branderize:production:cron:cost-accounting:v1`, so a run can never overlap itself. Preview deployments return `404` before authentication or lock acquisition, so the job cannot be invoked there even manually. Acquisition uses `SET NX PX 330000`; release is an owner-checked Lua delete. The client accepts either the native `UPSTASH_REDIS_REST_*` pair or the Vercel Marketplace `KV_REST_API_*` pair. A concurrent invocation returns `204`, and unavailable Redis returns `503` so accounting never runs without its lock.
+The reconciliation cron uses an environment-scoped Upstash lock key, for example `branderize:production:cron:cost-accounting:v1`, so a run can never overlap itself. Preview deployments return `404` before authentication or lock acquisition, so the job cannot be invoked there even manually. Acquisition uses `SET NX PX 330000`; release is an owner-checked Lua delete. A concurrent invocation returns `204`, and unavailable Redis returns `503` so accounting never runs without its lock.
 
 ## Deployment sequence
 

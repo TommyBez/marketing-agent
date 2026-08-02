@@ -6,7 +6,6 @@ import {
   hasRedisEnvironment,
   isAccountingCronEnabled,
   isAuthorizedCronRequest,
-  redisCredentials,
 } from "./cron-lock";
 
 const originalCronSecret = process.env.CRON_SECRET;
@@ -64,20 +63,6 @@ describe("cost-accounting cron guard", () => {
     }), true);
     assert.equal(hasRedisEnvironment({ KV_REST_API_URL: "https://redis.example.test" }), false);
     assert.equal(hasRedisEnvironment({}), false);
-  });
-
-  it("builds client credentials from a Marketplace-only environment", () => {
-    assert.deepEqual(redisCredentials({
-      KV_REST_API_URL: "https://redis.example.test",
-      KV_REST_API_TOKEN: "kv-token",
-    }), { url: "https://redis.example.test", token: "kv-token" });
-    assert.deepEqual(redisCredentials({
-      UPSTASH_REDIS_REST_URL: "https://native.example.test",
-      UPSTASH_REDIS_REST_TOKEN: "native-token",
-      KV_REST_API_URL: "https://redis.example.test",
-      KV_REST_API_TOKEN: "kv-token",
-    }), { url: "https://native.example.test", token: "native-token" });
-    assert.equal(redisCredentials({ KV_REST_API_TOKEN: "kv-token" }), null);
   });
 
   it("disables accounting cron routes only in Preview", () => {
