@@ -72,6 +72,6 @@ The cutoff is intentionally a soft transactional cutoff, not a reservation syste
 
 - `/api/cron/cost-reconciliation` runs every day at 02:15 UTC.
 - It requires `Authorization: Bearer $CRON_SECRET`, runs for at most 300 seconds, and uses the Redis lock.
-- Scheduling and route execution are Production-only; Preview returns `404`.
+- Vercel schedules the cron in Production only. The route returns `404` on Preview; in any other environment a manual invocation still requires the bearer secret and the Redis lock.
 
 The daily reconciliation refreshes AI Gateway spend with a 14-day lookback so a post-settlement run can refresh an entire reported week.

@@ -5,6 +5,10 @@ import { costReconciliationRuns } from "@/lib/db/schema";
 import { collectAiGatewayUsage } from "@/lib/cost-accounting/collectors/ai-gateway";
 import { reconciliationWindows, startOfUtcDay, utcDateKey } from "@/lib/cost-accounting/time";
 
+// Below the route's 300-second maxDuration so a hung collector still reaches
+// the failed-run update instead of leaving the row in "running" forever.
+const RECONCILIATION_TIMEOUT_MS = 4 * 60 * 1_000;
+
 type SourceResult = {
   status: "complete" | "partial" | "failed";
   window?: { start: string; end: string };
@@ -60,7 +64,10 @@ export async function runCostReconciliation(input?: {
   const sources: Record<string, SourceResult> = {};
 
   try {
-    const result = await collectAiGatewayUsage({ window: windows.aiGateway });
+    const result = await withDeadline(
+      collectAiGatewayUsage({ window: windows.aiGateway }),
+      RECONCILIATION_TIMEOUT_MS,
+    );
     sources.aiGateway = {
       status: result.status === "partial" ? "partial" : "complete",
       window: serializedWindow,
@@ -111,6 +118,19 @@ export async function runCostReconciliation(input?: {
   }));
 
   return { runId: run.id, status, sources };
+}
+
+function withDeadline<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) => {
+      const timer = setTimeout(
+        () => reject(new Error(`Reconciliation exceeded ${ms}ms`)),
+        ms,
+      );
+      timer.unref?.();
+    }),
+  ]);
 }
 
 function safeError(error: unknown): Record<string, unknown> {
